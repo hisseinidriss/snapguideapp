@@ -533,13 +533,16 @@ function getContentJS(): string {
     });
   }
 
-  function buildTooltipHTML(step, index, total, processName) {
+  function buildTooltipHTML(step, index, total, processName, targetMissing) {
     var isFirst = index === 0;
     var isLast = index === total - 1;
     return '<button class="bpg-btn-close">&times;</button>'
       + '<div style="font-size:11px;color:#6366f1;font-weight:600;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px">' + processName + '</div>'
       + '<h3 class="bpg-tooltip-title">' + step.title + '</h3>'
       + '<p class="bpg-tooltip-content">' + step.content + '</p>'
+      + (targetMissing
+        ? '<p style="font-size:12px;color:#b45309;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:8px 10px;margin:0 0 12px">Target element not found. Check if the selector is correct and visible on this page.</p>'
+        : '')
       + '<div class="bpg-tooltip-footer">'
       + '<span class="bpg-tooltip-progress">Step ' + (index + 1) + ' of ' + total + '</span>'
       + '<div class="bpg-tooltip-actions">'
