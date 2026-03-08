@@ -21,8 +21,6 @@ const TourEditor = () => {
   const [previewActive, setPreviewActive] = useState(false);
   const [previewStepIndex, setPreviewStepIndex] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [generatingFromManual, setGeneratingFromManual] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!appId || !tourId) return;
