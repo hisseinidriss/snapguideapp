@@ -14,7 +14,169 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      apps: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+          url: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+          url?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+          url?: string | null
+        }
+        Relationships: []
+      }
+      launchers: {
+        Row: {
+          app_id: string
+          color: string | null
+          created_at: string
+          id: string
+          is_active: boolean | null
+          label: string | null
+          name: string
+          pulse: boolean | null
+          selector: string
+          tour_id: string | null
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          app_id: string
+          color?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          label?: string | null
+          name: string
+          pulse?: boolean | null
+          selector?: string
+          tour_id?: string | null
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          app_id?: string
+          color?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          label?: string | null
+          name?: string
+          pulse?: boolean | null
+          selector?: string
+          tour_id?: string | null
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "launchers_app_id_fkey"
+            columns: ["app_id"]
+            isOneToOne: false
+            referencedRelation: "apps"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "launchers_tour_id_fkey"
+            columns: ["tour_id"]
+            isOneToOne: false
+            referencedRelation: "tours"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tour_steps: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          placement: string
+          selector: string | null
+          sort_order: number
+          title: string
+          tour_id: string
+          updated_at: string
+        }
+        Insert: {
+          content?: string
+          created_at?: string
+          id?: string
+          placement?: string
+          selector?: string | null
+          sort_order?: number
+          title?: string
+          tour_id: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          placement?: string
+          selector?: string | null
+          sort_order?: number
+          title?: string
+          tour_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tour_steps_tour_id_fkey"
+            columns: ["tour_id"]
+            isOneToOne: false
+            referencedRelation: "tours"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tours: {
+        Row: {
+          app_id: string
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          app_id: string
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          app_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tours_app_id_fkey"
+            columns: ["app_id"]
+            isOneToOne: false
+            referencedRelation: "apps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
