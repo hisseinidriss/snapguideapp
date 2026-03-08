@@ -211,6 +211,21 @@ const AppDetail = () => {
     await supabase.from("launchers").update(cleanUpdates).eq("id", id);
   };
 
+  // === Checklist handlers ===
+  const handleCreateChecklist = async () => {
+    if (!newChecklistName.trim() || !appId) return;
+    const { data, error } = await supabase
+      .from("checklists").insert({ app_id: appId, name: newChecklistName }).select().single();
+    if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
+    if (data) setChecklists((prev) => [data, ...prev]);
+    setNewChecklistName(""); setChecklistOpen(false);
+  };
+
+  const handleDeleteChecklist = async (id: string) => {
+    await supabase.from("checklists").delete().eq("id", id);
+    setChecklists((prev) => prev.filter((c) => c.id !== id));
+  };
+
   const selectedLauncher = launchers.find((l) => l.id === selectedLauncherId);
 
   if (loading) {
