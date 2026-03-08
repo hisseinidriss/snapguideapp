@@ -1,15 +1,19 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
-  ArrowLeft, Plus, GripVertical, ChevronUp, ChevronDown, Eye,
+  ArrowLeft, Plus, GripVertical, ChevronUp, ChevronDown, Eye, AlertTriangle, CheckCircle2, ShieldCheck, Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
 import type { TourStep } from "@/types/tour";
 import StepEditorPanel from "@/components/StepEditorPanel";
 import LivePreview from "@/components/LivePreview";
 import ElementPickerDialog from "@/components/ElementPickerDialog";
 import { useToast } from "@/hooks/use-toast";
+
+type ValidationStatus = "idle" | "validating" | "done";
+type SelectorResult = { found: boolean; context?: string };
 
 const TourEditor = () => {
   const { appId, tourId } = useParams<{ appId: string; tourId: string }>();
@@ -23,6 +27,8 @@ const TourEditor = () => {
   const [previewStepIndex, setPreviewStepIndex] = useState(0);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [validationStatus, setValidationStatus] = useState<ValidationStatus>("idle");
+  const [selectorResults, setSelectorResults] = useState<Record<string, SelectorResult>>({});
 
   useEffect(() => {
     if (!appId || !tourId) return;
