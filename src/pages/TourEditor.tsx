@@ -172,6 +172,7 @@ const TourEditor = () => {
               totalSteps={steps.length}
               onUpdate={updateStep}
               onRemove={removeStep}
+              onPickElement={() => setPickerOpen(true)}
             />
           ) : (
             <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
