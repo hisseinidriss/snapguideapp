@@ -152,8 +152,8 @@ const faqs = [
     a: "WalkThru supports PDF, DOCX, TXT, and Markdown (.md) files up to 10MB.",
   },
   {
-    q: "Do I need to add authentication to use WalkThru?",
-    a: "No — the current system works without user authentication. All apps and tours are accessible from the dashboard.",
+    q: "Do I need an account to use WalkThru?",
+    a: "Yes — you need to sign up and verify your email to access the dashboard. All registered users have equal access to create and manage apps and tours.",
   },
   {
     q: "How do CSS selectors work?",
