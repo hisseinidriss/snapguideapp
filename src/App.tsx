@@ -10,6 +10,7 @@ import EmbedCode from "./pages/EmbedCode";
 import LaunchersPage from "./pages/LaunchersPage";
 import ChecklistEditor from "./pages/ChecklistEditor";
 import AnalyticsDashboard from "./pages/AnalyticsDashboard";
+import UserGuide from "./pages/UserGuide";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
