@@ -46,7 +46,7 @@ const EmbedCode = () => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
-          <h2 className="text-xl font-semibold mb-2">Tour not found</h2>
+          <h2 className="text-xl font-semibold mb-2">Process not found</h2>
           <Button variant="ghost" asChild><Link to="/">Go back</Link></Button>
         </div>
       </div>
