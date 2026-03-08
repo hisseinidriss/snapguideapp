@@ -41,6 +41,10 @@ const AppDetail = () => {
   const [generating, setGenerating] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Checklist state
+  const [checklistOpen, setChecklistOpen] = useState(false);
+  const [newChecklistName, setNewChecklistName] = useState("");
+
   // Launcher state
   const [launcherOpen, setLauncherOpen] = useState(false);
   const [newLauncherName, setNewLauncherName] = useState("");
