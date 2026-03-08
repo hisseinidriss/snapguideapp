@@ -53,6 +53,8 @@ const AppDetail = () => {
     load();
   }, [appId]);
 
+  const [generating, setGenerating] = useState(false);
+
   const handleCreateTour = async () => {
     if (!tourName.trim() || !appId) return;
     const { error } = await supabase.from("tours").insert({ app_id: appId, name: tourName });
@@ -65,6 +67,51 @@ const AppDetail = () => {
   const handleDeleteTour = async (tourId: string) => {
     await supabase.from("tours").delete().eq("id", tourId);
     setTours((prev) => prev.filter((t) => t.id !== tourId));
+  };
+
+  const handleAutoGenerate = async (tourId: string) => {
+    if (!appUrl) {
+      toast({ title: "No URL", description: "This app has no URL configured. Edit the app to add one.", variant: "destructive" });
+      return;
+    }
+    setGenerating(true);
+    try {
+      const tour = tours.find((t) => t.id === tourId);
+      const { data, error } = await supabase.functions.invoke("generate-tour-steps", {
+        body: { url: appUrl, tourName: tour?.name || "Onboarding" },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      const steps = data.steps || [];
+      if (steps.length === 0) {
+        toast({ title: "No steps generated", description: "AI couldn't generate steps from this page.", variant: "destructive" });
+        return;
+      }
+
+      // Insert generated steps into the database
+      const inserts = steps.map((s: any, i: number) => ({
+        tour_id: tourId,
+        title: s.title,
+        content: s.content,
+        selector: s.selector || "",
+        placement: s.placement || "bottom",
+        sort_order: i,
+      }));
+
+      const { error: insertError } = await supabase.from("tour_steps").insert(inserts);
+      if (insertError) throw insertError;
+
+      toast({ title: "Steps generated!", description: `${steps.length} steps were created from your page content.` });
+      
+      // Update step counts
+      setTourCounts((prev) => ({ ...prev, [tourId]: (prev[tourId] || 0) + steps.length }));
+    } catch (err: any) {
+      console.error("Auto-generate error:", err);
+      toast({ title: "Generation failed", description: err.message || "Something went wrong", variant: "destructive" });
+    } finally {
+      setGenerating(false);
+    }
   };
 
   if (loading) {
