@@ -190,6 +190,10 @@ const AppDetail = () => {
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" onClick={() => handleAutoGenerate(tour.id)} disabled={generating}>
+                    {generating ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Sparkles className="mr-1 h-3 w-3" />}
+                    AI Generate
+                  </Button>
                   <Button variant="outline" size="sm" onClick={() => navigate(`/app/${appId}/tour/${tour.id}/embed`)}>
                     <Code className="mr-1 h-3 w-3" />Embed
                   </Button>
