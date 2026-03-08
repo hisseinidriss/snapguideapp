@@ -105,7 +105,7 @@ const EmbedCode = () => {
 
           {steps.length === 0 && (
             <div className="mt-6 p-4 bg-warning/10 border border-warning/20 rounded-lg">
-              <p className="text-sm text-warning font-medium">⚠ This tour has no steps yet. Add steps in the editor before embedding.</p>
+              <p className="text-sm text-warning font-medium">⚠ This process has no steps yet. Add steps in the editor before embedding.</p>
             </div>
           )}
         </div>

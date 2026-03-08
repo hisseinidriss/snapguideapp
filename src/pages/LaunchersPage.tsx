@@ -213,14 +213,14 @@ const LaunchersPage = () => {
               </div>
 
               <div className="space-y-2">
-                <Label>Linked Tour</Label>
+                <Label>Linked Process</Label>
                 <Select
                   value={selected.tour_id || "none"}
                   onValueChange={(v) => updateLauncher(selected.id, { tour_id: v === "none" ? null : v })}
                 >
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">No tour linked</SelectItem>
+                    <SelectItem value="none">No process linked</SelectItem>
                     {tours.map((t) => (
                       <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
                     ))}
