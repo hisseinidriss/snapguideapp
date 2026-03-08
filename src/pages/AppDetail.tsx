@@ -298,6 +298,10 @@ const AppDetail = () => {
                 </div>
               </DialogContent>
             </Dialog>
+            <Button variant="outline" onClick={() => navigate(`/app/${appId}/analytics`)}>
+              <BarChart3 className="mr-2 h-4 w-4" />
+              Analytics
+            </Button>
             <Button
               variant="outline"
               onClick={() => generateChromeExtension(appId!, appName, appUrl)}
