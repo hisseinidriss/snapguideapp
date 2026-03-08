@@ -29,7 +29,7 @@ export function generateEmbedScript(steps: TourStep[], launchers?: any[]): strin
       )
     : "[]";
 
-  return `<!-- TourBuilder Embed Script -->
+  return `<!-- WalkThru Embed Script -->
 <script>
 (function() {
   var steps = ${stepsJson};

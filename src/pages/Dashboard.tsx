@@ -70,9 +70,9 @@ const Dashboard = () => {
         <div className="container flex h-16 items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-sm">B</span>
+              <span className="text-primary-foreground font-bold text-sm">W</span>
             </div>
-            <h1 className="text-lg font-semibold">Business Process Builder</h1>
+            <h1 className="text-lg font-semibold">WalkThru</h1>
           </div>
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
