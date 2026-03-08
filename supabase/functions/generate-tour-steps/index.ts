@@ -44,7 +44,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         url: formattedUrl,
-        formats: ["markdown", "links"],
+        formats: ["markdown", "html", "links"],
         onlyMainContent: false,
       }),
     });
@@ -59,6 +59,7 @@ serve(async (req) => {
     }
 
     const markdown = scrapeData.data?.markdown || scrapeData.markdown || "";
+    const html = scrapeData.data?.html || scrapeData.html || "";
     const pageTitle = scrapeData.data?.metadata?.title || scrapeData.metadata?.title || "";
 
     if (!markdown) {
