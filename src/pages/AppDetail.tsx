@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, Trash2, Code, Pencil, Crosshair, Sparkles, Loader2 } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Code, Pencil, Crosshair, Sparkles, Loader2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -27,6 +27,8 @@ const AppDetail = () => {
   const [open, setOpen] = useState(false);
   const [processName, setProcessName] = useState("");
   const [stepCounts, setStepCounts] = useState<Record<string, number>>({});
+  const [generatingFromManual, setGeneratingFromManual] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!appId) return;
@@ -110,6 +112,93 @@ const AppDetail = () => {
     }
   };
 
+  const handleManualUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !appId) return;
+
+    const maxSize = 10 * 1024 * 1024;
+    if (file.size > maxSize) {
+      toast({ title: "File too large", description: "Please upload a file under 10MB.", variant: "destructive" });
+      return;
+    }
+
+    setGeneratingFromManual(true);
+    try {
+      const reader = new FileReader();
+      const base64 = await new Promise<string>((resolve, reject) => {
+        reader.onload = () => {
+          const result = reader.result as string;
+          resolve(result.split(",")[1]);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      const { data, error } = await supabase.functions.invoke("generate-tour-from-manual", {
+        body: { fileBase64: base64, fileName: file.name, mimeType: file.type },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      const processes = data.processes || [];
+      if (processes.length === 0) {
+        toast({ title: "No processes found", description: "Could not extract business processes from this document.", variant: "destructive" });
+        return;
+      }
+
+      // Create each process (tour) and its steps
+      let totalSteps = 0;
+      for (const proc of processes) {
+        const { data: tourData, error: tourErr } = await supabase
+          .from("tours")
+          .insert({ app_id: appId, name: proc.name })
+          .select()
+          .single();
+
+        if (tourErr || !tourData) continue;
+
+        const stepInserts = (proc.steps || []).map((s: any, i: number) => ({
+          tour_id: tourData.id,
+          title: s.title,
+          content: s.content,
+          selector: s.selector || "",
+          placement: s.placement || "center",
+          sort_order: i,
+        }));
+
+        if (stepInserts.length > 0) {
+          await supabase.from("tour_steps").insert(stepInserts);
+          totalSteps += stepInserts.length;
+        }
+      }
+
+      // Refresh the list
+      const { data: refreshed } = await supabase.from("tours").select("*").eq("app_id", appId).order("created_at", { ascending: false });
+      setTours(refreshed || []);
+
+      // Refresh step counts
+      if (refreshed?.length) {
+        const ids = refreshed.map((t) => t.id);
+        const { data: allSteps } = await supabase.from("tour_steps").select("tour_id").in("tour_id", ids);
+        const counts: Record<string, number> = {};
+        allSteps?.forEach((s) => { counts[s.tour_id] = (counts[s.tour_id] || 0) + 1; });
+        setStepCounts(counts);
+      }
+
+      toast({
+        title: "Processes created!",
+        description: `${processes.length} business process${processes.length !== 1 ? "es" : ""} with ${totalSteps} total steps extracted from the manual.`,
+      });
+    } catch (err: any) {
+      console.error("Manual upload error:", err);
+      toast({ title: "Generation failed", description: err.message || "Failed to extract processes from manual.", variant: "destructive" });
+    } finally {
+      setGeneratingFromManual(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -144,6 +233,24 @@ const AppDetail = () => {
             <Crosshair className="mr-2 h-4 w-4" />
             Launchers ({launchers.length})
           </Button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".pdf,.doc,.docx,.txt,.md"
+            className="hidden"
+            onChange={handleManualUpload}
+          />
+          <Button
+            variant="outline"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={generatingFromManual}
+          >
+            {generatingFromManual ? (
+              <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Extracting Processes...</>
+            ) : (
+              <><Upload className="mr-2 h-4 w-4" />Upload Manual</>
+            )}
+          </Button>
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button>
@@ -169,11 +276,22 @@ const AppDetail = () => {
               <Pencil className="h-8 w-8 text-accent" />
             </div>
             <h2 className="text-2xl font-semibold mb-2">No business processes yet</h2>
-            <p className="text-muted-foreground max-w-md mb-6">Create your first business process to guide users through {appName}.</p>
-            <Button onClick={() => setOpen(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              Create First Process
-            </Button>
+            <p className="text-muted-foreground max-w-md mb-6">
+              Upload a user manual to auto-extract processes, or create one manually.
+            </p>
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={generatingFromManual}>
+                {generatingFromManual ? (
+                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Extracting...</>
+                ) : (
+                  <><Upload className="mr-2 h-4 w-4" />Upload Manual</>
+                )}
+              </Button>
+              <Button onClick={() => setOpen(true)}>
+                <Plus className="mr-2 h-4 w-4" />
+                Create Manually
+              </Button>
+            </div>
           </div>
         ) : (
           <div className="space-y-3">
