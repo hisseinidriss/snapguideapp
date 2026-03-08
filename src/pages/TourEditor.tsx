@@ -193,6 +193,17 @@ const TourEditor = () => {
           onStart={() => { setPreviewStepIndex(0); setPreviewActive(true); }}
         />
       </div>
+
+      <ElementPickerDialog
+        open={pickerOpen}
+        onOpenChange={setPickerOpen}
+        appUrl={appUrl}
+        onSelectorPicked={(selector) => {
+          if (selectedStepId) {
+            updateStep(selectedStepId, { selector });
+          }
+        }}
+      />
     </div>
   );
 };
