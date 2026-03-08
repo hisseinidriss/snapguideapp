@@ -21,6 +21,7 @@ const TourEditor = () => {
   const [selectedStepId, setSelectedStepId] = useState<string | null>(null);
   const [previewActive, setPreviewActive] = useState(false);
   const [previewStepIndex, setPreviewStepIndex] = useState(0);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
