@@ -2,8 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Card } from "@/components/ui/card";
-import { Trash2 } from "lucide-react";
+import { Trash2, MousePointer2 } from "lucide-react";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -23,9 +22,10 @@ interface StepEditorPanelProps {
   totalSteps: number;
   onUpdate: (id: string, updates: Partial<TourStep>) => void;
   onRemove: (id: string) => void;
+  onPickElement?: () => void;
 }
 
-const StepEditorPanel = ({ step, stepIndex, totalSteps, onUpdate, onRemove }: StepEditorPanelProps) => {
+const StepEditorPanel = ({ step, stepIndex, totalSteps, onUpdate, onRemove, onPickElement }: StepEditorPanelProps) => {
   return (
     <div className="space-y-5 animate-fade-in">
       <div className="flex items-center justify-between">
@@ -46,7 +46,14 @@ const StepEditorPanel = ({ step, stepIndex, totalSteps, onUpdate, onRemove }: St
       </div>
 
       <div className="space-y-2">
-        <Label>CSS Selector</Label>
+        <div className="flex items-center justify-between">
+          <Label>CSS Selector</Label>
+          {onPickElement && (
+            <Button variant="outline" size="sm" className="h-7 text-xs" onClick={onPickElement}>
+              <MousePointer2 className="mr-1 h-3 w-3" />Pick Element
+            </Button>
+          )}
+        </div>
         <Input value={step.selector || ""} onChange={(e) => onUpdate(step.id, { selector: e.target.value })} placeholder="#my-button or .nav-item" className="font-mono text-sm" />
         <p className="text-xs text-muted-foreground">Target element for this step. Leave empty for a centered modal.</p>
       </div>

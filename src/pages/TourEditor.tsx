@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { TourStep } from "@/types/tour";
 import StepEditorPanel from "@/components/StepEditorPanel";
 import LivePreview from "@/components/LivePreview";
+import ElementPickerDialog from "@/components/ElementPickerDialog";
 import { useToast } from "@/hooks/use-toast";
 
 const TourEditor = () => {
@@ -20,6 +21,7 @@ const TourEditor = () => {
   const [selectedStepId, setSelectedStepId] = useState<string | null>(null);
   const [previewActive, setPreviewActive] = useState(false);
   const [previewStepIndex, setPreviewStepIndex] = useState(0);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -170,6 +172,7 @@ const TourEditor = () => {
               totalSteps={steps.length}
               onUpdate={updateStep}
               onRemove={removeStep}
+              onPickElement={() => setPickerOpen(true)}
             />
           ) : (
             <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
@@ -190,6 +193,17 @@ const TourEditor = () => {
           onStart={() => { setPreviewStepIndex(0); setPreviewActive(true); }}
         />
       </div>
+
+      <ElementPickerDialog
+        open={pickerOpen}
+        onOpenChange={setPickerOpen}
+        appUrl={appUrl}
+        onSelectorPicked={(selector) => {
+          if (selectedStepId) {
+            updateStep(selectedStepId, { selector });
+          }
+        }}
+      />
     </div>
   );
 };
