@@ -74,25 +74,32 @@ const Dashboard = () => {
             </div>
             <h1 className="text-lg font-semibold">WalkThru</h1>
           </div>
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                New App
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Add a new application</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 pt-2">
-                <Input placeholder="App name" value={newName} onChange={(e) => setNewName(e.target.value)} />
-                <Input placeholder="https://yourapp.com (optional)" value={newUrl} onChange={(e) => setNewUrl(e.target.value)} />
-                <Textarea placeholder="Brief description (optional)" value={newDesc} onChange={(e) => setNewDesc(e.target.value)} rows={3} />
-                <Button onClick={handleCreate} className="w-full">Create App</Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+          <div className="flex gap-2">
+            <Button variant="outline" asChild>
+              <Link to="/guide">
+                <BookOpen className="mr-2 h-4 w-4" />
+                User Guide
+              </Link>
+            </Button>
+            <Dialog open={open} onOpenChange={setOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="mr-2 h-4 w-4" />
+                  New App
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Add a new application</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 pt-2">
+                  <Input placeholder="App name" value={newName} onChange={(e) => setNewName(e.target.value)} />
+                  <Input placeholder="https://yourapp.com (optional)" value={newUrl} onChange={(e) => setNewUrl(e.target.value)} />
+                  <Textarea placeholder="Brief description (optional)" value={newDesc} onChange={(e) => setNewDesc(e.target.value)} rows={3} />
+                  <Button onClick={handleCreate} className="w-full">Create App</Button>
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
       </header>
