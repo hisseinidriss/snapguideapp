@@ -25,8 +25,8 @@ const AppDetail = () => {
   const [launchers, setLaunchers] = useState<Launcher[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
-  const [tourName, setTourName] = useState("");
-  const [tourCounts, setTourCounts] = useState<Record<string, number>>({});
+  const [processName, setProcessName] = useState("");
+  const [stepCounts, setStepCounts] = useState<Record<string, number>>({});
 
   useEffect(() => {
     if (!appId) return;
@@ -40,13 +40,12 @@ const AppDetail = () => {
       setTours(toursRes.data || []);
       setLaunchers(launchersRes.data || []);
 
-      // Get step counts
       if (toursRes.data?.length) {
         const ids = toursRes.data.map((t) => t.id);
         const { data: steps } = await supabase.from("tour_steps").select("tour_id").in("tour_id", ids);
         const counts: Record<string, number> = {};
         steps?.forEach((s) => { counts[s.tour_id] = (counts[s.tour_id] || 0) + 1; });
-        setTourCounts(counts);
+        setStepCounts(counts);
       }
       setLoading(false);
     };
@@ -55,18 +54,18 @@ const AppDetail = () => {
 
   const [generating, setGenerating] = useState(false);
 
-  const handleCreateTour = async () => {
-    if (!tourName.trim() || !appId) return;
-    const { error } = await supabase.from("tours").insert({ app_id: appId, name: tourName });
+  const handleCreateProcess = async () => {
+    if (!processName.trim() || !appId) return;
+    const { error } = await supabase.from("tours").insert({ app_id: appId, name: processName });
     if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
     const { data } = await supabase.from("tours").select("*").eq("app_id", appId).order("created_at", { ascending: false });
     setTours(data || []);
-    setTourName(""); setOpen(false);
+    setProcessName(""); setOpen(false);
   };
 
-  const handleDeleteTour = async (tourId: string) => {
-    await supabase.from("tours").delete().eq("id", tourId);
-    setTours((prev) => prev.filter((t) => t.id !== tourId));
+  const handleDeleteProcess = async (id: string) => {
+    await supabase.from("tours").delete().eq("id", id);
+    setTours((prev) => prev.filter((t) => t.id !== id));
   };
 
   const handleAutoGenerate = async (tourId: string) => {
@@ -89,7 +88,6 @@ const AppDetail = () => {
         return;
       }
 
-      // Insert generated steps into the database
       const inserts = steps.map((s: any, i: number) => ({
         tour_id: tourId,
         title: s.title,
@@ -103,9 +101,7 @@ const AppDetail = () => {
       if (insertError) throw insertError;
 
       toast({ title: "Steps generated!", description: `${steps.length} steps were created from your page content.` });
-      
-      // Update step counts
-      setTourCounts((prev) => ({ ...prev, [tourId]: (prev[tourId] || 0) + steps.length }));
+      setStepCounts((prev) => ({ ...prev, [tourId]: (prev[tourId] || 0) + steps.length }));
     } catch (err: any) {
       console.error("Auto-generate error:", err);
       toast({ title: "Generation failed", description: err.message || "Something went wrong", variant: "destructive" });
@@ -152,14 +148,14 @@ const AppDetail = () => {
             <DialogTrigger asChild>
               <Button>
                 <Plus className="mr-2 h-4 w-4" />
-                New Tour
+                New Business Process
               </Button>
             </DialogTrigger>
             <DialogContent>
-              <DialogHeader><DialogTitle>Create a new tour</DialogTitle></DialogHeader>
+              <DialogHeader><DialogTitle>Create a new business process</DialogTitle></DialogHeader>
               <div className="space-y-4 pt-2">
-                <Input placeholder="Tour name (e.g. Onboarding)" value={tourName} onChange={(e) => setTourName(e.target.value)} />
-                <Button onClick={handleCreateTour} className="w-full">Create Tour</Button>
+                <Input placeholder="Process name (e.g. Add New Record)" value={processName} onChange={(e) => setProcessName(e.target.value)} />
+                <Button onClick={handleCreateProcess} className="w-full">Create Process</Button>
               </div>
             </DialogContent>
           </Dialog>
@@ -172,11 +168,11 @@ const AppDetail = () => {
             <div className="h-16 w-16 rounded-2xl bg-accent/10 flex items-center justify-center mb-6">
               <Pencil className="h-8 w-8 text-accent" />
             </div>
-            <h2 className="text-2xl font-semibold mb-2">No tours yet</h2>
-            <p className="text-muted-foreground max-w-md mb-6">Create your first tour to guide users through {appName}.</p>
+            <h2 className="text-2xl font-semibold mb-2">No business processes yet</h2>
+            <p className="text-muted-foreground max-w-md mb-6">Create your first business process to guide users through {appName}.</p>
             <Button onClick={() => setOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
-              Create First Tour
+              Create First Process
             </Button>
           </div>
         ) : (
@@ -186,7 +182,7 @@ const AppDetail = () => {
                 <div>
                   <h3 className="font-medium">{tour.name}</h3>
                   <p className="text-sm text-muted-foreground">
-                    {tourCounts[tour.id] || 0} step{(tourCounts[tour.id] || 0) !== 1 ? "s" : ""} · Updated {new Date(tour.updated_at).toLocaleDateString()}
+                    {stepCounts[tour.id] || 0} step{(stepCounts[tour.id] || 0) !== 1 ? "s" : ""} · Updated {new Date(tour.updated_at).toLocaleDateString()}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -200,7 +196,7 @@ const AppDetail = () => {
                   <Button size="sm" onClick={() => navigate(`/app/${appId}/tour/${tour.id}`)}>
                     <Pencil className="mr-1 h-3 w-3" />Edit
                   </Button>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDeleteTour(tour.id)}>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDeleteProcess(tour.id)}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>

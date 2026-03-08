@@ -46,7 +46,7 @@ const EmbedCode = () => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
-          <h2 className="text-xl font-semibold mb-2">Tour not found</h2>
+          <h2 className="text-xl font-semibold mb-2">Process not found</h2>
           <Button variant="ghost" asChild><Link to="/">Go back</Link></Button>
         </div>
       </div>
@@ -77,7 +77,7 @@ const EmbedCode = () => {
 
       <main className="container py-8 max-w-3xl">
         <div className="animate-fade-in">
-          <h2 className="text-xl font-semibold mb-2">Embed your tour</h2>
+          <h2 className="text-xl font-semibold mb-2">Embed your business process</h2>
           <p className="text-muted-foreground mb-6">
             Copy the script below and paste it into your application's HTML, just before the closing{" "}
             <code className="font-mono text-xs bg-muted px-1 py-0.5 rounded">&lt;/body&gt;</code> tag.
@@ -105,7 +105,7 @@ const EmbedCode = () => {
 
           {steps.length === 0 && (
             <div className="mt-6 p-4 bg-warning/10 border border-warning/20 rounded-lg">
-              <p className="text-sm text-warning font-medium">⚠ This tour has no steps yet. Add steps in the editor before embedding.</p>
+              <p className="text-sm text-warning font-medium">⚠ This process has no steps yet. Add steps in the editor before embedding.</p>
             </div>
           )}
         </div>

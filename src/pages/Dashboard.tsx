@@ -70,9 +70,9 @@ const Dashboard = () => {
         <div className="container flex h-16 items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-sm">T</span>
+              <span className="text-primary-foreground font-bold text-sm">B</span>
             </div>
-            <h1 className="text-lg font-semibold">TourBuilder</h1>
+            <h1 className="text-lg font-semibold">Business Process Builder</h1>
           </div>
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
@@ -108,7 +108,7 @@ const Dashboard = () => {
             </div>
             <h2 className="text-2xl font-semibold mb-2">No apps yet</h2>
             <p className="text-muted-foreground max-w-md mb-6">
-              Create your first application to start building guided product tours.
+              Create your first application to start building guided business processes.
             </p>
             <Button onClick={() => setOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
