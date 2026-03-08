@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, Trash2, Code, Pencil, Crosshair, Sparkles, Loader2, Upload, Circle, Square, Zap, Download, HelpCircle, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Code, Pencil, Crosshair, Sparkles, Loader2, Upload, Circle, Square, Zap, Download, HelpCircle, CheckCircle2, ClipboardList } from "lucide-react";
 import { generateChromeExtension } from "@/lib/chrome-extension-generator";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -15,7 +15,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import type { Tour, Launcher, LauncherType } from "@/types/tour";
+import type { Tour, Launcher, LauncherType, Checklist } from "@/types/tour";
 import { useToast } from "@/hooks/use-toast";
 
 const LAUNCHER_TYPES: { value: LauncherType; label: string; icon: typeof Circle; desc: string }[] = [
@@ -32,6 +32,7 @@ const AppDetail = () => {
   const [appUrl, setAppUrl] = useState("");
   const [tours, setTours] = useState<Tour[]>([]);
   const [launchers, setLaunchers] = useState<Launcher[]>([]);
+  const [checklists, setChecklists] = useState<Checklist[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [processName, setProcessName] = useState("");
@@ -39,6 +40,10 @@ const AppDetail = () => {
   const [generatingFromManual, setGeneratingFromManual] = useState(false);
   const [generating, setGenerating] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Checklist state
+  const [checklistOpen, setChecklistOpen] = useState(false);
+  const [newChecklistName, setNewChecklistName] = useState("");
 
   // Launcher state
   const [launcherOpen, setLauncherOpen] = useState(false);
@@ -49,14 +54,16 @@ const AppDetail = () => {
   useEffect(() => {
     if (!appId) return;
     const load = async () => {
-      const [appRes, toursRes, launchersRes] = await Promise.all([
+      const [appRes, toursRes, launchersRes, checklistsRes] = await Promise.all([
         supabase.from("apps").select("*").eq("id", appId).single(),
         supabase.from("tours").select("*").eq("app_id", appId).order("created_at", { ascending: false }),
         supabase.from("launchers").select("*").eq("app_id", appId).order("created_at", { ascending: false }),
+        supabase.from("checklists").select("*").eq("app_id", appId).order("created_at", { ascending: false }),
       ]);
       if (appRes.data) { setAppName(appRes.data.name); setAppUrl(appRes.data.url || ""); }
       setTours(toursRes.data || []);
       setLaunchers(launchersRes.data || []);
+      setChecklists(checklistsRes.data || []);
 
       if (toursRes.data?.length) {
         const ids = toursRes.data.map((t) => t.id);
@@ -204,6 +211,21 @@ const AppDetail = () => {
     await supabase.from("launchers").update(cleanUpdates).eq("id", id);
   };
 
+  // === Checklist handlers ===
+  const handleCreateChecklist = async () => {
+    if (!newChecklistName.trim() || !appId) return;
+    const { data, error } = await supabase
+      .from("checklists").insert({ app_id: appId, name: newChecklistName }).select().single();
+    if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
+    if (data) setChecklists((prev) => [data, ...prev]);
+    setNewChecklistName(""); setChecklistOpen(false);
+  };
+
+  const handleDeleteChecklist = async (id: string) => {
+    await supabase.from("checklists").delete().eq("id", id);
+    setChecklists((prev) => prev.filter((c) => c.id !== id));
+  };
+
   const selectedLauncher = launchers.find((l) => l.id === selectedLauncherId);
 
   if (loading) {
@@ -291,6 +313,7 @@ const AppDetail = () => {
         <Tabs defaultValue="processes" className="w-full">
           <TabsList className="mb-6">
             <TabsTrigger value="processes">Business Processes ({tours.length})</TabsTrigger>
+            <TabsTrigger value="checklists">Checklists ({checklists.length})</TabsTrigger>
             <TabsTrigger value="extensions">Extensions ({launchers.length})</TabsTrigger>
           </TabsList>
 
@@ -369,6 +392,63 @@ const AppDetail = () => {
                         <Pencil className="mr-1 h-3 w-3" />Edit
                       </Button>
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDeleteProcess(tour.id)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          {/* === Checklists Tab === */}
+          <TabsContent value="checklists">
+            <div className="flex items-center justify-end mb-6">
+              <Dialog open={checklistOpen} onOpenChange={setChecklistOpen}>
+                <DialogTrigger asChild>
+                  <Button><Plus className="mr-2 h-4 w-4" />New Checklist</Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader><DialogTitle>Create a checklist</DialogTitle></DialogHeader>
+                  <div className="space-y-4 pt-2">
+                    <Input placeholder="e.g. New Employee Onboarding" value={newChecklistName} onChange={(e) => setNewChecklistName(e.target.value)} />
+                    <Button onClick={handleCreateChecklist} className="w-full">Create Checklist</Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+
+            {checklists.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-24 text-center animate-fade-in">
+                <div className="h-16 w-16 rounded-2xl bg-accent/10 flex items-center justify-center mb-6">
+                  <ClipboardList className="h-8 w-8 text-accent" />
+                </div>
+                <h2 className="text-2xl font-semibold mb-2">No checklists yet</h2>
+                <p className="text-muted-foreground max-w-md mb-6">
+                  Group your business processes into checklists so users can track their progress through multi-step workflows.
+                </p>
+                <Button onClick={() => setChecklistOpen(true)}>
+                  <Plus className="mr-2 h-4 w-4" />Create Checklist
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {checklists.map((checklist, i) => (
+                  <Card key={checklist.id} className="p-4 flex items-center justify-between animate-fade-in" style={{ animationDelay: `${i * 50}ms` }}>
+                    <div className="flex items-center gap-3">
+                      <div className={`h-2.5 w-2.5 rounded-full ${checklist.is_active ? "bg-success" : "bg-muted-foreground/30"}`} />
+                      <div>
+                        <h3 className="font-medium">{checklist.name}</h3>
+                        <p className="text-sm text-muted-foreground">
+                          {checklist.is_active ? "Active" : "Inactive"} · Updated {new Date(checklist.updated_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button size="sm" onClick={() => navigate(`/app/${appId}/checklist/${checklist.id}`)}>
+                        <Pencil className="mr-1 h-3 w-3" />Edit
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDeleteChecklist(checklist.id)}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
