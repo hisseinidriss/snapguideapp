@@ -623,16 +623,14 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      processes.forEach((proc, index) => {
-        const item = document.createElement('div');
+      processes.forEach(function(proc, index) {
+        var item = document.createElement('div');
         item.className = 'process-item';
-        item.innerHTML = \`
-          <div>
-            <div class="process-name">${proc.name}</div>
-            <div class="process-steps">${proc.steps.length} step${proc.steps.length !== 1 ? 's' : ''}</div>
-          </div>
-          <button class="play-btn" title="Start process">▶</button>
-        \`;
+        item.innerHTML = '<div>'
+          + '<div class="process-name">' + proc.name + '</div>'
+          + '<div class="process-steps">' + proc.steps.length + ' step' + (proc.steps.length !== 1 ? 's' : '') + '</div>'
+          + '</div>'
+          + '<button class="play-btn" title="Start process">▶</button>';
         item.querySelector('.play-btn').addEventListener('click', (e) => {
           e.stopPropagation();
           chrome.tabs.sendMessage(tabs[0].id, { type: 'START_PROCESS', processIndex: index });
