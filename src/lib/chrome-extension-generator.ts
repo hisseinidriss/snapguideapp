@@ -482,7 +482,7 @@ function getContentJS(): string {
     showStep();
   }
 
-  function showStep() {
+  async function showStep() {
     cleanup();
     if (!currentProcess || currentStepIndex >= currentProcess.steps.length) {
       endProcess();
@@ -490,7 +490,7 @@ function getContentJS(): string {
     }
 
     const step = currentProcess.steps[currentStepIndex];
-    const targetEl = step.selector ? document.querySelector(step.selector) : null;
+    const targetEl = step.selector ? await waitForElement(step.selector, 2500) : null;
 
     // Overlay
     overlayEl = document.createElement('div');
@@ -507,7 +507,13 @@ function getContentJS(): string {
     // Tooltip
     tooltipEl = document.createElement('div');
     tooltipEl.className = 'bpg-tooltip' + (!targetEl ? ' bpg-center-modal' : '');
-    tooltipEl.innerHTML = buildTooltipHTML(step, currentStepIndex, currentProcess.steps.length, currentProcess.name);
+    tooltipEl.innerHTML = buildTooltipHTML(
+      step,
+      currentStepIndex,
+      currentProcess.steps.length,
+      currentProcess.name,
+      Boolean(step.selector && !targetEl)
+    );
     document.body.appendChild(tooltipEl);
 
     // Position tooltip relative to target
