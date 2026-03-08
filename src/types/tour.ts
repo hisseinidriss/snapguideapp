@@ -1,26 +1,16 @@
-export type TourStep = {
-  id: string;
-  title: string;
-  content: string;
-  selector: string;
-  placement: "top" | "bottom" | "left" | "right" | "center";
-  order: number;
-};
+import { Tables, TablesInsert } from "@/integrations/supabase/types";
 
-export type Tour = {
-  id: string;
-  name: string;
-  appId: string;
-  steps: TourStep[];
-  createdAt: string;
-  updatedAt: string;
-};
+export type App = Tables<"apps">;
+export type AppInsert = TablesInsert<"apps">;
 
-export type App = {
-  id: string;
-  name: string;
-  url: string;
-  description: string;
-  tours: Tour[];
-  createdAt: string;
-};
+export type Tour = Tables<"tours">;
+export type TourInsert = TablesInsert<"tours">;
+
+export type TourStep = Tables<"tour_steps">;
+export type TourStepInsert = TablesInsert<"tour_steps">;
+
+export type Launcher = Tables<"launchers">;
+export type LauncherInsert = TablesInsert<"launchers">;
+
+export type Placement = "top" | "bottom" | "left" | "right" | "center";
+export type LauncherType = "beacon" | "button" | "hotspot";
