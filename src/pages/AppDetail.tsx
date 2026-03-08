@@ -15,7 +15,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
-import type { Tour, Launcher, LauncherType } from "@/types/tour";
+import type { Tour, Launcher, LauncherType, Checklist } from "@/types/tour";
 import { useToast } from "@/hooks/use-toast";
 
 const LAUNCHER_TYPES: { value: LauncherType; label: string; icon: typeof Circle; desc: string }[] = [
