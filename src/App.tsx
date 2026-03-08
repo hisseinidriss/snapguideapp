@@ -10,6 +10,7 @@ import EmbedCode from "./pages/EmbedCode";
 import LaunchersPage from "./pages/LaunchersPage";
 import ChecklistEditor from "./pages/ChecklistEditor";
 import AnalyticsDashboard from "./pages/AnalyticsDashboard";
+import UserGuide from "./pages/UserGuide";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App = () => (
           <Route path="/app/:appId/launchers" element={<LaunchersPage />} />
           <Route path="/app/:appId/checklist/:checklistId" element={<ChecklistEditor />} />
           <Route path="/app/:appId/analytics" element={<AnalyticsDashboard />} />
+          <Route path="/guide" element={<UserGuide />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
