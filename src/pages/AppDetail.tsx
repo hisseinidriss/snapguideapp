@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, Trash2, Code, Pencil, Crosshair, Sparkles, Loader2, Upload, Circle, Square, Zap, Download } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Code, Pencil, Crosshair, Sparkles, Loader2, Upload, Circle, Square, Zap, Download, HelpCircle, CheckCircle2 } from "lucide-react";
 import { generateChromeExtension } from "@/lib/chrome-extension-generator";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -236,13 +236,54 @@ const AppDetail = () => {
             <h1 className="text-lg font-semibold">{appName}</h1>
             {appUrl && <p className="text-xs text-muted-foreground">{appUrl}</p>}
           </div>
-          <Button
-            variant="outline"
-            onClick={() => generateChromeExtension(appId!, appName, appUrl)}
-          >
-            <Download className="mr-2 h-4 w-4" />
-            Chrome Extension
-          </Button>
+          <div className="flex gap-2">
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="ghost" size="icon" title="Installation instructions">
+                  <HelpCircle className="h-4 w-4" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-lg">
+                <DialogHeader>
+                  <DialogTitle>Install Chrome Extension</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 pt-2">
+                  <p className="text-sm text-muted-foreground">
+                    Follow these steps to install the downloaded extension in Google Chrome:
+                  </p>
+                  <ol className="space-y-3">
+                    {[
+                      { step: "Click the \"Chrome Extension\" button to download the ZIP file." },
+                      { step: "Extract/unzip the downloaded file to a folder on your computer." },
+                      { step: "Open Chrome and navigate to chrome://extensions" },
+                      { step: "Enable \"Developer mode\" using the toggle in the top-right corner." },
+                      { step: "Click \"Load unpacked\" and select the extracted folder." },
+                      { step: "The extension icon will appear in your toolbar. Visit your app URL to see it in action!" },
+                    ].map((item, i) => (
+                      <li key={i} className="flex gap-3 text-sm">
+                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-medium">
+                          {i + 1}
+                        </span>
+                        <span className="pt-0.5">{item.step}</span>
+                      </li>
+                    ))}
+                  </ol>
+                  <div className="rounded-lg border bg-muted/50 p-3">
+                    <p className="text-xs text-muted-foreground">
+                      <strong>Tip:</strong> The extension will only activate on pages matching <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">{appUrl || "your app URL"}</code>. Make sure your app URL is set correctly.
+                    </p>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+            <Button
+              variant="outline"
+              onClick={() => generateChromeExtension(appId!, appName, appUrl)}
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Chrome Extension
+            </Button>
+          </div>
         </div>
       </header>
 
