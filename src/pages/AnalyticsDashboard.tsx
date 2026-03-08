@@ -44,7 +44,6 @@ const AnalyticsDashboard = () => {
       const tours: Tour[] = toursRes.data || [];
       const events = eventsRes.data || [];
 
-      // Compute stats per tour
       const tourStats: TourStats[] = tours.map((tour) => {
         const tourEvents = events.filter((e) => e.tour_id === tour.id);
         const starts = tourEvents.filter((e) => e.event_type === "tour_started").length;
@@ -52,7 +51,6 @@ const AnalyticsDashboard = () => {
         const abandons = tourEvents.filter((e) => e.event_type === "tour_abandoned").length;
         const sessions = new Set(tourEvents.map((e) => e.session_id)).size;
 
-        // Step drop-off
         const stepViews = tourEvents.filter((e) => e.event_type === "step_viewed");
         const stepMap: Record<number, number> = {};
         stepViews.forEach((e) => {
@@ -79,16 +77,13 @@ const AnalyticsDashboard = () => {
       setStats(tourStats);
       if (tourStats.length > 0) setSelectedTourId(tourStats[0].tourId);
 
-      // Daily counts (last 30 days)
       const last30Days: DailyCount[] = [];
       const now = new Date();
       for (let i = 29; i >= 0; i--) {
         const date = new Date(now);
         date.setDate(date.getDate() - i);
         const dateStr = date.toISOString().split("T")[0];
-        const dayEvents = events.filter(
-          (e) => e.created_at.startsWith(dateStr)
-        );
+        const dayEvents = events.filter((e) => e.created_at.startsWith(dateStr));
         last30Days.push({
           date: dateStr,
           starts: dayEvents.filter((e) => e.event_type === "tour_started").length,
@@ -127,7 +122,7 @@ const AnalyticsDashboard = () => {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card">
-        <div className="container flex h-14 items-center gap-4">
+        <div className="container flex h-14 items-center gap-4 px-4">
           <Button variant="ghost" size="icon" asChild>
             <Link to={`/app/${appId}`}><ArrowLeft className="h-4 w-4" /></Link>
           </Button>
@@ -138,47 +133,47 @@ const AnalyticsDashboard = () => {
         </div>
       </header>
 
-      <main className="container py-8 max-w-5xl">
+      <main className="container py-8 px-4 max-w-5xl">
         <div className="space-y-8 animate-fade-in">
           {/* Summary cards */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Card className="p-5">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <Card className="p-4 sm:p-5">
               <div className="flex items-center gap-2 mb-1">
                 <Eye className="h-4 w-4 text-accent" />
-                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Starts</span>
+                <span className="text-[10px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wider">Total Starts</span>
               </div>
-              <p className="text-2xl font-bold">{totals.starts}</p>
+              <p className="text-xl sm:text-2xl font-bold">{totals.starts}</p>
             </Card>
-            <Card className="p-5">
+            <Card className="p-4 sm:p-5">
               <div className="flex items-center gap-2 mb-1">
                 <CheckCircle2 className="h-4 w-4 text-success" />
-                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Completions</span>
+                <span className="text-[10px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wider">Completions</span>
               </div>
-              <p className="text-2xl font-bold">{totals.completions}</p>
+              <p className="text-xl sm:text-2xl font-bold">{totals.completions}</p>
             </Card>
-            <Card className="p-5">
+            <Card className="p-4 sm:p-5">
               <div className="flex items-center gap-2 mb-1">
                 <LogOut className="h-4 w-4 text-warning" />
-                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Abandoned</span>
+                <span className="text-[10px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wider">Abandoned</span>
               </div>
-              <p className="text-2xl font-bold">{totals.abandons}</p>
+              <p className="text-xl sm:text-2xl font-bold">{totals.abandons}</p>
             </Card>
-            <Card className="p-5">
+            <Card className="p-4 sm:p-5">
               <div className="flex items-center gap-2 mb-1">
                 <TrendingUp className="h-4 w-4 text-primary" />
-                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Avg Completion</span>
+                <span className="text-[10px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wider">Avg Completion</span>
               </div>
-              <p className="text-2xl font-bold">
+              <p className="text-xl sm:text-2xl font-bold">
                 {totals.starts > 0 ? Math.round((totals.completions / totals.starts) * 100) : 0}%
               </p>
             </Card>
           </div>
 
           {/* Daily activity chart */}
-          <Card className="p-6">
+          <Card className="p-4 sm:p-6">
             <h2 className="text-sm font-semibold mb-4">Activity (Last 30 Days)</h2>
             {dailyCounts.some((d) => d.starts > 0 || d.completions > 0) ? (
-              <div className="h-40 flex items-end gap-[2px]">
+              <div className="h-32 sm:h-40 flex items-end gap-[2px]">
                 {dailyCounts.map((day, i) => {
                   const maxVal = Math.max(...dailyCounts.map((d) => d.starts + d.completions), 1);
                   const height = ((day.starts + day.completions) / maxVal) * 100;
@@ -193,7 +188,7 @@ const AnalyticsDashboard = () => {
                 })}
               </div>
             ) : (
-              <div className="h-40 flex items-center justify-center text-muted-foreground text-sm">
+              <div className="h-32 sm:h-40 flex items-center justify-center text-muted-foreground text-sm">
                 No activity yet. Events will appear here once users interact with your processes.
               </div>
             )}
@@ -218,19 +213,19 @@ const AnalyticsDashboard = () => {
                 <p className="text-xs mt-1">Create business processes to start tracking analytics.</p>
               </Card>
             ) : (
-              <div className="flex gap-6">
+              <div className="flex flex-col md:flex-row gap-6">
                 {/* Tour list */}
-                <div className="w-56 space-y-1 shrink-0">
+                <div className="flex md:flex-col gap-2 md:w-56 overflow-x-auto md:overflow-x-visible shrink-0">
                   {stats.map((s) => (
                     <button
                       key={s.tourId}
                       onClick={() => setSelectedTourId(s.tourId)}
-                      className={`w-full text-left p-3 rounded-lg transition-colors ${
-                        selectedTourId === s.tourId ? "bg-primary/10 border border-primary/20" : "hover:bg-muted"
+                      className={`text-left p-3 rounded-lg transition-colors shrink-0 md:w-full ${
+                        selectedTourId === s.tourId ? "bg-primary/10 border border-primary/20" : "hover:bg-muted border border-transparent"
                       }`}
                     >
                       <p className="text-sm font-medium truncate">{s.tourName}</p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-muted-foreground whitespace-nowrap">
                         {s.totalStarts} starts · {s.completionRate}% completion
                       </p>
                     </button>
@@ -239,32 +234,31 @@ const AnalyticsDashboard = () => {
 
                 {/* Tour detail */}
                 {selectedStats && (
-                  <Card className="flex-1 p-6 animate-fade-in">
+                  <Card className="flex-1 p-4 sm:p-6 animate-fade-in">
                     <h3 className="font-semibold mb-4">{selectedStats.tourName}</h3>
 
-                    <div className="grid grid-cols-3 gap-4 mb-6">
-                      <div className="text-center p-3 rounded-lg bg-muted/50">
-                        <p className="text-2xl font-bold">{selectedStats.totalStarts}</p>
+                    <div className="grid grid-cols-3 gap-3 sm:gap-4 mb-6">
+                      <div className="text-center p-2 sm:p-3 rounded-lg bg-muted/50">
+                        <p className="text-xl sm:text-2xl font-bold">{selectedStats.totalStarts}</p>
                         <p className="text-xs text-muted-foreground">Starts</p>
                       </div>
-                      <div className="text-center p-3 rounded-lg bg-muted/50">
-                        <p className="text-2xl font-bold">{selectedStats.totalCompletions}</p>
+                      <div className="text-center p-2 sm:p-3 rounded-lg bg-muted/50">
+                        <p className="text-xl sm:text-2xl font-bold">{selectedStats.totalCompletions}</p>
                         <p className="text-xs text-muted-foreground">Completions</p>
                       </div>
-                      <div className="text-center p-3 rounded-lg bg-muted/50">
-                        <p className="text-2xl font-bold text-primary">{selectedStats.completionRate}%</p>
-                        <p className="text-xs text-muted-foreground">Completion Rate</p>
+                      <div className="text-center p-2 sm:p-3 rounded-lg bg-muted/50">
+                        <p className="text-xl sm:text-2xl font-bold text-primary">{selectedStats.completionRate}%</p>
+                        <p className="text-xs text-muted-foreground">Rate</p>
                       </div>
                     </div>
 
-                    {/* Step funnel */}
                     <div>
                       <h4 className="text-sm font-medium mb-3">Step-by-Step Drop-off</h4>
                       {selectedStats.stepDropOff.length > 0 ? (
                         <div className="space-y-2">
                           {selectedStats.stepDropOff.map((step) => (
                             <div key={step.stepIndex} className="flex items-center gap-3">
-                              <span className="text-xs text-muted-foreground w-16 shrink-0">
+                              <span className="text-xs text-muted-foreground w-14 shrink-0">
                                 Step {step.stepIndex + 1}
                               </span>
                               <div className="flex-1 h-6 bg-muted rounded-md overflow-hidden">
@@ -273,7 +267,7 @@ const AnalyticsDashboard = () => {
                                   style={{ width: `${(step.views / maxStepViews) * 100}%` }}
                                 />
                               </div>
-                              <span className="text-xs font-medium w-12 text-right">{step.views}</span>
+                              <span className="text-xs font-medium w-10 text-right">{step.views}</span>
                             </div>
                           ))}
                         </div>

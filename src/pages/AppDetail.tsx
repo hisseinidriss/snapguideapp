@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, Trash2, Code, Pencil, Crosshair, Sparkles, Loader2, Upload, Circle, Square, Zap, Download, HelpCircle, CheckCircle2, ClipboardList, BarChart3 } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Code, Pencil, Crosshair, Sparkles, Loader2, Upload, Circle, Square, Zap, Download, HelpCircle, CheckCircle2, ClipboardList, BarChart3, Menu } from "lucide-react";
 import { generateChromeExtension } from "@/lib/chrome-extension-generator";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -14,6 +14,9 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tour, Launcher, LauncherType, Checklist } from "@/types/tour";
 import { useToast } from "@/hooks/use-toast";
@@ -41,11 +44,9 @@ const AppDetail = () => {
   const [generating, setGenerating] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Checklist state
   const [checklistOpen, setChecklistOpen] = useState(false);
   const [newChecklistName, setNewChecklistName] = useState("");
 
-  // Launcher state
   const [launcherOpen, setLauncherOpen] = useState(false);
   const [newLauncherName, setNewLauncherName] = useState("");
   const [newLauncherType, setNewLauncherType] = useState<LauncherType>("beacon");
@@ -77,7 +78,6 @@ const AppDetail = () => {
     load();
   }, [appId]);
 
-  // === Process handlers ===
   const handleCreateProcess = async () => {
     if (!processName.trim() || !appId) return;
     const { error } = await supabase.from("tours").insert({ app_id: appId, name: processName });
@@ -182,7 +182,6 @@ const AppDetail = () => {
     }
   };
 
-  // === Launcher handlers ===
   const handleCreateLauncher = async () => {
     if (!newLauncherName.trim() || !appId) return;
     const { data, error } = await supabase
@@ -211,7 +210,6 @@ const AppDetail = () => {
     await supabase.from("launchers").update(cleanUpdates).eq("id", id);
   };
 
-  // === Checklist handlers ===
   const handleCreateChecklist = async () => {
     if (!newChecklistName.trim() || !appId) return;
     const { data, error } = await supabase
@@ -250,15 +248,17 @@ const AppDetail = () => {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card">
-        <div className="container flex h-16 items-center gap-4">
+        <div className="container flex h-16 items-center gap-4 px-4">
           <Button variant="ghost" size="icon" asChild>
             <Link to="/"><ArrowLeft className="h-4 w-4" /></Link>
           </Button>
-          <div className="flex-1">
-            <h1 className="text-lg font-semibold">{appName}</h1>
-            {appUrl && <p className="text-xs text-muted-foreground">{appUrl}</p>}
+          <div className="flex-1 min-w-0">
+            <h1 className="text-lg font-semibold truncate">{appName}</h1>
+            {appUrl && <p className="text-xs text-muted-foreground truncate">{appUrl}</p>}
           </div>
-          <div className="flex gap-2">
+          
+          {/* Desktop actions */}
+          <div className="hidden md:flex gap-2">
             <Dialog>
               <DialogTrigger asChild>
                 <Button variant="ghost" size="icon" title="Installation instructions">
@@ -290,40 +290,51 @@ const AppDetail = () => {
                       </li>
                     ))}
                   </ol>
-                  <div className="rounded-lg border bg-muted/50 p-3">
-                    <p className="text-xs text-muted-foreground">
-                      <strong>Tip:</strong> The extension will only activate on pages matching <code className="rounded bg-muted px-1 py-0.5 text-xs font-mono">{appUrl || "your app URL"}</code>. Make sure your app URL is set correctly.
-                    </p>
-                  </div>
                 </div>
               </DialogContent>
             </Dialog>
-            <Button variant="outline" onClick={() => navigate(`/app/${appId}/analytics`)}>
+            <Button variant="outline" size="sm" onClick={() => navigate(`/app/${appId}/analytics`)}>
               <BarChart3 className="mr-2 h-4 w-4" />
               Analytics
             </Button>
-            <Button
-              variant="outline"
-              onClick={() => generateChromeExtension(appId!, appName, appUrl)}
-            >
+            <Button variant="outline" size="sm" onClick={() => generateChromeExtension(appId!, appName, appUrl)}>
               <Download className="mr-2 h-4 w-4" />
               Chrome Extension
             </Button>
           </div>
+
+          {/* Mobile menu */}
+          <div className="md:hidden">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon">
+                  <Menu className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => navigate(`/app/${appId}/analytics`)}>
+                  <BarChart3 className="mr-2 h-4 w-4" />Analytics
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => generateChromeExtension(appId!, appName, appUrl)}>
+                  <Download className="mr-2 h-4 w-4" />Chrome Extension
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </header>
 
-      <main className="container py-8">
+      <main className="container py-8 px-4">
         <Tabs defaultValue="processes" className="w-full">
-          <TabsList className="mb-6">
-            <TabsTrigger value="processes">Business Processes ({tours.length})</TabsTrigger>
-            <TabsTrigger value="checklists">Checklists ({checklists.length})</TabsTrigger>
-            <TabsTrigger value="extensions">Extensions ({launchers.length})</TabsTrigger>
+          <TabsList className="mb-6 w-full sm:w-auto">
+            <TabsTrigger value="processes" className="text-xs sm:text-sm">Processes ({tours.length})</TabsTrigger>
+            <TabsTrigger value="checklists" className="text-xs sm:text-sm">Checklists ({checklists.length})</TabsTrigger>
+            <TabsTrigger value="extensions" className="text-xs sm:text-sm">Extensions ({launchers.length})</TabsTrigger>
           </TabsList>
 
           {/* === Business Processes Tab === */}
           <TabsContent value="processes">
-            <div className="flex items-center justify-end gap-2 mb-6">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 mb-6">
               <input
                 ref={fileInputRef}
                 type="file"
@@ -331,16 +342,16 @@ const AppDetail = () => {
                 className="hidden"
                 onChange={handleManualUpload}
               />
-              <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={generatingFromManual}>
+              <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={generatingFromManual} className="w-full sm:w-auto">
                 {generatingFromManual ? (
-                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Extracting Processes...</>
+                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Extracting...</>
                 ) : (
                   <><Upload className="mr-2 h-4 w-4" />Upload Manual</>
                 )}
               </Button>
               <Dialog open={open} onOpenChange={setOpen}>
                 <DialogTrigger asChild>
-                  <Button><Plus className="mr-2 h-4 w-4" />New Business Process</Button>
+                  <Button className="w-full sm:w-auto"><Plus className="mr-2 h-4 w-4" />New Business Process</Button>
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader><DialogTitle>Create a new business process</DialogTitle></DialogHeader>
@@ -361,7 +372,7 @@ const AppDetail = () => {
                 <p className="text-muted-foreground max-w-md mb-6">
                   Upload a user manual to auto-extract processes, or create one manually.
                 </p>
-                <div className="flex gap-3">
+                <div className="flex flex-col sm:flex-row gap-3">
                   <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={generatingFromManual}>
                     {generatingFromManual ? (
                       <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Extracting...</>
@@ -377,27 +388,30 @@ const AppDetail = () => {
             ) : (
               <div className="space-y-3">
                 {tours.map((tour, i) => (
-                  <Card key={tour.id} className="p-4 flex items-center justify-between animate-fade-in" style={{ animationDelay: `${i * 50}ms` }}>
-                    <div>
-                      <h3 className="font-medium">{tour.name}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        {stepCounts[tour.id] || 0} step{(stepCounts[tour.id] || 0) !== 1 ? "s" : ""} · Updated {new Date(tour.updated_at).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button variant="outline" size="sm" onClick={() => handleAutoGenerate(tour.id)} disabled={generating}>
-                        {generating ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Sparkles className="mr-1 h-3 w-3" />}
-                        AI Generate
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={() => navigate(`/app/${appId}/tour/${tour.id}/embed`)}>
-                        <Code className="mr-1 h-3 w-3" />Embed
-                      </Button>
-                      <Button size="sm" onClick={() => navigate(`/app/${appId}/tour/${tour.id}`)}>
-                        <Pencil className="mr-1 h-3 w-3" />Edit
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDeleteProcess(tour.id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                  <Card key={tour.id} className="p-4 animate-fade-in" style={{ animationDelay: `${i * 50}ms` }}>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <h3 className="font-medium truncate">{tour.name}</h3>
+                        <p className="text-sm text-muted-foreground">
+                          {stepCounts[tour.id] || 0} step{(stepCounts[tour.id] || 0) !== 1 ? "s" : ""} · Updated {new Date(tour.updated_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Button variant="outline" size="sm" onClick={() => handleAutoGenerate(tour.id)} disabled={generating}>
+                          {generating ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Sparkles className="mr-1 h-3 w-3" />}
+                          <span className="hidden sm:inline">AI Generate</span>
+                          <span className="sm:hidden">AI</span>
+                        </Button>
+                        <Button variant="outline" size="sm" onClick={() => navigate(`/app/${appId}/tour/${tour.id}/embed`)}>
+                          <Code className="mr-1 h-3 w-3" /><span className="hidden sm:inline">Embed</span>
+                        </Button>
+                        <Button size="sm" onClick={() => navigate(`/app/${appId}/tour/${tour.id}`)}>
+                          <Pencil className="mr-1 h-3 w-3" />Edit
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDeleteProcess(tour.id)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   </Card>
                 ))}
@@ -438,23 +452,25 @@ const AppDetail = () => {
             ) : (
               <div className="space-y-3">
                 {checklists.map((checklist, i) => (
-                  <Card key={checklist.id} className="p-4 flex items-center justify-between animate-fade-in" style={{ animationDelay: `${i * 50}ms` }}>
-                    <div className="flex items-center gap-3">
-                      <div className={`h-2.5 w-2.5 rounded-full ${checklist.is_active ? "bg-success" : "bg-muted-foreground/30"}`} />
-                      <div>
-                        <h3 className="font-medium">{checklist.name}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          {checklist.is_active ? "Active" : "Inactive"} · Updated {new Date(checklist.updated_at).toLocaleDateString()}
-                        </p>
+                  <Card key={checklist.id} className="p-4 animate-fade-in" style={{ animationDelay: `${i * 50}ms` }}>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className={`h-2.5 w-2.5 rounded-full shrink-0 ${checklist.is_active ? "bg-success" : "bg-muted-foreground/30"}`} />
+                        <div>
+                          <h3 className="font-medium">{checklist.name}</h3>
+                          <p className="text-sm text-muted-foreground">
+                            {checklist.is_active ? "Active" : "Inactive"} · Updated {new Date(checklist.updated_at).toLocaleDateString()}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button size="sm" onClick={() => navigate(`/app/${appId}/checklist/${checklist.id}`)}>
-                        <Pencil className="mr-1 h-3 w-3" />Edit
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDeleteChecklist(checklist.id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button size="sm" onClick={() => navigate(`/app/${appId}/checklist/${checklist.id}`)}>
+                          <Pencil className="mr-1 h-3 w-3" />Edit
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDeleteChecklist(checklist.id)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   </Card>
                 ))}
@@ -513,22 +529,22 @@ const AppDetail = () => {
                 </Button>
               </div>
             ) : (
-              <div className="flex gap-6">
+              <div className="flex flex-col lg:flex-row gap-6">
                 {/* Extension list */}
-                <div className="w-64 space-y-1 shrink-0">
+                <div className="flex lg:flex-col gap-2 lg:w-64 overflow-x-auto lg:overflow-x-visible shrink-0">
                   {launchers.map((launcher) => (
                     <button
                       key={launcher.id}
                       onClick={() => setSelectedLauncherId(launcher.id)}
-                      className={`w-full text-left p-3 rounded-lg flex items-center gap-3 transition-colors ${
-                        selectedLauncherId === launcher.id ? "bg-primary/10 border border-primary/20" : "hover:bg-muted"
+                      className={`text-left p-3 rounded-lg flex items-center gap-3 transition-colors shrink-0 lg:w-full ${
+                        selectedLauncherId === launcher.id ? "bg-primary/10 border border-primary/20" : "hover:bg-muted border border-transparent"
                       }`}
                     >
                       <div
                         className="h-4 w-4 rounded-full shrink-0"
                         style={{ backgroundColor: launcher.color || "#1e6b45", opacity: launcher.is_active ? 1 : 0.3 }}
                       />
-                      <div className="flex-1 min-w-0">
+                      <div className="min-w-0">
                         <p className="text-sm font-medium truncate">{launcher.name}</p>
                         <p className="text-xs text-muted-foreground capitalize">{launcher.type}{!launcher.is_active ? " · Inactive" : ""}</p>
                       </div>
@@ -636,7 +652,6 @@ const AppDetail = () => {
                           <Switch checked={selectedLauncher.is_active ?? true} onCheckedChange={(v) => updateLauncher(selectedLauncher.id, { is_active: v })} />
                         </div>
 
-                        {/* Preview */}
                         <Card className="p-4 bg-muted/50">
                           <p className="text-xs font-medium text-muted-foreground mb-3 uppercase tracking-wider">Preview</p>
                           <div className="relative bg-card rounded-lg p-8 border min-h-[100px] flex items-center justify-center">

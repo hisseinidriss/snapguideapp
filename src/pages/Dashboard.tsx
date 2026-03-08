@@ -1,24 +1,21 @@
 import { useState, useEffect } from "react";
-import { Plus, Globe, MoreVertical, Trash2, ArrowRight, BookOpen } from "lucide-react";
+import { Plus, Globe, MoreVertical, Trash2, ArrowRight, BookOpen, UserCircle, Menu } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger,
+} from "@/components/ui/sheet";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import type { App } from "@/types/tour";
 import { useToast } from "@/hooks/use-toast";
 
@@ -30,6 +27,7 @@ const Dashboard = () => {
   const [newUrl, setNewUrl] = useState("");
   const [newDesc, setNewDesc] = useState("");
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const fetchApps = async () => {
     const { data, error } = await supabase.from("apps").select("*").order("created_at", { ascending: false });
@@ -67,23 +65,31 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card">
-        <div className="container flex h-16 items-center justify-between">
+        <div className="container flex h-16 items-center justify-between px-4">
           <div className="flex items-center gap-3">
             <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
               <span className="text-primary-foreground font-bold text-sm">W</span>
             </div>
             <h1 className="text-lg font-semibold">WalkThru</h1>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" asChild>
+
+          {/* Desktop nav */}
+          <div className="hidden sm:flex gap-2">
+            <Button variant="outline" size="sm" asChild>
               <Link to="/guide">
                 <BookOpen className="mr-2 h-4 w-4" />
                 User Guide
               </Link>
             </Button>
+            <Button variant="outline" size="sm" asChild>
+              <Link to="/account">
+                <UserCircle className="mr-2 h-4 w-4" />
+                Account
+              </Link>
+            </Button>
             <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger asChild>
-                <Button>
+                <Button size="sm">
                   <Plus className="mr-2 h-4 w-4" />
                   New App
                 </Button>
@@ -101,10 +107,55 @@ const Dashboard = () => {
               </DialogContent>
             </Dialog>
           </div>
+
+          {/* Mobile nav */}
+          <div className="flex sm:hidden gap-2">
+            <Dialog open={open} onOpenChange={setOpen}>
+              <DialogTrigger asChild>
+                <Button size="icon" variant="default">
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Add a new application</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 pt-2">
+                  <Input placeholder="App name" value={newName} onChange={(e) => setNewName(e.target.value)} />
+                  <Input placeholder="https://yourapp.com (optional)" value={newUrl} onChange={(e) => setNewUrl(e.target.value)} />
+                  <Textarea placeholder="Brief description (optional)" value={newDesc} onChange={(e) => setNewDesc(e.target.value)} rows={3} />
+                  <Button onClick={handleCreate} className="w-full">Create App</Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button size="icon" variant="outline">
+                  <Menu className="h-4 w-4" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-64">
+                <SheetHeader>
+                  <SheetTitle>Menu</SheetTitle>
+                </SheetHeader>
+                <div className="flex flex-col gap-2 mt-4">
+                  <Button variant="outline" asChild className="justify-start">
+                    <Link to="/guide"><BookOpen className="mr-2 h-4 w-4" />User Guide</Link>
+                  </Button>
+                  <Button variant="outline" asChild className="justify-start">
+                    <Link to="/account"><UserCircle className="mr-2 h-4 w-4" />Account</Link>
+                  </Button>
+                </div>
+                {user && (
+                  <p className="text-xs text-muted-foreground mt-6 truncate">{user.email}</p>
+                )}
+              </SheetContent>
+            </Sheet>
+          </div>
         </div>
       </header>
 
-      <main className="container py-8">
+      <main className="container py-8 px-4">
         {loading ? (
           <div className="flex items-center justify-center py-24">
             <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
@@ -124,7 +175,7 @@ const Dashboard = () => {
             </Button>
           </div>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             {apps.map((app, i) => (
               <Card key={app.id} className="p-5 hover:shadow-md transition-shadow animate-fade-in" style={{ animationDelay: `${i * 50}ms` }}>
                 <div className="flex items-start justify-between mb-3">

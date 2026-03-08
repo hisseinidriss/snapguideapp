@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
-  ArrowLeft, Plus, GripVertical, ChevronUp, ChevronDown, Eye, AlertTriangle, CheckCircle2, ShieldCheck, Loader2,
+  ArrowLeft, Plus, GripVertical, ChevronUp, ChevronDown, Eye, AlertTriangle, CheckCircle2, ShieldCheck, Loader2, Menu,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { supabase } from "@/integrations/supabase/client";
 import type { TourStep } from "@/types/tour";
 import StepEditorPanel from "@/components/StepEditorPanel";
@@ -29,6 +30,7 @@ const TourEditor = () => {
   const [loading, setLoading] = useState(true);
   const [validationStatus, setValidationStatus] = useState<ValidationStatus>("idle");
   const [selectorResults, setSelectorResults] = useState<Record<string, SelectorResult>>({});
+  const [mobileStepListOpen, setMobileStepListOpen] = useState(false);
 
   useEffect(() => {
     if (!appId || !tourId) return;
@@ -127,7 +129,7 @@ const TourEditor = () => {
 
   const getStepValidationIcon = (selector: string | null) => {
     if (validationStatus === "idle") return null;
-    if (!selector) return null; // No selector = centered modal, always valid
+    if (!selector) return null;
     const result = selectorResults[selector];
     if (!result) return validationStatus === "validating" ? "loading" : null;
     return result.found ? "valid" : "invalid";
@@ -154,17 +156,85 @@ const TourEditor = () => {
     );
   }
 
+  const stepListContent = (
+    <>
+      <div className="p-3 border-b">
+        <Button onClick={addStep} size="sm" className="w-full">
+          <Plus className="mr-1 h-3 w-3" />Add Step
+        </Button>
+      </div>
+      <div className="flex-1 overflow-y-auto p-2 space-y-1">
+        {steps.map((step, index) => (
+          <button
+            key={step.id}
+            onClick={() => { setSelectedStepId(step.id); setMobileStepListOpen(false); }}
+            className={`w-full text-left p-2.5 rounded-lg flex items-center gap-2 transition-colors ${
+              selectedStepId === step.id ? "bg-primary/10 border border-primary/20" : "hover:bg-muted"
+            }`}
+          >
+            <GripVertical className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+            {(() => {
+              const icon = getStepValidationIcon(step.selector);
+              if (icon === "loading") return <Loader2 className="h-3 w-3 text-muted-foreground animate-spin shrink-0" />;
+              if (icon === "valid") return (
+                <Tooltip><TooltipTrigger asChild><span><CheckCircle2 className="h-3 w-3 text-success shrink-0" /></span></TooltipTrigger><TooltipContent>Selector found on page</TooltipContent></Tooltip>
+              );
+              if (icon === "invalid") return (
+                <Tooltip><TooltipTrigger asChild><span><AlertTriangle className="h-3 w-3 text-warning shrink-0" /></span></TooltipTrigger><TooltipContent>Selector not found on page</TooltipContent></Tooltip>
+              );
+              return null;
+            })()}
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-medium truncate">{step.title}</p>
+              <p className="text-[10px] text-muted-foreground truncate">{step.selector || "Center modal"}</p>
+            </div>
+            <div className="flex flex-col shrink-0">
+              <button onClick={(e) => { e.stopPropagation(); moveStep(index, "up"); }} className="p-0.5 hover:text-primary" disabled={index === 0}>
+                <ChevronUp className="h-3 w-3" />
+              </button>
+              <button onClick={(e) => { e.stopPropagation(); moveStep(index, "down"); }} className="p-0.5 hover:text-primary" disabled={index === steps.length - 1}>
+                <ChevronDown className="h-3 w-3" />
+              </button>
+            </div>
+          </button>
+        ))}
+        {steps.length === 0 && (
+          <p className="text-xs text-muted-foreground text-center py-8">No steps yet.</p>
+        )}
+      </div>
+    </>
+  );
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <header className="border-b bg-card shrink-0">
-        <div className="container flex h-14 items-center gap-4">
+        <div className="container flex h-14 items-center gap-2 sm:gap-4 px-4">
           <Button variant="ghost" size="icon" asChild>
             <Link to={`/app/${appId}`}><ArrowLeft className="h-4 w-4" /></Link>
           </Button>
           <div className="flex-1 min-w-0">
             <h1 className="text-sm font-semibold truncate">{tourName}</h1>
-            <p className="text-xs text-muted-foreground">{appName}</p>
+            <p className="text-xs text-muted-foreground truncate">{appName}</p>
           </div>
+
+          {/* Mobile step list trigger */}
+          <Sheet open={mobileStepListOpen} onOpenChange={setMobileStepListOpen}>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="sm" className="lg:hidden h-8">
+                <Menu className="mr-1.5 h-3.5 w-3.5" />
+                Steps ({steps.length})
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-72 p-0">
+              <SheetHeader className="p-4 pb-0">
+                <SheetTitle>Steps</SheetTitle>
+              </SheetHeader>
+              <div className="flex flex-col h-full">
+                {stepListContent}
+              </div>
+            </SheetContent>
+          </Sheet>
+
           <Button
             variant="outline"
             size="sm"
@@ -173,65 +243,22 @@ const TourEditor = () => {
             className="h-8"
           >
             {validationStatus === "validating" ? (
-              <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />Validating...</>
+              <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /><span className="hidden sm:inline">Validating...</span></>
             ) : (
-              <><ShieldCheck className="mr-1.5 h-3.5 w-3.5" />Validate Selectors</>
+              <><ShieldCheck className="mr-1.5 h-3.5 w-3.5" /><span className="hidden sm:inline">Validate Selectors</span></>
             )}
           </Button>
         </div>
       </header>
 
       <div className="flex-1 flex overflow-hidden">
-        {/* Step List */}
-        <div className="w-64 border-r bg-card overflow-y-auto shrink-0 flex flex-col">
-          <div className="p-3 border-b">
-            <Button onClick={addStep} size="sm" className="w-full">
-              <Plus className="mr-1 h-3 w-3" />Add Step
-            </Button>
-          </div>
-          <div className="flex-1 overflow-y-auto p-2 space-y-1">
-            {steps.map((step, index) => (
-              <button
-                key={step.id}
-                onClick={() => setSelectedStepId(step.id)}
-                className={`w-full text-left p-2.5 rounded-lg flex items-center gap-2 transition-colors ${
-                  selectedStepId === step.id ? "bg-primary/10 border border-primary/20" : "hover:bg-muted"
-                }`}
-              >
-                <GripVertical className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                {(() => {
-                  const icon = getStepValidationIcon(step.selector);
-                  if (icon === "loading") return <Loader2 className="h-3 w-3 text-muted-foreground animate-spin shrink-0" />;
-                  if (icon === "valid") return (
-                    <Tooltip><TooltipTrigger asChild><span><CheckCircle2 className="h-3 w-3 text-success shrink-0" /></span></TooltipTrigger><TooltipContent>Selector found on page</TooltipContent></Tooltip>
-                  );
-                  if (icon === "invalid") return (
-                    <Tooltip><TooltipTrigger asChild><span><AlertTriangle className="h-3 w-3 text-warning shrink-0" /></span></TooltipTrigger><TooltipContent>Selector not found on page</TooltipContent></Tooltip>
-                  );
-                  return null;
-                })()}
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium truncate">{step.title}</p>
-                  <p className="text-[10px] text-muted-foreground truncate">{step.selector || "Center modal"}</p>
-                </div>
-                <div className="flex flex-col shrink-0">
-                  <button onClick={(e) => { e.stopPropagation(); moveStep(index, "up"); }} className="p-0.5 hover:text-primary" disabled={index === 0}>
-                    <ChevronUp className="h-3 w-3" />
-                  </button>
-                  <button onClick={(e) => { e.stopPropagation(); moveStep(index, "down"); }} className="p-0.5 hover:text-primary" disabled={index === steps.length - 1}>
-                    <ChevronDown className="h-3 w-3" />
-                  </button>
-                </div>
-              </button>
-            ))}
-            {steps.length === 0 && (
-              <p className="text-xs text-muted-foreground text-center py-8">No steps yet.</p>
-            )}
-          </div>
+        {/* Step List - desktop */}
+        <div className="hidden lg:flex w-64 border-r bg-card overflow-y-auto shrink-0 flex-col">
+          {stepListContent}
         </div>
 
         {/* Step Editor */}
-        <div className="w-80 border-r overflow-y-auto shrink-0 p-4">
+        <div className="w-full lg:w-80 border-r overflow-y-auto shrink-0 p-4">
           {selectedStep ? (
             <StepEditorPanel
               step={selectedStep}
@@ -248,17 +275,19 @@ const TourEditor = () => {
           )}
         </div>
 
-        {/* Live Preview */}
-        <LivePreview
-          appUrl={appUrl}
-          steps={steps}
-          previewActive={previewActive}
-          previewStepIndex={previewStepIndex}
-          onNext={() => setPreviewStepIndex((i) => Math.min(i + 1, steps.length - 1))}
-          onPrev={() => setPreviewStepIndex((i) => Math.max(i - 1, 0))}
-          onClose={() => setPreviewActive(false)}
-          onStart={() => { setPreviewStepIndex(0); setPreviewActive(true); }}
-        />
+        {/* Live Preview - hidden on mobile */}
+        <div className="hidden lg:block flex-1">
+          <LivePreview
+            appUrl={appUrl}
+            steps={steps}
+            previewActive={previewActive}
+            previewStepIndex={previewStepIndex}
+            onNext={() => setPreviewStepIndex((i) => Math.min(i + 1, steps.length - 1))}
+            onPrev={() => setPreviewStepIndex((i) => Math.max(i - 1, 0))}
+            onClose={() => setPreviewActive(false)}
+            onStart={() => { setPreviewStepIndex(0); setPreviewActive(true); }}
+          />
+        </div>
       </div>
 
       <ElementPickerDialog
