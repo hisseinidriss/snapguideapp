@@ -77,7 +77,7 @@ const EmbedCode = () => {
 
       <main className="container py-8 max-w-3xl">
         <div className="animate-fade-in">
-          <h2 className="text-xl font-semibold mb-2">Embed your tour</h2>
+          <h2 className="text-xl font-semibold mb-2">Embed your business process</h2>
           <p className="text-muted-foreground mb-6">
             Copy the script below and paste it into your application's HTML, just before the closing{" "}
             <code className="font-mono text-xs bg-muted px-1 py-0.5 rounded">&lt;/body&gt;</code> tag.
