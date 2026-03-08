@@ -96,6 +96,43 @@ const TourEditor = () => {
     ]);
   };
 
+  const validateSelectors = async () => {
+    if (!appUrl || steps.length === 0) {
+      toast({ title: "Cannot validate", description: "Add an app URL and steps first.", variant: "destructive" });
+      return;
+    }
+    const selectors = steps.map((s) => s.selector || "");
+    setValidationStatus("validating");
+    setSelectorResults({});
+    try {
+      const { data, error } = await supabase.functions.invoke("validate-selectors", {
+        body: { url: appUrl, selectors },
+      });
+      if (error) throw error;
+      if (data?.results) {
+        setSelectorResults(data.results);
+        const broken = Object.entries(data.results).filter(([sel, r]: [string, any]) => sel && !r.found).length;
+        toast({
+          title: broken > 0 ? `${broken} selector(s) not found` : "All selectors valid ✓",
+          description: broken > 0 ? "Check the warning icons next to steps." : "Every selector was found on the page.",
+          variant: broken > 0 ? "destructive" : "default",
+        });
+      }
+    } catch (err: any) {
+      toast({ title: "Validation failed", description: err.message || "Could not validate selectors.", variant: "destructive" });
+    } finally {
+      setValidationStatus("done");
+    }
+  };
+
+  const getStepValidationIcon = (selector: string | null) => {
+    if (validationStatus === "idle") return null;
+    if (!selector) return null; // No selector = centered modal, always valid
+    const result = selectorResults[selector];
+    if (!result) return validationStatus === "validating" ? "loading" : null;
+    return result.found ? "valid" : "invalid";
+  };
+
   const selectedStep = steps.find((s) => s.id === selectedStepId);
 
   if (loading) {
