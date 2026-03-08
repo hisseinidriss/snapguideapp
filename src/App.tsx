@@ -9,6 +9,7 @@ import TourEditor from "./pages/TourEditor";
 import EmbedCode from "./pages/EmbedCode";
 import LaunchersPage from "./pages/LaunchersPage";
 import ChecklistEditor from "./pages/ChecklistEditor";
+import AnalyticsDashboard from "./pages/AnalyticsDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
