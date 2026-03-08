@@ -335,6 +335,60 @@ function getContentJS(): string {
   let overlayEl = null;
   let tooltipEl = null;
 
+  function safeQuerySelector(selector) {
+    if (!selector) return null;
+    try {
+      return document.querySelector(selector);
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function waitForElement(selector, timeoutMs) {
+    return new Promise((resolve) => {
+      if (!selector) {
+        resolve(null);
+        return;
+      }
+
+      const immediate = safeQuerySelector(selector);
+      if (immediate) {
+        resolve(immediate);
+        return;
+      }
+
+      const start = Date.now();
+      const observer = new MutationObserver(() => {
+        const found = safeQuerySelector(selector);
+        if (found) {
+          observer.disconnect();
+          resolve(found);
+        }
+      });
+
+      observer.observe(document.documentElement, { childList: true, subtree: true, attributes: true });
+
+      const tick = () => {
+        const found = safeQuerySelector(selector);
+        if (found) {
+          observer.disconnect();
+          resolve(found);
+          return;
+        }
+
+        if (Date.now() - start >= timeoutMs) {
+          observer.disconnect();
+          resolve(null);
+          return;
+        }
+
+        requestAnimationFrame(tick);
+      };
+
+      requestAnimationFrame(tick);
+    });
+  }
+
   function init() {
     // Load data script
     const script = document.createElement('script');
@@ -372,19 +426,22 @@ function getContentJS(): string {
 
     launchers.forEach(launcher => {
       if (!launcher.is_active) return;
+      if (document.querySelector('[data-bpg-launcher-id="' + launcher.id + '"]')) return;
 
-      const targetEl = launcher.selector ? document.querySelector(launcher.selector) : null;
+      const targetEl = safeQuerySelector(launcher.selector);
       if (!targetEl && launcher.selector) return;
 
       if (launcher.type === 'button') {
         const btn = document.createElement('button');
         btn.className = 'bpg-launcher-button';
+        btn.setAttribute('data-bpg-launcher-id', launcher.id);
         btn.style.backgroundColor = launcher.color || '#6366f1';
         btn.textContent = launcher.label || launcher.name;
         btn.addEventListener('click', () => {
           const procIndex = processes.findIndex(p => p.id === launcher.tour_id);
           if (procIndex >= 0) startProcess(procIndex);
         });
+
         if (targetEl) {
           targetEl.style.position = 'relative';
           targetEl.appendChild(btn);
@@ -398,12 +455,14 @@ function getContentJS(): string {
         // beacon or hotspot
         const dot = document.createElement('div');
         dot.className = 'bpg-beacon' + (launcher.pulse ? ' bpg-beacon-pulse' : '');
+        dot.setAttribute('data-bpg-launcher-id', launcher.id);
         dot.style.backgroundColor = launcher.color || '#6366f1';
         dot.style.color = launcher.color || '#6366f1';
         dot.addEventListener('click', () => {
           const procIndex = processes.findIndex(p => p.id === launcher.tour_id);
           if (procIndex >= 0) startProcess(procIndex);
         });
+
         if (targetEl) {
           targetEl.style.position = 'relative';
           dot.style.position = 'absolute';
@@ -423,7 +482,7 @@ function getContentJS(): string {
     showStep();
   }
 
-  function showStep() {
+  async function showStep() {
     cleanup();
     if (!currentProcess || currentStepIndex >= currentProcess.steps.length) {
       endProcess();
@@ -431,7 +490,7 @@ function getContentJS(): string {
     }
 
     const step = currentProcess.steps[currentStepIndex];
-    const targetEl = step.selector ? document.querySelector(step.selector) : null;
+    const targetEl = step.selector ? await waitForElement(step.selector, 2500) : null;
 
     // Overlay
     overlayEl = document.createElement('div');
@@ -448,7 +507,13 @@ function getContentJS(): string {
     // Tooltip
     tooltipEl = document.createElement('div');
     tooltipEl.className = 'bpg-tooltip' + (!targetEl ? ' bpg-center-modal' : '');
-    tooltipEl.innerHTML = buildTooltipHTML(step, currentStepIndex, currentProcess.steps.length, currentProcess.name);
+    tooltipEl.innerHTML = buildTooltipHTML(
+      step,
+      currentStepIndex,
+      currentProcess.steps.length,
+      currentProcess.name,
+      Boolean(step.selector && !targetEl)
+    );
     document.body.appendChild(tooltipEl);
 
     // Position tooltip relative to target
@@ -468,13 +533,16 @@ function getContentJS(): string {
     });
   }
 
-  function buildTooltipHTML(step, index, total, processName) {
+  function buildTooltipHTML(step, index, total, processName, targetMissing) {
     var isFirst = index === 0;
     var isLast = index === total - 1;
     return '<button class="bpg-btn-close">&times;</button>'
       + '<div style="font-size:11px;color:#6366f1;font-weight:600;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px">' + processName + '</div>'
       + '<h3 class="bpg-tooltip-title">' + step.title + '</h3>'
       + '<p class="bpg-tooltip-content">' + step.content + '</p>'
+      + (targetMissing
+        ? '<p style="font-size:12px;color:#b45309;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:8px 10px;margin:0 0 12px">Target element not found. Check if the selector is correct and visible on this page.</p>'
+        : '')
       + '<div class="bpg-tooltip-footer">'
       + '<span class="bpg-tooltip-progress">Step ' + (index + 1) + ' of ' + total + '</span>'
       + '<div class="bpg-tooltip-actions">'
