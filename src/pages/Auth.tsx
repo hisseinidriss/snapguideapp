@@ -114,22 +114,11 @@ const Auth = () => {
           <div className="h-10 w-10 rounded-lg bg-primary flex items-center justify-center mx-auto mb-3">
             <span className="text-primary-foreground font-bold text-sm">W</span>
           </div>
-          <h1 className="text-xl font-semibold">{isLogin ? "Welcome back" : "Create account"}</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {isLogin ? "Sign in to your WalkThru account" : "Get started with WalkThru"}
-          </p>
+          <h1 className="text-xl font-semibold">Welcome back</h1>
+          <p className="text-sm text-muted-foreground mt-1">Sign in to your WalkThru account</p>
         </div>
 
-        <form onSubmit={isLogin ? handleLogin : handleSignup} className="space-y-4">
-          {!isLogin && (
-            <div className="space-y-2">
-              <Label htmlFor="name">Full Name</Label>
-              <div className="relative">
-                <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input id="name" placeholder="John Doe" value={fullName} onChange={(e) => setFullName(e.target.value)} className="pl-9" />
-              </div>
-            </div>
-          )}
+        <form onSubmit={handleLogin} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <div className="relative">
@@ -140,11 +129,9 @@ const Auth = () => {
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label htmlFor="password">Password</Label>
-              {isLogin && (
-                <button type="button" onClick={() => setIsForgot(true)} className="text-xs text-primary hover:underline">
-                  Forgot password?
-                </button>
-              )}
+              <button type="button" onClick={() => setIsForgot(true)} className="text-xs text-primary hover:underline">
+                Forgot password?
+              </button>
             </div>
             <div className="relative">
               <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -153,16 +140,9 @@ const Auth = () => {
           </div>
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ArrowRight className="mr-2 h-4 w-4" />}
-            {isLogin ? "Sign In" : "Create Account"}
+            Sign In
           </Button>
         </form>
-
-        <p className="text-center text-sm text-muted-foreground">
-          {isLogin ? "Don't have an account? " : "Already have an account? "}
-          <button onClick={() => setIsLogin(!isLogin)} className="text-primary hover:underline font-medium">
-            {isLogin ? "Sign up" : "Sign in"}
-          </button>
-        </p>
       </Card>
     </div>
   );
