@@ -335,6 +335,60 @@ function getContentJS(): string {
   let overlayEl = null;
   let tooltipEl = null;
 
+  function safeQuerySelector(selector) {
+    if (!selector) return null;
+    try {
+      return document.querySelector(selector);
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function waitForElement(selector, timeoutMs) {
+    return new Promise((resolve) => {
+      if (!selector) {
+        resolve(null);
+        return;
+      }
+
+      const immediate = safeQuerySelector(selector);
+      if (immediate) {
+        resolve(immediate);
+        return;
+      }
+
+      const start = Date.now();
+      const observer = new MutationObserver(() => {
+        const found = safeQuerySelector(selector);
+        if (found) {
+          observer.disconnect();
+          resolve(found);
+        }
+      });
+
+      observer.observe(document.documentElement, { childList: true, subtree: true, attributes: true });
+
+      const tick = () => {
+        const found = safeQuerySelector(selector);
+        if (found) {
+          observer.disconnect();
+          resolve(found);
+          return;
+        }
+
+        if (Date.now() - start >= timeoutMs) {
+          observer.disconnect();
+          resolve(null);
+          return;
+        }
+
+        requestAnimationFrame(tick);
+      };
+
+      requestAnimationFrame(tick);
+    });
+  }
+
   function init() {
     // Load data script
     const script = document.createElement('script');
