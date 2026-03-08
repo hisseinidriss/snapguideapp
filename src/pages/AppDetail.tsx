@@ -401,6 +401,63 @@ const AppDetail = () => {
             )}
           </TabsContent>
 
+          {/* === Checklists Tab === */}
+          <TabsContent value="checklists">
+            <div className="flex items-center justify-end mb-6">
+              <Dialog open={checklistOpen} onOpenChange={setChecklistOpen}>
+                <DialogTrigger asChild>
+                  <Button><Plus className="mr-2 h-4 w-4" />New Checklist</Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader><DialogTitle>Create a checklist</DialogTitle></DialogHeader>
+                  <div className="space-y-4 pt-2">
+                    <Input placeholder="e.g. New Employee Onboarding" value={newChecklistName} onChange={(e) => setNewChecklistName(e.target.value)} />
+                    <Button onClick={handleCreateChecklist} className="w-full">Create Checklist</Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+
+            {checklists.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-24 text-center animate-fade-in">
+                <div className="h-16 w-16 rounded-2xl bg-accent/10 flex items-center justify-center mb-6">
+                  <ClipboardList className="h-8 w-8 text-accent" />
+                </div>
+                <h2 className="text-2xl font-semibold mb-2">No checklists yet</h2>
+                <p className="text-muted-foreground max-w-md mb-6">
+                  Group your business processes into checklists so users can track their progress through multi-step workflows.
+                </p>
+                <Button onClick={() => setChecklistOpen(true)}>
+                  <Plus className="mr-2 h-4 w-4" />Create Checklist
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {checklists.map((checklist, i) => (
+                  <Card key={checklist.id} className="p-4 flex items-center justify-between animate-fade-in" style={{ animationDelay: `${i * 50}ms` }}>
+                    <div className="flex items-center gap-3">
+                      <div className={`h-2.5 w-2.5 rounded-full ${checklist.is_active ? "bg-success" : "bg-muted-foreground/30"}`} />
+                      <div>
+                        <h3 className="font-medium">{checklist.name}</h3>
+                        <p className="text-sm text-muted-foreground">
+                          {checklist.is_active ? "Active" : "Inactive"} · Updated {new Date(checklist.updated_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button size="sm" onClick={() => navigate(`/app/${appId}/checklist/${checklist.id}`)}>
+                        <Pencil className="mr-1 h-3 w-3" />Edit
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDeleteChecklist(checklist.id)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
           {/* === Extensions Tab === */}
           <TabsContent value="extensions">
             <div className="flex items-center justify-end mb-6">
