@@ -313,6 +313,7 @@ const AppDetail = () => {
         <Tabs defaultValue="processes" className="w-full">
           <TabsList className="mb-6">
             <TabsTrigger value="processes">Business Processes ({tours.length})</TabsTrigger>
+            <TabsTrigger value="checklists">Checklists ({checklists.length})</TabsTrigger>
             <TabsTrigger value="extensions">Extensions ({launchers.length})</TabsTrigger>
           </TabsList>
 
