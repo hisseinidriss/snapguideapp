@@ -427,10 +427,10 @@ function getContentJS(): string {
     launchers.forEach(launcher => {
       if (!launcher.is_active) return;
 
-      const targetEl = launcher.selector ? document.querySelector(launcher.selector) : null;
+      const targetEl = safeQuerySelector(launcher.selector);
       if (!targetEl && launcher.selector) return;
+      if (document.querySelector('[data-bpg-launcher-id="' + launcher.id + '"]')) return;
 
-      if (launcher.type === 'button') {
         const btn = document.createElement('button');
         btn.className = 'bpg-launcher-button';
         btn.style.backgroundColor = launcher.color || '#6366f1';
