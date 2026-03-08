@@ -92,7 +92,8 @@ const Dashboard = () => {
                 <Button onClick={handleCreate} className="w-full">Create App</Button>
               </div>
             </DialogContent>
-          </Dialog>
+            </Dialog>
+          </div>
         </div>
       </header>
 
