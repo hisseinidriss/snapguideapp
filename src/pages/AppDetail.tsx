@@ -236,6 +236,13 @@ const AppDetail = () => {
             <h1 className="text-lg font-semibold">{appName}</h1>
             {appUrl && <p className="text-xs text-muted-foreground">{appUrl}</p>}
           </div>
+          <Button
+            variant="outline"
+            onClick={() => generateChromeExtension(appId!, appName, appUrl)}
+          >
+            <Download className="mr-2 h-4 w-4" />
+            Chrome Extension
+          </Button>
         </div>
       </header>
 
