@@ -27,6 +27,7 @@ const App = () => (
           <Route path="/app/:appId/tour/:tourId/embed" element={<EmbedCode />} />
           <Route path="/app/:appId/launchers" element={<LaunchersPage />} />
           <Route path="/app/:appId/checklist/:checklistId" element={<ChecklistEditor />} />
+          <Route path="/app/:appId/analytics" element={<AnalyticsDashboard />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
