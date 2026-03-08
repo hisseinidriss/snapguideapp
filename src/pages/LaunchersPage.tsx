@@ -149,7 +149,7 @@ const LaunchersPage = () => {
             <div className="text-center py-12">
               <Zap className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
               <p className="text-sm text-muted-foreground">No launchers yet.</p>
-              <p className="text-xs text-muted-foreground mt-1">Add a beacon or button to trigger tours.</p>
+              <p className="text-xs text-muted-foreground mt-1">Add a beacon or button to trigger processes.</p>
             </div>
           ) : (
             launchers.map((launcher) => (
