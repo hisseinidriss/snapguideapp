@@ -199,6 +199,17 @@ const TourEditor = () => {
                 }`}
               >
                 <GripVertical className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                {(() => {
+                  const icon = getStepValidationIcon(step.selector);
+                  if (icon === "loading") return <Loader2 className="h-3 w-3 text-muted-foreground animate-spin shrink-0" />;
+                  if (icon === "valid") return (
+                    <Tooltip><TooltipTrigger asChild><span><CheckCircle2 className="h-3 w-3 text-success shrink-0" /></span></TooltipTrigger><TooltipContent>Selector found on page</TooltipContent></Tooltip>
+                  );
+                  if (icon === "invalid") return (
+                    <Tooltip><TooltipTrigger asChild><span><AlertTriangle className="h-3 w-3 text-warning shrink-0" /></span></TooltipTrigger><TooltipContent>Selector not found on page</TooltipContent></Tooltip>
+                  );
+                  return null;
+                })()}
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-medium truncate">{step.title}</p>
                   <p className="text-[10px] text-muted-foreground truncate">{step.selector || "Center modal"}</p>
