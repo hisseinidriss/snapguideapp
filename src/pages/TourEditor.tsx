@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
-  ArrowLeft, Plus, GripVertical, ChevronUp, ChevronDown, Eye,
+  ArrowLeft, Plus, GripVertical, ChevronUp, ChevronDown, Eye, Upload, Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,6 +21,8 @@ const TourEditor = () => {
   const [previewActive, setPreviewActive] = useState(false);
   const [previewStepIndex, setPreviewStepIndex] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [generatingFromManual, setGeneratingFromManual] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!appId || !tourId) return;
@@ -88,6 +90,71 @@ const TourEditor = () => {
     ]);
   };
 
+  const handleManualUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !tourId) return;
+
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) {
+      toast({ title: "File too large", description: "Please upload a file under 10MB.", variant: "destructive" });
+      return;
+    }
+
+    setGeneratingFromManual(true);
+    try {
+      const reader = new FileReader();
+      const base64 = await new Promise<string>((resolve, reject) => {
+        reader.onload = () => {
+          const result = reader.result as string;
+          resolve(result.split(",")[1]); // strip data:...;base64, prefix
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      const { data, error } = await supabase.functions.invoke("generate-tour-from-manual", {
+        body: { fileBase64: base64, fileName: file.name, mimeType: file.type, tourName },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      const generatedSteps = data.steps || [];
+      if (generatedSteps.length === 0) {
+        toast({ title: "No steps generated", description: "Could not extract tour steps from this manual.", variant: "destructive" });
+        return;
+      }
+
+      // Insert steps into DB
+      const inserts = generatedSteps.map((s: any, i: number) => ({
+        tour_id: tourId,
+        title: s.title,
+        content: s.content,
+        selector: s.selector || "",
+        placement: s.placement || "center",
+        sort_order: steps.length + i,
+      }));
+
+      const { data: inserted, error: insertErr } = await supabase
+        .from("tour_steps")
+        .insert(inserts)
+        .select();
+
+      if (insertErr) throw insertErr;
+      if (inserted) {
+        setSteps((prev) => [...prev, ...inserted]);
+        setSelectedStepId(inserted[0].id);
+        toast({ title: "Steps generated!", description: `${inserted.length} steps created from the manual.` });
+      }
+    } catch (err: any) {
+      console.error("Manual upload error:", err);
+      toast({ title: "Generation failed", description: err.message || "Failed to generate steps from manual.", variant: "destructive" });
+    } finally {
+      setGeneratingFromManual(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
   const selectedStep = steps.find((s) => s.id === selectedStepId);
 
   if (loading) {
@@ -126,9 +193,29 @@ const TourEditor = () => {
       <div className="flex-1 flex overflow-hidden">
         {/* Step List */}
         <div className="w-64 border-r bg-card overflow-y-auto shrink-0 flex flex-col">
-          <div className="p-3 border-b">
+          <div className="p-3 border-b space-y-2">
             <Button onClick={addStep} size="sm" className="w-full">
               <Plus className="mr-1 h-3 w-3" />Add Step
+            </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf,.doc,.docx,.txt,.md"
+              className="hidden"
+              onChange={handleManualUpload}
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={generatingFromManual}
+            >
+              {generatingFromManual ? (
+                <><Loader2 className="mr-1 h-3 w-3 animate-spin" />Generating...</>
+              ) : (
+                <><Upload className="mr-1 h-3 w-3" />Upload Manual</>
+              )}
             </Button>
           </div>
           <div className="flex-1 overflow-y-auto p-2 space-y-1">
