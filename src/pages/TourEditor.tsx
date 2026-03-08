@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { TourStep } from "@/types/tour";
 import StepEditorPanel from "@/components/StepEditorPanel";
 import LivePreview from "@/components/LivePreview";
+import ElementPickerDialog from "@/components/ElementPickerDialog";
 import { useToast } from "@/hooks/use-toast";
 
 const TourEditor = () => {
