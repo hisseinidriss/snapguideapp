@@ -426,19 +426,22 @@ function getContentJS(): string {
 
     launchers.forEach(launcher => {
       if (!launcher.is_active) return;
+      if (document.querySelector('[data-bpg-launcher-id="' + launcher.id + '"]')) return;
 
       const targetEl = safeQuerySelector(launcher.selector);
       if (!targetEl && launcher.selector) return;
-      if (document.querySelector('[data-bpg-launcher-id="' + launcher.id + '"]')) return;
 
+      if (launcher.type === 'button') {
         const btn = document.createElement('button');
         btn.className = 'bpg-launcher-button';
+        btn.setAttribute('data-bpg-launcher-id', launcher.id);
         btn.style.backgroundColor = launcher.color || '#6366f1';
         btn.textContent = launcher.label || launcher.name;
         btn.addEventListener('click', () => {
           const procIndex = processes.findIndex(p => p.id === launcher.tour_id);
           if (procIndex >= 0) startProcess(procIndex);
         });
+
         if (targetEl) {
           targetEl.style.position = 'relative';
           targetEl.appendChild(btn);
@@ -453,11 +456,13 @@ function getContentJS(): string {
         const dot = document.createElement('div');
         dot.className = 'bpg-beacon' + (launcher.pulse ? ' bpg-beacon-pulse' : '');
         dot.setAttribute('data-bpg-launcher-id', launcher.id);
+        dot.style.backgroundColor = launcher.color || '#6366f1';
         dot.style.color = launcher.color || '#6366f1';
         dot.addEventListener('click', () => {
           const procIndex = processes.findIndex(p => p.id === launcher.tour_id);
           if (procIndex >= 0) startProcess(procIndex);
         });
+
         if (targetEl) {
           targetEl.style.position = 'relative';
           dot.style.position = 'absolute';
