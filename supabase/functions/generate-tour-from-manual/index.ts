@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { fileBase64, fileName, mimeType, tourName } = await req.json();
+    const { fileBase64, fileName, mimeType } = await req.json();
 
     if (!fileBase64) {
       return new Response(JSON.stringify({ error: "File content is required" }), {
@@ -31,33 +31,21 @@ serve(async (req) => {
 
     console.log(`Processing manual: ${fileName} (${mimeType})`);
 
-    // Determine the media type for the AI model
-    const supportedTypes = [
-      "application/pdf",
-      "text/plain",
-      "text/markdown",
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    ];
-    const resolvedMime = supportedTypes.includes(mimeType) ? mimeType : "application/pdf";
+    const resolvedMime = mimeType === "application/pdf" ? "application/pdf" : mimeType;
 
-    // Build messages with inline document for Gemini
     const userContent: any[] = [
       {
         type: "text",
-        text: `Tour name: ${tourName || "Getting Started"}
+        text: `I have uploaded a user manual / documentation file: "${fileName}".
 
-I have uploaded a user manual / documentation file: "${fileName}".
-Please analyze it thoroughly and create a product tour with 5-10 steps that guides a new user through the application's key features and workflows described in the manual.
+Analyze the document and extract ALL distinct business processes described in it. A business process is a series of steps a user performs to accomplish a task — such as adding data, updating records, deleting entries, running reports, approvals, validations, etc.
 
-Focus on:
-- The most important features and how to access them
-- Key workflows the user needs to learn
-- Navigation and UI elements mentioned in the manual
-- Settings or configuration steps if relevant`,
+For EACH business process found, provide:
+- A clear process name (e.g. "Add New Member", "Update Payment Details", "Delete Record", "Run Monthly Report")
+- 5-15 ordered steps that walk a user through the process, including any checks, validations, approvals, or conditions mentioned in the manual`,
       },
     ];
 
-    // For PDFs and supported binary docs, include as inline_data
     if (resolvedMime === "application/pdf") {
       userContent.push({
         type: "image_url",
@@ -66,7 +54,6 @@ Focus on:
         },
       });
     } else {
-      // For text-based files, decode and include as text
       const textContent = atob(fileBase64);
       userContent[0].text += `\n\nDocument content:\n${textContent.slice(0, 15000)}`;
     }
@@ -82,27 +69,25 @@ Focus on:
         messages: [
           {
             role: "system",
-            content: `You are a UX onboarding expert. Your job is to create a product tour from a user manual or documentation file.
+            content: `You are a business process analyst. Your job is to extract business processes from user manuals and documentation.
 
-Analyze the document and create a guided walkthrough that:
-1. Welcomes the user and explains what the application does (first step, no selector, placement: center)
-2. Walks through the key features described in the manual in logical order
-3. Explains what each feature does and WHY the user would use it
-4. Follows a logical workflow order
-5. Ends with a summary / next-steps message (last step, no selector, placement: center)
+Analyze the document and identify ALL distinct business processes. Each process should represent a complete workflow (e.g. creating a record, updating data, running a report, approval flow, deletion with checks).
 
-SELECTOR RULES:
-- Since this is generated from a manual (not live HTML), leave selector empty for all steps
-- The user can manually assign CSS selectors later in the editor
+For each process, create ordered steps that include:
+1. A welcome/overview step explaining what this process does (placement: center)
+2. Detailed steps covering each action, input, validation, check, or approval required
+3. Any conditions or branches (e.g. "If the record exists...", "Verify the data before...")
+4. A completion step summarizing what was accomplished (placement: center)
 
 CONTENT RULES:
-- Write in second person ("You can...", "Click here to...", "This is where you...")
-- Be specific about what each feature does
-- Keep titles to 2-5 words
+- Write in second person ("You need to...", "Click on...", "Verify that...")
+- Be specific about fields, buttons, menus mentioned in the manual
+- Include validation checks and conditions as separate steps
+- Keep titles to 2-6 words
 - Keep content to 1-3 actionable sentences
-- Reference specific UI elements, buttons, or menu items mentioned in the manual
+- Leave selector empty (user will assign CSS selectors later)
 
-Return 5-10 steps.`,
+Extract as many processes as are described in the document (typically 3-15).`,
           },
           {
             role: "user",
@@ -113,36 +98,47 @@ Return 5-10 steps.`,
           {
             type: "function",
             function: {
-              name: "generate_steps",
-              description: "Generate tour steps from a user manual",
+              name: "extract_processes",
+              description: "Extract business processes and their steps from a document",
               parameters: {
                 type: "object",
                 properties: {
-                  steps: {
+                  processes: {
                     type: "array",
                     items: {
                       type: "object",
                       properties: {
-                        title: { type: "string" },
-                        content: { type: "string" },
-                        selector: { type: "string" },
-                        placement: {
-                          type: "string",
-                          enum: ["top", "bottom", "left", "right", "center"],
+                        name: { type: "string", description: "Business process name" },
+                        steps: {
+                          type: "array",
+                          items: {
+                            type: "object",
+                            properties: {
+                              title: { type: "string" },
+                              content: { type: "string" },
+                              selector: { type: "string" },
+                              placement: {
+                                type: "string",
+                                enum: ["top", "bottom", "left", "right", "center"],
+                              },
+                            },
+                            required: ["title", "content", "selector", "placement"],
+                            additionalProperties: false,
+                          },
                         },
                       },
-                      required: ["title", "content", "selector", "placement"],
+                      required: ["name", "steps"],
                       additionalProperties: false,
                     },
                   },
                 },
-                required: ["steps"],
+                required: ["processes"],
                 additionalProperties: false,
               },
             },
           },
         ],
-        tool_choice: { type: "function", function: { name: "generate_steps" } },
+        tool_choice: { type: "function", function: { name: "extract_processes" } },
       }),
     });
 
@@ -170,18 +166,18 @@ Return 5-10 steps.`,
     const aiData = await aiRes.json();
     const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
     if (!toolCall) {
-      return new Response(JSON.stringify({ error: "AI did not return structured steps" }), {
+      return new Response(JSON.stringify({ error: "AI did not return structured output" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const parsed = JSON.parse(toolCall.function.arguments);
-    const steps = parsed.steps || [];
+    const processes = parsed.processes || [];
 
-    console.log(`Generated ${steps.length} tour steps from manual`);
+    console.log(`Extracted ${processes.length} business processes from manual`);
 
-    return new Response(JSON.stringify({ steps }), {
+    return new Response(JSON.stringify({ processes }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
