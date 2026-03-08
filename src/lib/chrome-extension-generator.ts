@@ -469,21 +469,18 @@ function getContentJS(): string {
   }
 
   function buildTooltipHTML(step, index, total, processName) {
-    const isFirst = index === 0;
-    const isLast = index === total - 1;
-    return `
-      <button class="bpg-btn-close">&times;</button>
-      <div style="font-size:11px;color:#6366f1;font-weight:600;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px">${processName}</div>
-      <h3 class="bpg-tooltip-title">${step.title}</h3>
-      <p class="bpg-tooltip-content">${step.content}</p>
-      <div class="bpg-tooltip-footer">
-        <span class="bpg-tooltip-progress">Step ${index + 1} of ${total}</span>
-        <div class="bpg-tooltip-actions">
-          ${!isFirst ? '<button class="bpg-btn bpg-btn-secondary" data-action="prev">Back</button>' : ''}
-          <button class="bpg-btn bpg-btn-primary" data-action="next">${isLast ? 'Finish' : 'Next'}</button>
-        </div>
-      </div>
-    `;
+    var isFirst = index === 0;
+    var isLast = index === total - 1;
+    return '<button class="bpg-btn-close">&times;</button>'
+      + '<div style="font-size:11px;color:#6366f1;font-weight:600;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px">' + processName + '</div>'
+      + '<h3 class="bpg-tooltip-title">' + step.title + '</h3>'
+      + '<p class="bpg-tooltip-content">' + step.content + '</p>'
+      + '<div class="bpg-tooltip-footer">'
+      + '<span class="bpg-tooltip-progress">Step ' + (index + 1) + ' of ' + total + '</span>'
+      + '<div class="bpg-tooltip-actions">'
+      + (!isFirst ? '<button class="bpg-btn bpg-btn-secondary" data-action="prev">Back</button>' : '')
+      + '<button class="bpg-btn bpg-btn-primary" data-action="next">' + (isLast ? 'Finish' : 'Next') + '</button>'
+      + '</div></div>';
   }
 
   function positionTooltip(tooltip, target, placement) {
