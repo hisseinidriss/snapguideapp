@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { TourStep } from "@/types/tour";
 import { Button } from "@/components/ui/button";
-import { X, ChevronLeft, ChevronRight, Play, AlertTriangle } from "lucide-react";
+import { X, ChevronLeft, ChevronRight, Play, AlertTriangle, RefreshCw, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface LivePreviewProps {
   appUrl: string;
@@ -24,9 +25,36 @@ const LivePreview = ({
   onClose,
   onStart,
 }: LivePreviewProps) => {
-  const [iframeError, setIframeError] = useState(false);
+  const [screenshotUrl, setScreenshotUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
+
   const step = previewActive ? steps[previewStepIndex] : null;
   const isLast = previewStepIndex === steps.length - 1;
+
+  const captureScreenshot = async () => {
+    if (!appUrl) return;
+    setLoading(true);
+    setError(false);
+    try {
+      const { data, error: fnError } = await supabase.functions.invoke("screenshot-url", {
+        body: { url: appUrl },
+      });
+      if (fnError || !data?.screenshot) {
+        setError(true);
+      } else {
+        setScreenshotUrl(data.screenshot);
+      }
+    } catch {
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (appUrl) captureScreenshot();
+  }, [appUrl]);
 
   if (!appUrl) {
     return (
@@ -52,31 +80,49 @@ const LivePreview = ({
           </div>
           <span className="text-xs text-muted-foreground font-mono truncate max-w-[300px]">{appUrl}</span>
         </div>
-        {steps.length > 0 && !previewActive && (
-          <Button size="sm" variant="outline" className="h-7 text-xs" onClick={onStart}>
-            <Play className="mr-1 h-3 w-3" />Run Tour
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={captureScreenshot} disabled={loading}>
+            <RefreshCw className={`mr-1 h-3 w-3 ${loading ? "animate-spin" : ""}`} />
+            Refresh
           </Button>
-        )}
+          {steps.length > 0 && !previewActive && (
+            <Button size="sm" variant="outline" className="h-7 text-xs" onClick={onStart}>
+              <Play className="mr-1 h-3 w-3" />Run Tour
+            </Button>
+          )}
+        </div>
       </div>
 
-      {/* Iframe */}
-      <div className="flex-1 relative">
-        <iframe
-          src={appUrl}
-          className="w-full h-full border-0"
-          title="App Preview"
-          sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-          onError={() => setIframeError(true)}
-        />
-
-        {iframeError && (
-          <div className="absolute inset-0 flex items-center justify-center bg-background/80">
-            <div className="text-center space-y-2">
-              <AlertTriangle className="h-8 w-8 mx-auto text-warning" />
-              <p className="text-sm font-medium">Unable to load preview</p>
-              <p className="text-xs text-muted-foreground">The site may block iframe embedding.</p>
+      {/* Screenshot preview */}
+      <div className="flex-1 relative overflow-auto">
+        {loading && !screenshotUrl && (
+          <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-20">
+            <div className="text-center space-y-3">
+              <Loader2 className="h-8 w-8 mx-auto animate-spin text-primary" />
+              <p className="text-sm text-muted-foreground">Capturing screenshot...</p>
             </div>
           </div>
+        )}
+
+        {error && !screenshotUrl && (
+          <div className="absolute inset-0 flex items-center justify-center bg-background/80">
+            <div className="text-center space-y-3">
+              <AlertTriangle className="h-8 w-8 mx-auto text-warning" />
+              <p className="text-sm font-medium">Unable to capture screenshot</p>
+              <p className="text-xs text-muted-foreground">Check the app URL and try again.</p>
+              <Button size="sm" variant="outline" onClick={captureScreenshot}>
+                <RefreshCw className="mr-1 h-3 w-3" />Retry
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {screenshotUrl && (
+          <img
+            src={screenshotUrl}
+            alt="App screenshot"
+            className="w-full h-auto"
+          />
         )}
 
         {/* Tour step overlay */}
@@ -84,9 +130,10 @@ const LivePreview = ({
           <div className="absolute inset-0 z-10">
             {/* Backdrop */}
             <div className="absolute inset-0 bg-foreground/40" onClick={onClose} />
-            
+
             {/* Tooltip */}
-            <div className="absolute z-20 bg-card rounded-xl shadow-2xl border p-5 max-w-xs"
+            <div
+              className="absolute z-20 bg-card rounded-xl shadow-2xl border p-5 max-w-xs"
               style={getTooltipPosition(step)}
             >
               <button onClick={onClose} className="absolute top-2.5 right-2.5 text-muted-foreground hover:text-foreground">
@@ -119,14 +166,10 @@ const LivePreview = ({
 };
 
 function getTooltipPosition(step: TourStep): React.CSSProperties {
-  // Since we can't access iframe DOM, position based on placement hint
-  const base: React.CSSProperties = { };
-  
   if (!step.selector || step.placement === "center") {
     return { top: "50%", left: "50%", transform: "translate(-50%, -50%)" };
   }
 
-  // Position hints based on placement
   switch (step.placement) {
     case "top":
       return { top: "20%", left: "50%", transform: "translateX(-50%)" };
