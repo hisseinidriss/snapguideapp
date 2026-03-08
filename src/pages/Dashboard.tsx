@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, Globe, MoreVertical, Trash2, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -18,29 +18,50 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { getApps, createApp, deleteApp } from "@/lib/tour-store";
-import { App } from "@/types/tour";
+import { supabase } from "@/integrations/supabase/client";
+import type { App } from "@/types/tour";
+import { useToast } from "@/hooks/use-toast";
 
 const Dashboard = () => {
-  const [apps, setApps] = useState<App[]>(getApps());
+  const [apps, setApps] = useState<App[]>([]);
+  const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [newName, setNewName] = useState("");
   const [newUrl, setNewUrl] = useState("");
   const [newDesc, setNewDesc] = useState("");
+  const { toast } = useToast();
 
-  const handleCreate = () => {
+  const fetchApps = async () => {
+    const { data, error } = await supabase.from("apps").select("*").order("created_at", { ascending: false });
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } else {
+      setApps(data || []);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchApps(); }, []);
+
+  const handleCreate = async () => {
     if (!newName.trim()) return;
-    createApp(newName, newUrl, newDesc);
-    setApps(getApps());
-    setNewName("");
-    setNewUrl("");
-    setNewDesc("");
+    const { error } = await supabase.from("apps").insert({ name: newName, url: newUrl, description: newDesc });
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+      return;
+    }
+    await fetchApps();
+    setNewName(""); setNewUrl(""); setNewDesc("");
     setOpen(false);
   };
 
-  const handleDelete = (id: string) => {
-    deleteApp(id);
-    setApps(getApps());
+  const handleDelete = async (id: string) => {
+    const { error } = await supabase.from("apps").delete().eq("id", id);
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+      return;
+    }
+    setApps((prev) => prev.filter((a) => a.id !== id));
   };
 
   return (
@@ -65,25 +86,10 @@ const Dashboard = () => {
                 <DialogTitle>Add a new application</DialogTitle>
               </DialogHeader>
               <div className="space-y-4 pt-2">
-                <Input
-                  placeholder="App name"
-                  value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
-                />
-                <Input
-                  placeholder="https://yourapp.com (optional)"
-                  value={newUrl}
-                  onChange={(e) => setNewUrl(e.target.value)}
-                />
-                <Textarea
-                  placeholder="Brief description (optional)"
-                  value={newDesc}
-                  onChange={(e) => setNewDesc(e.target.value)}
-                  rows={3}
-                />
-                <Button onClick={handleCreate} className="w-full">
-                  Create App
-                </Button>
+                <Input placeholder="App name" value={newName} onChange={(e) => setNewName(e.target.value)} />
+                <Input placeholder="https://yourapp.com (optional)" value={newUrl} onChange={(e) => setNewUrl(e.target.value)} />
+                <Textarea placeholder="Brief description (optional)" value={newDesc} onChange={(e) => setNewDesc(e.target.value)} rows={3} />
+                <Button onClick={handleCreate} className="w-full">Create App</Button>
               </div>
             </DialogContent>
           </Dialog>
@@ -91,7 +97,11 @@ const Dashboard = () => {
       </header>
 
       <main className="container py-8">
-        {apps.length === 0 ? (
+        {loading ? (
+          <div className="flex items-center justify-center py-24">
+            <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+          </div>
+        ) : apps.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-center animate-fade-in">
             <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
               <Globe className="h-8 w-8 text-primary" />
@@ -108,16 +118,10 @@ const Dashboard = () => {
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {apps.map((app, i) => (
-              <Card
-                key={app.id}
-                className="p-5 hover:shadow-md transition-shadow animate-fade-in"
-                style={{ animationDelay: `${i * 50}ms` }}
-              >
+              <Card key={app.id} className="p-5 hover:shadow-md transition-shadow animate-fade-in" style={{ animationDelay: `${i * 50}ms` }}>
                 <div className="flex items-start justify-between mb-3">
                   <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <span className="text-primary font-bold">
-                      {app.name.charAt(0).toUpperCase()}
-                    </span>
+                    <span className="text-primary font-bold">{app.name.charAt(0).toUpperCase()}</span>
                   </div>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -126,10 +130,7 @@ const Dashboard = () => {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem
-                        className="text-destructive"
-                        onClick={() => handleDelete(app.id)}
-                      >
+                      <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(app.id)}>
                         <Trash2 className="mr-2 h-4 w-4" />
                         Delete
                       </DropdownMenuItem>
@@ -137,18 +138,9 @@ const Dashboard = () => {
                   </DropdownMenu>
                 </div>
                 <h3 className="font-semibold mb-1">{app.name}</h3>
-                {app.url && (
-                  <p className="text-xs text-muted-foreground mb-2 truncate">
-                    {app.url}
-                  </p>
-                )}
-                <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                  {app.description || "No description"}
-                </p>
+                {app.url && <p className="text-xs text-muted-foreground mb-2 truncate">{app.url}</p>}
+                <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{app.description || "No description"}</p>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground">
-                    {app.tours.length} tour{app.tours.length !== 1 ? "s" : ""}
-                  </span>
                   <Button variant="ghost" size="sm" asChild>
                     <Link to={`/app/${app.id}`}>
                       Open

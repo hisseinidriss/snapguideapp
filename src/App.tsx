@@ -7,6 +7,7 @@ import Dashboard from "./pages/Dashboard";
 import AppDetail from "./pages/AppDetail";
 import TourEditor from "./pages/TourEditor";
 import EmbedCode from "./pages/EmbedCode";
+import LaunchersPage from "./pages/LaunchersPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -22,6 +23,7 @@ const App = () => (
           <Route path="/app/:appId" element={<AppDetail />} />
           <Route path="/app/:appId/tour/:tourId" element={<TourEditor />} />
           <Route path="/app/:appId/tour/:tourId/embed" element={<EmbedCode />} />
+          <Route path="/app/:appId/launchers" element={<LaunchersPage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

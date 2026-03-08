@@ -1,109 +1,39 @@
-import { App, Tour, TourStep } from "@/types/tour";
+import { supabase } from "@/integrations/supabase/client";
+import type { TourStep } from "@/types/tour";
 
-const generateId = () => Math.random().toString(36).substr(2, 9);
+export function generateEmbedScript(steps: TourStep[], launchers?: any[]): string {
+  const stepsJson = JSON.stringify(
+    steps.map((s) => ({
+      title: s.title,
+      content: s.content,
+      selector: s.selector,
+      placement: s.placement,
+    })),
+    null,
+    2
+  );
 
-const STORAGE_KEY = "tourbuilder_apps";
-
-function loadApps(): App[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveApps(apps: App[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(apps));
-}
-
-export function getApps(): App[] {
-  return loadApps();
-}
-
-export function getApp(id: string): App | undefined {
-  return loadApps().find((a) => a.id === id);
-}
-
-export function createApp(name: string, url: string, description: string): App {
-  const apps = loadApps();
-  const app: App = {
-    id: generateId(),
-    name,
-    url,
-    description,
-    tours: [],
-    createdAt: new Date().toISOString(),
-  };
-  apps.push(app);
-  saveApps(apps);
-  return app;
-}
-
-export function deleteApp(id: string) {
-  const apps = loadApps().filter((a) => a.id !== id);
-  saveApps(apps);
-}
-
-export function createTour(appId: string, name: string): Tour {
-  const apps = loadApps();
-  const app = apps.find((a) => a.id === appId);
-  if (!app) throw new Error("App not found");
-  const tour: Tour = {
-    id: generateId(),
-    name,
-    appId,
-    steps: [],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
-  app.tours.push(tour);
-  saveApps(apps);
-  return tour;
-}
-
-export function updateTour(appId: string, tourId: string, updates: Partial<Pick<Tour, "name" | "steps">>) {
-  const apps = loadApps();
-  const app = apps.find((a) => a.id === appId);
-  if (!app) return;
-  const tour = app.tours.find((t) => t.id === tourId);
-  if (!tour) return;
-  if (updates.name) tour.name = updates.name;
-  if (updates.steps) tour.steps = updates.steps;
-  tour.updatedAt = new Date().toISOString();
-  saveApps(apps);
-}
-
-export function deleteTour(appId: string, tourId: string) {
-  const apps = loadApps();
-  const app = apps.find((a) => a.id === appId);
-  if (!app) return;
-  app.tours = app.tours.filter((t) => t.id !== tourId);
-  saveApps(apps);
-}
-
-export function createStep(partial?: Partial<TourStep>): TourStep {
-  return {
-    id: generateId(),
-    title: partial?.title || "New Step",
-    content: partial?.content || "Describe what happens here.",
-    selector: partial?.selector || "",
-    placement: partial?.placement || "bottom",
-    order: partial?.order ?? 0,
-  };
-}
-
-export function generateEmbedScript(appId: string, tourId: string): string {
-  const app = getApp(appId);
-  const tour = app?.tours.find((t) => t.id === tourId);
-  if (!tour) return "// Tour not found";
-
-  const stepsJson = JSON.stringify(tour.steps, null, 2);
+  const launchersJson = launchers?.length
+    ? JSON.stringify(
+        launchers
+          .filter((l) => l.is_active)
+          .map((l) => ({
+            type: l.type,
+            selector: l.selector,
+            label: l.label,
+            color: l.color,
+            pulse: l.pulse,
+          })),
+        null,
+        2
+      )
+    : "[]";
 
   return `<!-- TourBuilder Embed Script -->
 <script>
 (function() {
   var steps = ${stepsJson};
+  var launchers = ${launchersJson};
   
   var currentStep = 0;
   var overlay, tooltip;
@@ -111,7 +41,8 @@ export function generateEmbedScript(appId: string, tourId: string): string {
   function createOverlay() {
     overlay = document.createElement('div');
     overlay.id = 'tb-overlay';
-    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:99998;';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:99998;transition:opacity 0.3s;';
+    overlay.onclick = cleanup;
     document.body.appendChild(overlay);
   }
 
@@ -123,7 +54,7 @@ export function generateEmbedScript(appId: string, tourId: string): string {
     if (tooltip) tooltip.remove();
     tooltip = document.createElement('div');
     tooltip.id = 'tb-tooltip';
-    tooltip.style.cssText = 'position:fixed;z-index:99999;background:#fff;border-radius:10px;padding:20px;max-width:320px;box-shadow:0 8px 32px rgba(0,0,0,0.15);font-family:system-ui;';
+    tooltip.style.cssText = 'position:fixed;z-index:99999;background:#fff;border-radius:10px;padding:20px;max-width:320px;box-shadow:0 8px 32px rgba(0,0,0,0.15);font-family:system-ui;animation:tb-fade 0.2s ease;';
     
     tooltip.innerHTML = '<h3 style="margin:0 0 8px;font-size:16px;font-weight:600;">' + step.title + '</h3>' +
       '<p style="margin:0 0 16px;font-size:14px;color:#666;">' + step.content + '</p>' +
@@ -135,34 +66,73 @@ export function generateEmbedScript(appId: string, tourId: string): string {
       '</div></div>';
     
     document.body.appendChild(tooltip);
-    
-    if (target) {
-      var rect = target.getBoundingClientRect();
-      var pos = { top: rect.bottom + 12, left: rect.left };
-      if (step.placement === 'top') pos = { top: rect.top - tooltip.offsetHeight - 12, left: rect.left };
-      if (step.placement === 'left') pos = { top: rect.top, left: rect.left - tooltip.offsetWidth - 12 };
-      if (step.placement === 'right') pos = { top: rect.top, left: rect.right + 12 };
-      tooltip.style.top = pos.top + 'px';
-      tooltip.style.left = pos.left + 'px';
-    } else {
-      tooltip.style.top = '50%';
-      tooltip.style.left = '50%';
-      tooltip.style.transform = 'translate(-50%, -50%)';
+    positionTooltip(tooltip, target, step.placement);
+  }
+
+  function positionTooltip(el, target, placement) {
+    if (!target) {
+      el.style.top = '50%'; el.style.left = '50%'; el.style.transform = 'translate(-50%,-50%)';
+      return;
     }
+    var rect = target.getBoundingClientRect();
+    var pos = { top: rect.bottom + 12, left: rect.left };
+    if (placement === 'top') pos = { top: rect.top - el.offsetHeight - 12, left: rect.left };
+    if (placement === 'left') pos = { top: rect.top, left: rect.left - el.offsetWidth - 12 };
+    if (placement === 'right') pos = { top: rect.top, left: rect.right + 12 };
+    if (placement === 'center') { el.style.top='50%'; el.style.left='50%'; el.style.transform='translate(-50%,-50%)'; return; }
+    el.style.top = pos.top + 'px';
+    el.style.left = pos.left + 'px';
   }
 
   function cleanup() {
     if (overlay) overlay.remove();
     if (tooltip) tooltip.remove();
+    overlay = null; tooltip = null;
   }
 
   window.__tb_next = function() { currentStep++; showStep(currentStep); };
   window.__tb_prev = function() { currentStep--; showStep(currentStep); };
+  window.__tb_start = function() { currentStep = 0; createOverlay(); showStep(0); };
 
-  if (steps.length > 0) {
-    createOverlay();
-    showStep(0);
+  // Add CSS animation
+  var style = document.createElement('style');
+  style.textContent = '@keyframes tb-fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}@keyframes tb-pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.3);opacity:0.7}}';
+  document.head.appendChild(style);
+
+  // Create launchers
+  launchers.forEach(function(l) {
+    var target = l.selector ? document.querySelector(l.selector) : null;
+    if (!target && l.selector) return;
+    
+    var el = document.createElement('div');
+    el.className = 'tb-launcher';
+    
+    if (l.type === 'beacon' || l.type === 'hotspot') {
+      el.style.cssText = 'position:absolute;width:16px;height:16px;border-radius:50%;background:' + (l.color || '#1e6b45') + ';cursor:pointer;z-index:99997;' + (l.pulse ? 'animation:tb-pulse 2s infinite;' : '');
+    } else {
+      el.style.cssText = 'position:absolute;padding:6px 14px;border-radius:20px;background:' + (l.color || '#1e6b45') + ';color:#fff;font-size:13px;font-family:system-ui;cursor:pointer;z-index:99997;border:none;box-shadow:0 2px 8px rgba(0,0,0,0.15);';
+      el.textContent = l.label || 'Help';
+    }
+    
+    el.onclick = function() { window.__tb_start(); };
+    
+    if (target) {
+      target.style.position = target.style.position || 'relative';
+      target.appendChild(el);
+    } else {
+      el.style.position = 'fixed';
+      el.style.bottom = '20px';
+      el.style.right = '20px';
+      document.body.appendChild(el);
+    }
+  });
+
+  // Auto-start if no launchers
+  if (launchers.length === 0 && steps.length > 0) {
+    window.__tb_start();
   }
 })();
 </script>`;
 }
+
+export { supabase };
