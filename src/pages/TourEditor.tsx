@@ -1,15 +1,19 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
-  ArrowLeft, Plus, GripVertical, ChevronUp, ChevronDown, Eye,
+  ArrowLeft, Plus, GripVertical, ChevronUp, ChevronDown, Eye, AlertTriangle, CheckCircle2, ShieldCheck, Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
 import type { TourStep } from "@/types/tour";
 import StepEditorPanel from "@/components/StepEditorPanel";
 import LivePreview from "@/components/LivePreview";
 import ElementPickerDialog from "@/components/ElementPickerDialog";
 import { useToast } from "@/hooks/use-toast";
+
+type ValidationStatus = "idle" | "validating" | "done";
+type SelectorResult = { found: boolean; context?: string };
 
 const TourEditor = () => {
   const { appId, tourId } = useParams<{ appId: string; tourId: string }>();
@@ -23,6 +27,8 @@ const TourEditor = () => {
   const [previewStepIndex, setPreviewStepIndex] = useState(0);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [validationStatus, setValidationStatus] = useState<ValidationStatus>("idle");
+  const [selectorResults, setSelectorResults] = useState<Record<string, SelectorResult>>({});
 
   useEffect(() => {
     if (!appId || !tourId) return;
@@ -90,6 +96,43 @@ const TourEditor = () => {
     ]);
   };
 
+  const validateSelectors = async () => {
+    if (!appUrl || steps.length === 0) {
+      toast({ title: "Cannot validate", description: "Add an app URL and steps first.", variant: "destructive" });
+      return;
+    }
+    const selectors = steps.map((s) => s.selector || "");
+    setValidationStatus("validating");
+    setSelectorResults({});
+    try {
+      const { data, error } = await supabase.functions.invoke("validate-selectors", {
+        body: { url: appUrl, selectors },
+      });
+      if (error) throw error;
+      if (data?.results) {
+        setSelectorResults(data.results);
+        const broken = Object.entries(data.results).filter(([sel, r]: [string, any]) => sel && !r.found).length;
+        toast({
+          title: broken > 0 ? `${broken} selector(s) not found` : "All selectors valid ✓",
+          description: broken > 0 ? "Check the warning icons next to steps." : "Every selector was found on the page.",
+          variant: broken > 0 ? "destructive" : "default",
+        });
+      }
+    } catch (err: any) {
+      toast({ title: "Validation failed", description: err.message || "Could not validate selectors.", variant: "destructive" });
+    } finally {
+      setValidationStatus("done");
+    }
+  };
+
+  const getStepValidationIcon = (selector: string | null) => {
+    if (validationStatus === "idle") return null;
+    if (!selector) return null; // No selector = centered modal, always valid
+    const result = selectorResults[selector];
+    if (!result) return validationStatus === "validating" ? "loading" : null;
+    return result.found ? "valid" : "invalid";
+  };
+
   const selectedStep = steps.find((s) => s.id === selectedStepId);
 
   if (loading) {
@@ -122,6 +165,19 @@ const TourEditor = () => {
             <h1 className="text-sm font-semibold truncate">{tourName}</h1>
             <p className="text-xs text-muted-foreground">{appName}</p>
           </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={validateSelectors}
+            disabled={validationStatus === "validating"}
+            className="h-8"
+          >
+            {validationStatus === "validating" ? (
+              <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />Validating...</>
+            ) : (
+              <><ShieldCheck className="mr-1.5 h-3.5 w-3.5" />Validate Selectors</>
+            )}
+          </Button>
         </div>
       </header>
 
@@ -143,6 +199,17 @@ const TourEditor = () => {
                 }`}
               >
                 <GripVertical className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                {(() => {
+                  const icon = getStepValidationIcon(step.selector);
+                  if (icon === "loading") return <Loader2 className="h-3 w-3 text-muted-foreground animate-spin shrink-0" />;
+                  if (icon === "valid") return (
+                    <Tooltip><TooltipTrigger asChild><span><CheckCircle2 className="h-3 w-3 text-success shrink-0" /></span></TooltipTrigger><TooltipContent>Selector found on page</TooltipContent></Tooltip>
+                  );
+                  if (icon === "invalid") return (
+                    <Tooltip><TooltipTrigger asChild><span><AlertTriangle className="h-3 w-3 text-warning shrink-0" /></span></TooltipTrigger><TooltipContent>Selector not found on page</TooltipContent></Tooltip>
+                  );
+                  return null;
+                })()}
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-medium truncate">{step.title}</p>
                   <p className="text-[10px] text-muted-foreground truncate">{step.selector || "Center modal"}</p>
