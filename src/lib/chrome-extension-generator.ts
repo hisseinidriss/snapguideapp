@@ -452,7 +452,7 @@ function getContentJS(): string {
         // beacon or hotspot
         const dot = document.createElement('div');
         dot.className = 'bpg-beacon' + (launcher.pulse ? ' bpg-beacon-pulse' : '');
-        dot.style.backgroundColor = launcher.color || '#6366f1';
+        dot.setAttribute('data-bpg-launcher-id', launcher.id);
         dot.style.color = launcher.color || '#6366f1';
         dot.addEventListener('click', () => {
           const procIndex = processes.findIndex(p => p.id === launcher.tour_id);
