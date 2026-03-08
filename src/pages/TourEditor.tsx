@@ -193,9 +193,29 @@ const TourEditor = () => {
       <div className="flex-1 flex overflow-hidden">
         {/* Step List */}
         <div className="w-64 border-r bg-card overflow-y-auto shrink-0 flex flex-col">
-          <div className="p-3 border-b">
+          <div className="p-3 border-b space-y-2">
             <Button onClick={addStep} size="sm" className="w-full">
               <Plus className="mr-1 h-3 w-3" />Add Step
+            </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf,.doc,.docx,.txt,.md"
+              className="hidden"
+              onChange={handleManualUpload}
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={generatingFromManual}
+            >
+              {generatingFromManual ? (
+                <><Loader2 className="mr-1 h-3 w-3 animate-spin" />Generating...</>
+              ) : (
+                <><Upload className="mr-1 h-3 w-3" />Upload Manual</>
+              )}
             </Button>
           </div>
           <div className="flex-1 overflow-y-auto p-2 space-y-1">
