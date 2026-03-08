@@ -90,6 +90,71 @@ const TourEditor = () => {
     ]);
   };
 
+  const handleManualUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !tourId) return;
+
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) {
+      toast({ title: "File too large", description: "Please upload a file under 10MB.", variant: "destructive" });
+      return;
+    }
+
+    setGeneratingFromManual(true);
+    try {
+      const reader = new FileReader();
+      const base64 = await new Promise<string>((resolve, reject) => {
+        reader.onload = () => {
+          const result = reader.result as string;
+          resolve(result.split(",")[1]); // strip data:...;base64, prefix
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      const { data, error } = await supabase.functions.invoke("generate-tour-from-manual", {
+        body: { fileBase64: base64, fileName: file.name, mimeType: file.type, tourName },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      const generatedSteps = data.steps || [];
+      if (generatedSteps.length === 0) {
+        toast({ title: "No steps generated", description: "Could not extract tour steps from this manual.", variant: "destructive" });
+        return;
+      }
+
+      // Insert steps into DB
+      const inserts = generatedSteps.map((s: any, i: number) => ({
+        tour_id: tourId,
+        title: s.title,
+        content: s.content,
+        selector: s.selector || "",
+        placement: s.placement || "center",
+        sort_order: steps.length + i,
+      }));
+
+      const { data: inserted, error: insertErr } = await supabase
+        .from("tour_steps")
+        .insert(inserts)
+        .select();
+
+      if (insertErr) throw insertErr;
+      if (inserted) {
+        setSteps((prev) => [...prev, ...inserted]);
+        setSelectedStepId(inserted[0].id);
+        toast({ title: "Steps generated!", description: `${inserted.length} steps created from the manual.` });
+      }
+    } catch (err: any) {
+      console.error("Manual upload error:", err);
+      toast({ title: "Generation failed", description: err.message || "Failed to generate steps from manual.", variant: "destructive" });
+    } finally {
+      setGeneratingFromManual(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
   const selectedStep = steps.find((s) => s.id === selectedStepId);
 
   if (loading) {
