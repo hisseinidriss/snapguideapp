@@ -181,6 +181,51 @@ export type Database = {
           },
         ]
       }
+      tour_events: {
+        Row: {
+          app_id: string
+          created_at: string
+          event_type: string
+          id: string
+          session_id: string
+          step_index: number | null
+          tour_id: string
+        }
+        Insert: {
+          app_id: string
+          created_at?: string
+          event_type: string
+          id?: string
+          session_id: string
+          step_index?: number | null
+          tour_id: string
+        }
+        Update: {
+          app_id?: string
+          created_at?: string
+          event_type?: string
+          id?: string
+          session_id?: string
+          step_index?: number | null
+          tour_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tour_events_app_id_fkey"
+            columns: ["app_id"]
+            isOneToOne: false
+            referencedRelation: "apps"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tour_events_tour_id_fkey"
+            columns: ["tour_id"]
+            isOneToOne: false
+            referencedRelation: "tours"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tour_steps: {
         Row: {
           content: string

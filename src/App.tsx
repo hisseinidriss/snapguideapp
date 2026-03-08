@@ -9,6 +9,7 @@ import TourEditor from "./pages/TourEditor";
 import EmbedCode from "./pages/EmbedCode";
 import LaunchersPage from "./pages/LaunchersPage";
 import ChecklistEditor from "./pages/ChecklistEditor";
+import AnalyticsDashboard from "./pages/AnalyticsDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +27,7 @@ const App = () => (
           <Route path="/app/:appId/tour/:tourId/embed" element={<EmbedCode />} />
           <Route path="/app/:appId/launchers" element={<LaunchersPage />} />
           <Route path="/app/:appId/checklist/:checklistId" element={<ChecklistEditor />} />
+          <Route path="/app/:appId/analytics" element={<AnalyticsDashboard />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

@@ -1,7 +1,11 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { TourStep } from "@/types/tour";
 
-export function generateEmbedScript(steps: TourStep[], launchers?: any[]): string {
+export function generateEmbedScript(
+  steps: TourStep[],
+  launchers?: any[],
+  options?: { tourId?: string; appId?: string; supabaseUrl?: string; supabaseKey?: string }
+): string {
   const stepsJson = JSON.stringify(
     steps.map((s) => ({
       title: s.title,
@@ -29,27 +33,56 @@ export function generateEmbedScript(steps: TourStep[], launchers?: any[]): strin
       )
     : "[]";
 
+  const tourId = options?.tourId || "";
+  const appId = options?.appId || "";
+  const trackingUrl = options?.supabaseUrl
+    ? `${options.supabaseUrl}/functions/v1/track-events`
+    : "";
+  const anonKey = options?.supabaseKey || "";
+
   return `<!-- WalkThru Embed Script -->
 <script>
 (function() {
   var steps = ${stepsJson};
   var launchers = ${launchersJson};
+  var tourId = '${tourId}';
+  var appId = '${appId}';
+  var trackUrl = '${trackingUrl}';
+  var anonKey = '${anonKey}';
   
   var currentStep = 0;
   var overlay, tooltip;
+  var sessionId = 'wt_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
+  var eventQueue = [];
+
+  function track(eventType, stepIndex) {
+    if (!trackUrl || !tourId || !appId) return;
+    eventQueue.push({ tour_id: tourId, app_id: appId, event_type: eventType, step_index: stepIndex, session_id: sessionId });
+    if (eventQueue.length === 1) setTimeout(flushEvents, 1000);
+  }
+
+  function flushEvents() {
+    if (eventQueue.length === 0) return;
+    var batch = eventQueue.splice(0);
+    try {
+      var headers = { 'Content-Type': 'application/json', 'apikey': anonKey, 'Authorization': 'Bearer ' + anonKey };
+      fetch(trackUrl, { method: 'POST', headers: headers, body: JSON.stringify({ events: batch }) }).catch(function(){});
+    } catch(e) {}
+  }
 
   function createOverlay() {
     overlay = document.createElement('div');
     overlay.id = 'tb-overlay';
     overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:99998;transition:opacity 0.3s;';
-    overlay.onclick = cleanup;
+    overlay.onclick = function() { track('tour_abandoned', currentStep); flushEvents(); cleanup(); };
     document.body.appendChild(overlay);
   }
 
   function showStep(index) {
-    if (index >= steps.length) { cleanup(); return; }
+    if (index >= steps.length) { track('tour_completed', null); flushEvents(); cleanup(); return; }
     var step = steps[index];
     var target = step.selector ? document.querySelector(step.selector) : null;
+    track('step_viewed', index);
     
     if (tooltip) tooltip.remove();
     tooltip = document.createElement('div');
@@ -92,7 +125,7 @@ export function generateEmbedScript(steps: TourStep[], launchers?: any[]): strin
 
   window.__tb_next = function() { currentStep++; showStep(currentStep); };
   window.__tb_prev = function() { currentStep--; showStep(currentStep); };
-  window.__tb_start = function() { currentStep = 0; createOverlay(); showStep(0); };
+  window.__tb_start = function() { currentStep = 0; track('tour_started', null); createOverlay(); showStep(0); };
 
   // Add CSS animation
   var style = document.createElement('style');
@@ -131,6 +164,9 @@ export function generateEmbedScript(steps: TourStep[], launchers?: any[]): strin
   if (launchers.length === 0 && steps.length > 0) {
     window.__tb_start();
   }
+
+  // Flush on page unload
+  window.addEventListener('beforeunload', flushEvents);
 })();
 </script>`;
 }

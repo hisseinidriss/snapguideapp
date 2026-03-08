@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, Trash2, Code, Pencil, Crosshair, Sparkles, Loader2, Upload, Circle, Square, Zap, Download, HelpCircle, CheckCircle2, ClipboardList } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Code, Pencil, Crosshair, Sparkles, Loader2, Upload, Circle, Square, Zap, Download, HelpCircle, CheckCircle2, ClipboardList, BarChart3 } from "lucide-react";
 import { generateChromeExtension } from "@/lib/chrome-extension-generator";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -298,6 +298,10 @@ const AppDetail = () => {
                 </div>
               </DialogContent>
             </Dialog>
+            <Button variant="outline" onClick={() => navigate(`/app/${appId}/analytics`)}>
+              <BarChart3 className="mr-2 h-4 w-4" />
+              Analytics
+            </Button>
             <Button
               variant="outline"
               onClick={() => generateChromeExtension(appId!, appName, appUrl)}

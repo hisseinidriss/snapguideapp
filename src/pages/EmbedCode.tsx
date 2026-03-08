@@ -53,7 +53,12 @@ const EmbedCode = () => {
     );
   }
 
-  const script = generateEmbedScript(steps, launchers);
+  const script = generateEmbedScript(steps, launchers, {
+    tourId: tourId,
+    appId: appId,
+    supabaseUrl: import.meta.env.VITE_SUPABASE_URL,
+    supabaseKey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+  });
 
   const handleCopy = () => {
     navigator.clipboard.writeText(script);
