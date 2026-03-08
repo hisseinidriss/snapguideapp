@@ -165,6 +165,19 @@ const TourEditor = () => {
             <h1 className="text-sm font-semibold truncate">{tourName}</h1>
             <p className="text-xs text-muted-foreground">{appName}</p>
           </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={validateSelectors}
+            disabled={validationStatus === "validating"}
+            className="h-8"
+          >
+            {validationStatus === "validating" ? (
+              <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />Validating...</>
+            ) : (
+              <><ShieldCheck className="mr-1.5 h-3.5 w-3.5" />Validate Selectors</>
+            )}
+          </Button>
         </div>
       </header>
 
