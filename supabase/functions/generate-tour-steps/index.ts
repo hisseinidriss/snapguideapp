@@ -78,7 +78,17 @@ serve(async (req) => {
       );
     }
 
-    const truncatedMarkdown = markdown.slice(0, 8000);
+    // Extract interactive elements from HTML for better selector hints
+    // Strip large chunks but keep structure with IDs, classes, roles, aria labels
+    const extractUIHints = (rawHtml: string): string => {
+      // Match elements with id, class, role, aria-label, type, placeholder, data-* attributes
+      const interactivePattern = /<(button|a|input|select|textarea|nav|form|header|footer|main|aside|dialog|details|summary|[a-z]+-[a-z]+)[^>]*(id=|class=|role=|aria-label=|data-|placeholder=|type=)[^>]*>/gi;
+      const matches = rawHtml.match(interactivePattern) || [];
+      return matches.slice(0, 150).join("\n");
+    };
+
+    const uiHints = extractUIHints(html);
+    const truncatedMarkdown = markdown.slice(0, 6000);
 
     const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -91,21 +101,38 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `You are a product tour designer. Given a webpage's content, generate 4-7 tour steps that guide a first-time user through the key sections and features of the page. Each step should highlight an important UI element or section.
+            content: `You are a UX onboarding expert. Your job is to create a product tour that teaches a NEW USER how to use an application step by step.
 
-Return a JSON array of steps. Each step has:
-- "title": short title (2-5 words)
-- "content": helpful description (1-2 sentences explaining what the user sees or should do)
-- "selector": a CSS selector for the target element (use common selectors like header, nav, .hero, main, footer, h1, h2, .cta, button, etc. Make reasonable guesses based on the content.)
-- "placement": one of "top", "bottom", "left", "right", "center"
+Analyze the page's actual UI structure (buttons, navigation, forms, inputs, CTAs) and create a guided walkthrough that:
+1. Welcomes the user and explains what the app does (first step, centered, no selector)
+2. Points to REAL interactive UI elements (navigation menus, key buttons, search bars, forms, settings) using precise CSS selectors
+3. Explains what each element does and WHY the user would use it
+4. Follows a logical workflow order (e.g., navigate → find content → take action → review results)
+5. Ends with a completion/next-steps message (last step, centered, no selector)
 
-The first step should use placement "center" with no selector (welcome step). The last step should also use "center" with no selector (completion step).
+SELECTOR RULES:
+- Use selectors from the actual HTML: IDs (#sidebar), classes (.nav-menu), aria-labels ([aria-label="Search"]), data attributes ([data-testid="submit"]), or tag+class combos (nav.main-nav)
+- Prefer IDs and aria-labels (most stable), then unique classes, then tag+class combos
+- NEVER invent selectors — only use what exists in the HTML structure provided
+- For elements without good selectors, use tag-based selectors (header, nav, main, footer)
 
-Return ONLY the JSON array, no markdown formatting.`,
+CONTENT RULES:
+- Write in second person ("You can...", "Click here to...", "This is where you...")
+- Be specific about what the element does, not just what it is
+- Keep titles to 2-5 words, content to 1-2 actionable sentences
+
+Return 5-8 steps.`,
           },
           {
             role: "user",
-            content: `Page title: ${pageTitle}\nTour name: ${tourName || "Onboarding"}\n\nPage content:\n${truncatedMarkdown}`,
+            content: `Page title: ${pageTitle}
+Tour name: ${tourName || "Getting Started"}
+
+HTML UI elements found on the page:
+${uiHints}
+
+Page content summary:
+${truncatedMarkdown}`,
           },
         ],
         tools: [
