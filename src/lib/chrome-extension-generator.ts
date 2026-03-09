@@ -490,7 +490,22 @@ function getContentJS(): string {
     });
   }
 
-  function startProcess(index) {
+  function resumeIfNeeded() {
+    const saved = sessionStorage.getItem('bpg_resume');
+    if (!saved) return;
+    sessionStorage.removeItem('bpg_resume');
+    try {
+      const { processIndex, stepIndex } = JSON.parse(saved);
+      const processes = getProcesses();
+      if (processes[processIndex]) {
+        currentProcess = processes[processIndex];
+        currentStepIndex = stepIndex;
+        // Small delay to let the page render
+        setTimeout(() => showStep(), 800);
+      }
+    } catch(e) {}
+  }
+
     const processes = getProcesses();
     if (!processes[index] || !processes[index].steps.length) return;
     currentProcess = processes[index];
