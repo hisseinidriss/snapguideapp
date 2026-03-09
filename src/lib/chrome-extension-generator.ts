@@ -120,7 +120,7 @@ export async function generateChromeExtension(
       {
         resources: ["data.js"],
         matches: appUrl
-          ? [`${appUrl}/*`, `${appUrl.replace(/\/$/, "")}/*`]
+          ? [`${appUrl.replace(/\/+$/, "")}/*`]
           : ["<all_urls>"],
       },
     ],
