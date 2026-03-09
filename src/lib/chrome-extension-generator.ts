@@ -118,7 +118,7 @@ export async function generateChromeExtension(
     },
     web_accessible_resources: [
       {
-        resources: ["data.js"],
+        resources: ["data.json"],
         matches: appUrl
           ? [`${appUrl.replace(/\/+$/, "")}/*`]
           : ["<all_urls>"],
