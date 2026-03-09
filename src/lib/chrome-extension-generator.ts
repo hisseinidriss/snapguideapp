@@ -565,37 +565,57 @@ function getContentJS(): string {
       + '</div></div>';
   }
 
+  function calcPosition(rect, tw, th, gap, side) {
+    switch (side) {
+      case 'top':    return { top: rect.top - th - gap, left: rect.left + rect.width / 2 - tw / 2 };
+      case 'bottom': return { top: rect.bottom + gap, left: rect.left + rect.width / 2 - tw / 2 };
+      case 'left':   return { top: rect.top + rect.height / 2 - th / 2, left: rect.left - tw - gap };
+      case 'right':  return { top: rect.top + rect.height / 2 - th / 2, left: rect.right + gap };
+      default:       return { top: rect.bottom + gap, left: rect.left + rect.width / 2 - tw / 2 };
+    }
+  }
+
+  function fitsViewport(pos, tw, th, margin) {
+    return pos.top >= margin && pos.left >= margin &&
+           pos.top + th <= window.innerHeight - margin &&
+           pos.left + tw <= window.innerWidth - margin;
+  }
+
+  function overlapsTarget(pos, tw, th, rect) {
+    return !(pos.left + tw < rect.left || pos.left > rect.right ||
+             pos.top + th < rect.top || pos.top > rect.bottom);
+  }
+
   function positionTooltip(tooltip, target, placement) {
     const rect = target.getBoundingClientRect();
     const tw = tooltip.offsetWidth;
     const th = tooltip.offsetHeight;
     const gap = 12;
-    let top, left;
+    const margin = 8;
 
-    switch (placement) {
-      case 'top':
-        top = rect.top - th - gap;
-        left = rect.left + rect.width / 2 - tw / 2;
+    // Try preferred placement first, then fallbacks
+    const preferred = placement || 'bottom';
+    const fallbacks = ['bottom', 'top', 'right', 'left'].filter(s => s !== preferred);
+    const tryOrder = [preferred, ...fallbacks];
+
+    let bestPos = null;
+    for (const side of tryOrder) {
+      const pos = calcPosition(rect, tw, th, gap, side);
+      if (fitsViewport(pos, tw, th, margin) && !overlapsTarget(pos, tw, th, rect)) {
+        bestPos = pos;
         break;
-      case 'left':
-        top = rect.top + rect.height / 2 - th / 2;
-        left = rect.left - tw - gap;
-        break;
-      case 'right':
-        top = rect.top + rect.height / 2 - th / 2;
-        left = rect.right + gap;
-        break;
-      default: // bottom
-        top = rect.bottom + gap;
-        left = rect.left + rect.width / 2 - tw / 2;
+      }
     }
 
-    // Keep in viewport
-    top = Math.max(8, Math.min(window.innerHeight - th - 8, top));
-    left = Math.max(8, Math.min(window.innerWidth - tw - 8, left));
+    // If nothing fits perfectly, use preferred but clamp to viewport
+    if (!bestPos) {
+      bestPos = calcPosition(rect, tw, th, gap, preferred);
+      bestPos.top = Math.max(margin, Math.min(window.innerHeight - th - margin, bestPos.top));
+      bestPos.left = Math.max(margin, Math.min(window.innerWidth - tw - margin, bestPos.left));
+    }
 
-    tooltip.style.top = top + 'px';
-    tooltip.style.left = left + 'px';
+    tooltip.style.top = bestPos.top + 'px';
+    tooltip.style.left = bestPos.left + 'px';
   }
 
   function cleanup() {
