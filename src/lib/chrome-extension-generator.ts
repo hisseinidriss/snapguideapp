@@ -128,12 +128,10 @@ export async function generateChromeExtension(
 
   zip.file("manifest.json", JSON.stringify(manifest, null, 2));
 
-  // Embedded data
+  // Embedded data as JSON
   zip.file(
-    "data.js",
-    `const BPG_PROCESSES = ${JSON.stringify(processes, null, 2)};
-const BPG_LAUNCHERS = ${JSON.stringify(activeLaunchers, null, 2)};
-const BPG_APP_NAME = ${JSON.stringify(appName)};`
+    "data.json",
+    JSON.stringify({ processes, launchers: activeLaunchers, appName }, null, 2)
   );
 
   // content.css
