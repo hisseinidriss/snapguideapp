@@ -691,15 +691,14 @@ function getPopupHTML(appName: string, processes: Process[]): string {
 function getPopupJS(): string {
   return `
 document.addEventListener('DOMContentLoaded', () => {
-  // Processes are embedded in data.js; we read from the content script
-  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-    chrome.scripting.executeScript({
-      target: { tabId: tabs[0].id },
-      func: () => window.BPG_PROCESSES || [],
-    }, (results) => {
-      const processes = results?.[0]?.result || [];
-      const list = document.getElementById('processList');
-      
+  const list = document.getElementById('processList');
+
+  // Load data directly from the bundled JSON file
+  fetch(chrome.runtime.getURL('data.json'))
+    .then(r => r.json())
+    .then(data => {
+      const processes = data.processes || [];
+
       if (processes.length === 0) {
         list.innerHTML = '<div class="empty">No business processes configured for this page.</div>';
         return;
@@ -715,17 +714,23 @@ document.addEventListener('DOMContentLoaded', () => {
           + '<button class="play-btn" title="Start process">▶</button>';
         item.querySelector('.play-btn').addEventListener('click', (e) => {
           e.stopPropagation();
-          chrome.tabs.sendMessage(tabs[0].id, { type: 'START_PROCESS', processIndex: index });
-          window.close();
+          chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            chrome.tabs.sendMessage(tabs[0].id, { type: 'START_PROCESS', processIndex: index });
+            window.close();
+          });
         });
         item.addEventListener('click', () => {
-          chrome.tabs.sendMessage(tabs[0].id, { type: 'START_PROCESS', processIndex: index });
-          window.close();
+          chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            chrome.tabs.sendMessage(tabs[0].id, { type: 'START_PROCESS', processIndex: index });
+            window.close();
+          });
         });
         list.appendChild(item);
       });
+    })
+    .catch(() => {
+      list.innerHTML = '<div class="empty">Failed to load business processes.</div>';
     });
-  });
 });
 `;
 }
