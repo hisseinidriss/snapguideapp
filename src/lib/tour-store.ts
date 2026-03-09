@@ -102,19 +102,33 @@ export function generateEmbedScript(
     positionTooltip(tooltip, target, step.placement);
   }
 
+  function calcPos(rect, tw, th, gap, side) {
+    if (side==='top') return {top:rect.top-th-gap, left:rect.left+rect.width/2-tw/2};
+    if (side==='left') return {top:rect.top+rect.height/2-th/2, left:rect.left-tw-gap};
+    if (side==='right') return {top:rect.top+rect.height/2-th/2, left:rect.right+gap};
+    return {top:rect.bottom+gap, left:rect.left+rect.width/2-tw/2};
+  }
   function positionTooltip(el, target, placement) {
     if (!target) {
       el.style.top = '50%'; el.style.left = '50%'; el.style.transform = 'translate(-50%,-50%)';
       return;
     }
     var rect = target.getBoundingClientRect();
-    var pos = { top: rect.bottom + 12, left: rect.left };
-    if (placement === 'top') pos = { top: rect.top - el.offsetHeight - 12, left: rect.left };
-    if (placement === 'left') pos = { top: rect.top, left: rect.left - el.offsetWidth - 12 };
-    if (placement === 'right') pos = { top: rect.top, left: rect.right + 12 };
-    if (placement === 'center') { el.style.top='50%'; el.style.left='50%'; el.style.transform='translate(-50%,-50%)'; return; }
-    el.style.top = pos.top + 'px';
-    el.style.left = pos.left + 'px';
+    var tw = el.offsetWidth, th = el.offsetHeight, gap = 12, m = 8;
+    var pref = placement || 'bottom';
+    var sides = ['bottom','top','right','left'];
+    var order = [pref].concat(sides.filter(function(s){return s!==pref;}));
+    var best = null;
+    for (var i=0;i<order.length;i++) {
+      var p = calcPos(rect,tw,th,gap,order[i]);
+      if (p.top>=m && p.left>=m && p.top+th<=window.innerHeight-m && p.left+tw<=window.innerWidth-m &&
+          (p.left+tw<rect.left || p.left>rect.right || p.top+th<rect.top || p.top>rect.bottom)) {
+        best=p; break;
+      }
+    }
+    if (!best) { best=calcPos(rect,tw,th,gap,pref); best.top=Math.max(m,Math.min(window.innerHeight-th-m,best.top)); best.left=Math.max(m,Math.min(window.innerWidth-tw-m,best.left)); }
+    el.style.top = best.top + 'px';
+    el.style.left = best.left + 'px';
   }
 
   function cleanup() {
