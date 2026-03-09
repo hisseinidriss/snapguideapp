@@ -104,7 +104,7 @@ export async function generateChromeExtension(
     content_scripts: [
       {
         matches: appUrl
-          ? [`${appUrl}/*`, `${appUrl.replace(/\/$/, "")}/*`]
+          ? [`${appUrl.replace(/\/+$/, "")}/*`]
           : ["<all_urls>"],
         js: ["content.js"],
         css: ["content.css"],
