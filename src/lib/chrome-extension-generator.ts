@@ -8,6 +8,7 @@ interface ProcessStep {
   selector: string | null;
   placement: string;
   sort_order: number;
+  target_url?: string | null;
 }
 
 interface Process {
