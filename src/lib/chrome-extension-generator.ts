@@ -116,6 +116,14 @@ export async function generateChromeExtension(
       "48": "icon48.png",
       "128": "icon128.png",
     },
+    web_accessible_resources: [
+      {
+        resources: ["data.js"],
+        matches: appUrl
+          ? [`${appUrl}/*`, `${appUrl.replace(/\/$/, "")}/*`]
+          : ["<all_urls>"],
+      },
+    ],
   };
 
   zip.file("manifest.json", JSON.stringify(manifest, null, 2));
