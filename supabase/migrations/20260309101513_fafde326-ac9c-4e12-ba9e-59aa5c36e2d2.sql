@@ -1,0 +1,1 @@
+ALTER TABLE public.tour_steps ADD COLUMN target_url TEXT DEFAULT NULL;

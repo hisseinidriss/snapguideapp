@@ -59,6 +59,12 @@ const StepEditorPanel = ({ step, stepIndex, totalSteps, onUpdate, onRemove, onPi
       </div>
 
       <div className="space-y-2">
+        <Label>Target URL <span className="text-muted-foreground font-normal">(optional)</span></Label>
+        <Input value={(step as any).target_url || ""} onChange={(e) => onUpdate(step.id, { target_url: e.target.value || null } as any)} placeholder="/portfolio or https://app.com/page" className="font-mono text-sm" />
+        <p className="text-xs text-muted-foreground">Navigate to this URL before showing the step. Used for multi-page tours.</p>
+      </div>
+
+      <div className="space-y-2">
         <Label>Placement</Label>
         <Select value={step.placement} onValueChange={(v) => onUpdate(step.id, { placement: v })}>
           <SelectTrigger><SelectValue /></SelectTrigger>

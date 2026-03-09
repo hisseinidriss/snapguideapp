@@ -234,6 +234,7 @@ export type Database = {
           placement: string
           selector: string | null
           sort_order: number
+          target_url: string | null
           title: string
           tour_id: string
           updated_at: string
@@ -245,6 +246,7 @@ export type Database = {
           placement?: string
           selector?: string | null
           sort_order?: number
+          target_url?: string | null
           title?: string
           tour_id: string
           updated_at?: string
@@ -256,6 +258,7 @@ export type Database = {
           placement?: string
           selector?: string | null
           sort_order?: number
+          target_url?: string | null
           title?: string
           tour_id?: string
           updated_at?: string
