@@ -504,6 +504,29 @@ function getContentJS(): string {
     }
 
     const step = currentProcess.steps[currentStepIndex];
+
+    // Multi-page: navigate if step has a target_url different from current page
+    if (step.target_url) {
+      const currentPath = window.location.pathname + window.location.search + window.location.hash;
+      const currentFull = window.location.href;
+      // Check if target_url is a relative path or full URL
+      let targetFull;
+      try {
+        targetFull = new URL(step.target_url, window.location.origin).href;
+      } catch(e) {
+        targetFull = step.target_url;
+      }
+      if (currentFull !== targetFull && currentPath !== step.target_url) {
+        // Save state so we can resume after navigation
+        sessionStorage.setItem('bpg_resume', JSON.stringify({
+          processIndex: _bpgData.processes.indexOf(currentProcess),
+          stepIndex: currentStepIndex
+        }));
+        window.location.href = targetFull;
+        return;
+      }
+    }
+
     const targetEl = step.selector ? await waitForElement(step.selector, 2500) : null;
 
     // Overlay
