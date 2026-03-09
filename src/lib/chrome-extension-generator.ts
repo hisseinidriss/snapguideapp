@@ -404,6 +404,7 @@ function getContentJS(): string {
       .then(data => {
         _bpgData = data;
         setupLaunchers();
+        resumeIfNeeded();
       })
       .catch(err => console.error('BPG: Failed to load data', err));
 
