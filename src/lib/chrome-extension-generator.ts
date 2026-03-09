@@ -118,7 +118,7 @@ export async function generateChromeExtension(
     },
     web_accessible_resources: [
       {
-        resources: ["data.js"],
+        resources: ["data.json"],
         matches: appUrl
           ? [`${appUrl.replace(/\/+$/, "")}/*`]
           : ["<all_urls>"],
@@ -128,12 +128,10 @@ export async function generateChromeExtension(
 
   zip.file("manifest.json", JSON.stringify(manifest, null, 2));
 
-  // Embedded data
+  // Embedded data as JSON
   zip.file(
-    "data.js",
-    `const BPG_PROCESSES = ${JSON.stringify(processes, null, 2)};
-const BPG_LAUNCHERS = ${JSON.stringify(activeLaunchers, null, 2)};
-const BPG_APP_NAME = ${JSON.stringify(appName)};`
+    "data.json",
+    JSON.stringify({ processes, launchers: activeLaunchers, appName }, null, 2)
   );
 
   // content.css
@@ -397,35 +395,43 @@ function getContentJS(): string {
     });
   }
 
+  let _bpgData = { processes: [], launchers: [], appName: '' };
+
   function init() {
-    // Load data script
-    const script = document.createElement('script');
-    script.src = chrome.runtime.getURL('data.js');
-    script.onload = () => {
-      script.remove();
-      setupLaunchers();
-    };
-    (document.head || document.documentElement).appendChild(script);
+    // Load data from JSON file bundled with extension
+    fetch(chrome.runtime.getURL('data.json'))
+      .then(r => r.json())
+      .then(data => {
+        _bpgData = data;
+        setupLaunchers();
+      })
+      .catch(err => console.error('BPG: Failed to load data', err));
 
     // Listen for messages from popup
     chrome.runtime.onMessage.addListener((msg) => {
       if (msg.type === 'START_PROCESS') {
         startProcess(msg.processIndex);
       }
+      if (msg.type === 'GET_DATA') {
+        return true; // keep channel open for sendResponse
+      }
     });
 
-    // Also read from window since data.js sets globals
-    setTimeout(() => {
-      setupLaunchers();
-    }, 500);
+    // Also respond to data requests from popup
+    chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+      if (msg.type === 'GET_DATA') {
+        sendResponse(_bpgData);
+        return true;
+      }
+    });
   }
 
   function getProcesses() {
-    return window.BPG_PROCESSES || [];
+    return _bpgData.processes || [];
   }
 
   function getLaunchers() {
-    return window.BPG_LAUNCHERS || [];
+    return _bpgData.launchers || [];
   }
 
   function setupLaunchers() {
@@ -685,15 +691,14 @@ function getPopupHTML(appName: string, processes: Process[]): string {
 function getPopupJS(): string {
   return `
 document.addEventListener('DOMContentLoaded', () => {
-  // Processes are embedded in data.js; we read from the content script
-  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-    chrome.scripting.executeScript({
-      target: { tabId: tabs[0].id },
-      func: () => window.BPG_PROCESSES || [],
-    }, (results) => {
-      const processes = results?.[0]?.result || [];
-      const list = document.getElementById('processList');
-      
+  const list = document.getElementById('processList');
+
+  // Load data directly from the bundled JSON file
+  fetch(chrome.runtime.getURL('data.json'))
+    .then(r => r.json())
+    .then(data => {
+      const processes = data.processes || [];
+
       if (processes.length === 0) {
         list.innerHTML = '<div class="empty">No business processes configured for this page.</div>';
         return;
@@ -709,17 +714,23 @@ document.addEventListener('DOMContentLoaded', () => {
           + '<button class="play-btn" title="Start process">▶</button>';
         item.querySelector('.play-btn').addEventListener('click', (e) => {
           e.stopPropagation();
-          chrome.tabs.sendMessage(tabs[0].id, { type: 'START_PROCESS', processIndex: index });
-          window.close();
+          chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            chrome.tabs.sendMessage(tabs[0].id, { type: 'START_PROCESS', processIndex: index });
+            window.close();
+          });
         });
         item.addEventListener('click', () => {
-          chrome.tabs.sendMessage(tabs[0].id, { type: 'START_PROCESS', processIndex: index });
-          window.close();
+          chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            chrome.tabs.sendMessage(tabs[0].id, { type: 'START_PROCESS', processIndex: index });
+            window.close();
+          });
         });
         list.appendChild(item);
       });
+    })
+    .catch(() => {
+      list.innerHTML = '<div class="empty">Failed to load business processes.</div>';
     });
-  });
 });
 `;
 }
