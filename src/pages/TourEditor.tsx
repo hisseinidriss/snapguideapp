@@ -284,7 +284,7 @@ const TourEditor = () => {
               <p>Select a step to edit.</p>
             </div>
           )}
-        </div>
+        </div>}
 
         {/* Live Preview - hidden on mobile */}
         <div className="hidden lg:block flex-1">
