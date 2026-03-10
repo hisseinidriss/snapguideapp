@@ -7,17 +7,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Mail, Lock, User, ArrowRight } from "lucide-react";
+import { Loader2, Mail, User, ArrowRight, Eye, EyeOff } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const Auth = () => {
   const { session, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const [isLogin, setIsLogin] = useState(true);
   const [isForgot, setIsForgot] = useState(false);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState(() => localStorage.getItem("walkthru_remembered_email") || "");
+  const [password, setPassword] = useState(() => localStorage.getItem("walkthru_remembered_pass") || "");
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(() => !!localStorage.getItem("walkthru_remembered_email"));
 
   if (authLoading) {
     return (
@@ -32,6 +35,13 @@ const Auth = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    if (rememberMe) {
+      localStorage.setItem("walkthru_remembered_email", email);
+      localStorage.setItem("walkthru_remembered_pass", password);
+    } else {
+      localStorage.removeItem("walkthru_remembered_email");
+      localStorage.removeItem("walkthru_remembered_pass");
+    }
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       toast({ title: "Login failed", description: error.message, variant: "destructive" });
@@ -125,16 +135,17 @@ const Auth = () => {
             </div>
           </div>
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="password">Password</Label>
-              <button type="button" onClick={() => setIsForgot(true)} className="text-xs text-primary hover:underline">
-                Forgot password?
+            <Label htmlFor="password">Password</Label>
+            <div className="relative">
+              <Input id="password" type={showPassword ? "text" : "password"} placeholder="Enter your password" value={password} onChange={(e) => setPassword(e.target.value)} className="pr-9" required minLength={6} />
+              <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-3 text-muted-foreground hover:text-foreground">
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
-            <div className="relative">
-              <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input id="password" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} className="pl-9" required minLength={6} />
-            </div>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Checkbox id="remember" checked={rememberMe} onCheckedChange={(checked) => setRememberMe(checked === true)} />
+            <Label htmlFor="remember" className="text-sm font-normal cursor-pointer">Remember me</Label>
           </div>
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ArrowRight className="mr-2 h-4 w-4" />}
