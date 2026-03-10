@@ -78,16 +78,34 @@ serve(async (req) => {
       );
     }
 
-    // Extract interactive elements from HTML for better selector hints
-    // Strip large chunks but keep structure with IDs, classes, roles, aria labels
+    // Extract interactive elements from HTML with full attribute context for selector generation
     const extractUIHints = (rawHtml: string): string => {
-      // Match elements with id, class, role, aria-label, type, placeholder, data-* attributes
-      const interactivePattern = /<(button|a|input|select|textarea|nav|form|header|footer|main|aside|dialog|details|summary|[a-z]+-[a-z]+)[^>]*(id=|class=|role=|aria-label=|data-|placeholder=|type=)[^>]*>/gi;
+      // Match ALL elements that have useful attributes for CSS selectors
+      const interactivePattern = /<(button|a|input|select|textarea|nav|form|header|footer|main|aside|dialog|details|summary|label|div|span|section|ul|li|h[1-6]|img|[a-z]+-[a-z]+)[^>]*(id=|class=|role=|aria-label=|aria-labelledby=|data-|placeholder=|type=|name=|href=|for=|title=)[^>]*>/gi;
       const matches = rawHtml.match(interactivePattern) || [];
-      return matches.slice(0, 150).join("\n");
+      // Deduplicate and keep more context
+      const unique = [...new Set(matches)];
+      return unique.slice(0, 200).join("\n");
+    };
+
+    // Also extract a DOM outline showing nesting for context
+    const extractDOMOutline = (rawHtml: string): string => {
+      // Find elements with IDs or aria-labels to build a quick hierarchy
+      const idPattern = /id="([^"]+)"/gi;
+      const ariaPattern = /aria-label="([^"]+)"/gi;
+      const placeholderPattern = /placeholder="([^"]+)"/gi;
+      const namePattern = /name="([^"]+)"/gi;
+      
+      const ids = [...rawHtml.matchAll(idPattern)].map(m => `#${m[1]}`);
+      const ariaLabels = [...rawHtml.matchAll(ariaPattern)].map(m => `[aria-label="${m[1]}"]`);
+      const placeholders = [...rawHtml.matchAll(placeholderPattern)].map(m => `[placeholder="${m[1]}"]`);
+      const names = [...rawHtml.matchAll(namePattern)].map(m => `[name="${m[1]}"]`);
+      
+      return `Available IDs: ${ids.slice(0, 50).join(', ')}\nAvailable aria-labels: ${ariaLabels.slice(0, 50).join(', ')}\nAvailable placeholders: ${placeholders.slice(0, 30).join(', ')}\nAvailable names: ${names.slice(0, 30).join(', ')}`;
     };
 
     const uiHints = extractUIHints(html);
+    const domOutline = extractDOMOutline(html);
     const truncatedMarkdown = markdown.slice(0, 6000);
 
     const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
