@@ -63,6 +63,25 @@ const Dashboard = () => {
     setApps((prev) => prev.filter((a) => a.id !== id));
   };
 
+  const openEdit = (app: App) => {
+    setEditApp(app);
+    setNewName(app.name);
+    setNewUrl(app.url || "");
+    setNewDesc(app.description || "");
+  };
+
+  const handleEdit = async () => {
+    if (!editApp || !newName.trim()) return;
+    const { error } = await supabase.from("apps").update({ name: newName, url: newUrl, description: newDesc }).eq("id", editApp.id);
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+      return;
+    }
+    await fetchApps();
+    setEditApp(null);
+    setNewName(""); setNewUrl(""); setNewDesc("");
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card">
