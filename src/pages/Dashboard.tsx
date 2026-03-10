@@ -108,14 +108,18 @@ const Dashboard = () => {
 
   const handleEdit = async () => {
     if (!editApp || !newName.trim()) return;
-    const { error } = await supabase.from("apps").update({ name: newName, url: newUrl, description: newDesc }).eq("id", editApp.id);
+    let iconUrl = (editApp as any).icon_url;
+    if (iconFile) {
+      iconUrl = await uploadIcon(iconFile, editApp.id);
+    }
+    const { error } = await supabase.from("apps").update({ name: newName, url: newUrl, description: newDesc, icon_url: iconUrl } as any).eq("id", editApp.id);
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
       return;
     }
     await fetchApps();
     setEditApp(null);
-    setNewName(""); setNewUrl(""); setNewDesc("");
+    resetForm();
   };
 
   return (
