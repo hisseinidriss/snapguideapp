@@ -33,7 +33,8 @@ const Dashboard = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const editFileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
 
   const fetchApps = async () => {
     const { data, error } = await supabase.from("apps").select("*").order("created_at", { ascending: false });
