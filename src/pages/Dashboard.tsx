@@ -22,6 +22,7 @@ import { useToast } from "@/hooks/use-toast";
 
 const Dashboard = () => {
   const [apps, setApps] = useState<App[]>([]);
+  const [viewMode, setViewMode] = useState<"grid" | "list">(() => (localStorage.getItem("walkthru_view_mode") as "grid" | "list") || "grid");
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [editApp, setEditApp] = useState<App | null>(null);
