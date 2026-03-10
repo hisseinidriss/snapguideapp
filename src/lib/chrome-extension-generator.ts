@@ -886,12 +886,12 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      var appUrl = (data.appUrl || '').replace(/\/+$/, '');
+      var appUrl = (data.appUrl || '').replace(/\\/+$/, '');
 
       function launchProcess(index) {
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
           var tab = tabs[0];
-          var tabUrl = (tab.url || '').replace(/\/+$/, '');
+          var tabUrl = (tab.url || '').replace(/\\/+$/, '');
           var needsNav = appUrl && !tabUrl.startsWith(appUrl);
 
           if (needsNav) {
