@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
-import { Plus, Globe, MoreVertical, Trash2, ArrowRight, BookOpen, UserCircle, Menu, Pencil } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Plus, Globe, MoreVertical, Trash2, ArrowRight, BookOpen, UserCircle, Menu, Pencil, ImagePlus } from "lucide-react";
+import { Label } from "@/components/ui/label";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -27,6 +28,10 @@ const Dashboard = () => {
   const [newName, setNewName] = useState("");
   const [newUrl, setNewUrl] = useState("");
   const [newDesc, setNewDesc] = useState("");
+  const [iconFile, setIconFile] = useState<File | null>(null);
+  const [iconPreview, setIconPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const editFileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -42,16 +47,45 @@ const Dashboard = () => {
 
   useEffect(() => { fetchApps(); }, []);
 
+  const uploadIcon = async (file: File, appId: string): Promise<string | null> => {
+    const ext = file.name.split('.').pop();
+    const path = `${appId}/icon.${ext}`;
+    const { error } = await supabase.storage.from("app-icons").upload(path, file, { upsert: true });
+    if (error) {
+      toast({ title: "Icon upload failed", description: error.message, variant: "destructive" });
+      return null;
+    }
+    const { data: urlData } = supabase.storage.from("app-icons").getPublicUrl(path);
+    return urlData.publicUrl + "?t=" + Date.now();
+  };
+
+  const handleIconSelect = (file: File | undefined) => {
+    if (!file) return;
+    setIconFile(file);
+    setIconPreview(URL.createObjectURL(file));
+  };
+
   const handleCreate = async () => {
     if (!newName.trim()) return;
-    const { error } = await supabase.from("apps").insert({ name: newName, url: newUrl, description: newDesc });
+    const { data: inserted, error } = await supabase.from("apps").insert({ name: newName, url: newUrl, description: newDesc }).select().single();
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
       return;
     }
+    if (iconFile && inserted) {
+      const iconUrl = await uploadIcon(iconFile, inserted.id);
+      if (iconUrl) {
+        await supabase.from("apps").update({ icon_url: iconUrl } as any).eq("id", inserted.id);
+      }
+    }
     await fetchApps();
-    setNewName(""); setNewUrl(""); setNewDesc("");
+    resetForm();
     setOpen(false);
+  };
+
+  const resetForm = () => {
+    setNewName(""); setNewUrl(""); setNewDesc("");
+    setIconFile(null); setIconPreview(null);
   };
 
   const handleDelete = async (id: string) => {
@@ -68,18 +102,24 @@ const Dashboard = () => {
     setNewName(app.name);
     setNewUrl(app.url || "");
     setNewDesc(app.description || "");
+    setIconPreview((app as any).icon_url || null);
+    setIconFile(null);
   };
 
   const handleEdit = async () => {
     if (!editApp || !newName.trim()) return;
-    const { error } = await supabase.from("apps").update({ name: newName, url: newUrl, description: newDesc }).eq("id", editApp.id);
+    let iconUrl = (editApp as any).icon_url;
+    if (iconFile) {
+      iconUrl = await uploadIcon(iconFile, editApp.id);
+    }
+    const { error } = await supabase.from("apps").update({ name: newName, url: newUrl, description: newDesc, icon_url: iconUrl } as any).eq("id", editApp.id);
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
       return;
     }
     await fetchApps();
     setEditApp(null);
-    setNewName(""); setNewUrl(""); setNewDesc("");
+    resetForm();
   };
 
   return (
@@ -108,6 +148,27 @@ const Dashboard = () => {
                   <Input placeholder="App name" value={newName} onChange={(e) => setNewName(e.target.value)} />
                   <Input placeholder="https://yourapp.com (optional)" value={newUrl} onChange={(e) => setNewUrl(e.target.value)} />
                   <Textarea placeholder="Brief description (optional)" value={newDesc} onChange={(e) => setNewDesc(e.target.value)} rows={3} />
+                  <div>
+                    <Label className="text-sm mb-1.5 block">App Icon</Label>
+                    <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleIconSelect(e.target.files?.[0])} />
+                    <div className="flex items-center gap-3">
+                      {iconPreview ? (
+                        <img src={iconPreview} alt="Icon preview" className="h-10 w-10 rounded-lg object-cover border" />
+                      ) : (
+                        <div className="h-10 w-10 rounded-lg border border-dashed border-muted-foreground/30 flex items-center justify-center">
+                          <ImagePlus className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                      )}
+                      <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
+                        {iconPreview ? "Change" : "Upload"}
+                      </Button>
+                      {iconPreview && (
+                        <Button type="button" variant="ghost" size="sm" onClick={() => { setIconFile(null); setIconPreview(null); }}>
+                          Remove
+                        </Button>
+                      )}
+                    </div>
+                  </div>
                   <Button onClick={handleCreate} className="w-full">Create App</Button>
                 </div>
               </DialogContent>
@@ -206,9 +267,13 @@ const Dashboard = () => {
             {apps.map((app, i) => (
               <Card key={app.id} className="p-5 hover:shadow-md transition-shadow animate-fade-in" style={{ animationDelay: `${i * 50}ms` }}>
                 <div className="flex items-start justify-between mb-3">
-                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <span className="text-primary font-bold">{app.name.charAt(0).toUpperCase()}</span>
-                  </div>
+                  {(app as any).icon_url ? (
+                    <img src={(app as any).icon_url} alt={app.name} className="h-10 w-10 rounded-lg object-cover" />
+                  ) : (
+                    <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <span className="text-primary font-bold">{app.name.charAt(0).toUpperCase()}</span>
+                    </div>
+                  )}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -245,7 +310,7 @@ const Dashboard = () => {
       </main>
 
       {/* Edit App Dialog */}
-      <Dialog open={!!editApp} onOpenChange={(o) => { if (!o) { setEditApp(null); setNewName(""); setNewUrl(""); setNewDesc(""); } }}>
+      <Dialog open={!!editApp} onOpenChange={(o) => { if (!o) { setEditApp(null); resetForm(); } }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit application</DialogTitle>
@@ -254,6 +319,27 @@ const Dashboard = () => {
             <Input placeholder="App name" value={newName} onChange={(e) => setNewName(e.target.value)} />
             <Input placeholder="https://yourapp.com (optional)" value={newUrl} onChange={(e) => setNewUrl(e.target.value)} />
             <Textarea placeholder="Brief description (optional)" value={newDesc} onChange={(e) => setNewDesc(e.target.value)} rows={3} />
+            <div>
+              <Label className="text-sm mb-1.5 block">App Icon</Label>
+              <input ref={editFileInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleIconSelect(e.target.files?.[0])} />
+              <div className="flex items-center gap-3">
+                {iconPreview ? (
+                  <img src={iconPreview} alt="Icon preview" className="h-10 w-10 rounded-lg object-cover border" />
+                ) : (
+                  <div className="h-10 w-10 rounded-lg border border-dashed border-muted-foreground/30 flex items-center justify-center">
+                    <ImagePlus className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                )}
+                <Button type="button" variant="outline" size="sm" onClick={() => editFileInputRef.current?.click()}>
+                  {iconPreview ? "Change" : "Upload"}
+                </Button>
+                {iconPreview && (
+                  <Button type="button" variant="ghost" size="sm" onClick={() => { setIconFile(null); setIconPreview(null); }}>
+                    Remove
+                  </Button>
+                )}
+              </div>
+            </div>
             <Button onClick={handleEdit} className="w-full">Save Changes</Button>
           </div>
         </DialogContent>

@@ -1,0 +1,1 @@
+ALTER TABLE public.apps ADD COLUMN icon_url text DEFAULT NULL;
