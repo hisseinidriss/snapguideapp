@@ -102,6 +102,8 @@ const Dashboard = () => {
     setNewName(app.name);
     setNewUrl(app.url || "");
     setNewDesc(app.description || "");
+    setIconPreview((app as any).icon_url || null);
+    setIconFile(null);
   };
 
   const handleEdit = async () => {
