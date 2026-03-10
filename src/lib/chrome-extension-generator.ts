@@ -172,18 +172,18 @@ function generateIcon(size: number): Promise<Uint8Array> {
     canvas.height = size;
     const ctx = canvas.getContext("2d")!;
 
-    // Background
-    ctx.fillStyle = "#6366f1";
+    // IsDB sage green background
+    ctx.fillStyle = "#4d8b6f";
     ctx.beginPath();
     ctx.roundRect(0, 0, size, size, size * 0.2);
     ctx.fill();
 
-    // Letter B
+    // Letter W for WalkThru
     ctx.fillStyle = "#ffffff";
-    ctx.font = `bold ${size * 0.6}px sans-serif`;
+    ctx.font = `bold ${size * 0.55}px sans-serif`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText("B", size / 2, size / 2 + size * 0.03);
+    ctx.fillText("W", size / 2, size / 2 + size * 0.03);
 
     canvas.toBlob((blob) => {
       blob!.arrayBuffer().then((buf) => resolve(new Uint8Array(buf)));
