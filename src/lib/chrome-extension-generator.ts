@@ -191,9 +191,17 @@ function getContentCSS(): string {
 .bpg-overlay {
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.5);
   z-index: 999998;
   transition: opacity 0.2s;
+  pointer-events: auto;
+}
+
+.bpg-overlay-bg {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 999998;
+  pointer-events: auto;
 }
 
 .bpg-tooltip {
