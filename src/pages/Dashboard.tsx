@@ -67,9 +67,7 @@ const Dashboard = () => {
       <header className="border-b bg-card">
         <div className="container flex h-16 items-center justify-between px-4">
           <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-sm">W</span>
-            </div>
+            <img src="/favicon.png" alt="IsDB Logo" className="h-8 w-8 rounded-lg object-contain" />
             <h1 className="text-lg font-semibold">WalkThru</h1>
           </div>
 
