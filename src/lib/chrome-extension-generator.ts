@@ -349,7 +349,8 @@ function getContentJS(): string {
 
   let currentProcess = null;
   let currentStepIndex = 0;
-  let overlayEl = null;
+  let overlayEls = [];
+  let spotlightRing = null;
   let tooltipEl = null;
 
   function safeQuerySelector(selector) {
