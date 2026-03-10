@@ -194,9 +194,11 @@ function generateIcon(size: number): Promise<Uint8Array> {
 function getContentCSS(): string {
   return `
 /* Business Process Guide - Overlay Styles */
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
+
 .bpg-overlay-box {
   position: fixed;
-  background: rgba(0,0,0,0.5);
+  background: rgba(34,41,47,0.45);
   z-index: 999998;
   transition: all 0.3s ease;
   pointer-events: auto;
@@ -205,10 +207,10 @@ function getContentCSS(): string {
 .bpg-spotlight-ring {
   position: fixed;
   z-index: 999998;
-  border: 3px solid #ef4444;
-  border-radius: 6px;
+  border: 2.5px solid #4d8b6f;
+  border-radius: 8px;
   pointer-events: none;
-  box-shadow: 0 0 0 3px rgba(239,68,68,0.3);
+  box-shadow: 0 0 0 3px rgba(77,139,111,0.25), 0 0 20px rgba(77,139,111,0.15);
   transition: all 0.3s ease;
 }
 
@@ -217,12 +219,12 @@ function getContentCSS(): string {
   z-index: 999999;
   background: #fff;
   border-radius: 12px;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.05);
-  padding: 20px;
+  box-shadow: 0 20px 60px rgba(34,41,47,0.12), 0 0 0 1px rgba(77,139,111,0.1);
+  padding: 22px;
   max-width: 360px;
   min-width: 280px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  animation: bpg-fadeIn 0.2s ease;
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  animation: bpg-fadeIn 0.25s ease;
 }
 
 @keyframes bpg-fadeIn {
@@ -233,14 +235,14 @@ function getContentCSS(): string {
 .bpg-tooltip-title {
   font-size: 16px;
   font-weight: 600;
-  color: #111;
+  color: #2d3b34;
   margin: 0 0 8px;
 }
 
 .bpg-tooltip-content {
   font-size: 14px;
-  color: #555;
-  line-height: 1.5;
+  color: #5a6b62;
+  line-height: 1.6;
   margin: 0 0 16px;
 }
 
@@ -252,7 +254,8 @@ function getContentCSS(): string {
 
 .bpg-tooltip-progress {
   font-size: 12px;
-  color: #999;
+  color: #8a9b92;
+  font-weight: 500;
 }
 
 .bpg-tooltip-actions {
@@ -261,42 +264,44 @@ function getContentCSS(): string {
 }
 
 .bpg-btn {
-  padding: 8px 16px;
+  padding: 8px 18px;
   border-radius: 8px;
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
   border: none;
   transition: all 0.15s;
+  font-family: 'DM Sans', sans-serif;
 }
 
 .bpg-btn-secondary {
-  background: #f3f4f6;
-  color: #374151;
+  background: #eef2f0;
+  color: #2d3b34;
 }
-.bpg-btn-secondary:hover { background: #e5e7eb; }
+.bpg-btn-secondary:hover { background: #dfe6e2; }
 
 .bpg-btn-primary {
-  background: #6366f1;
+  background: #4d8b6f;
   color: #fff;
 }
-.bpg-btn-primary:hover { background: #4f46e5; }
+.bpg-btn-primary:hover { background: #3d7a5e; }
 
 .bpg-btn-close {
   position: absolute;
-  top: 8px; right: 8px;
+  top: 10px; right: 10px;
   width: 28px; height: 28px;
   border-radius: 50%;
   border: none;
-  background: #f3f4f6;
+  background: #eef2f0;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 14px;
-  color: #666;
+  color: #5a6b62;
+  transition: all 0.15s;
 }
-.bpg-btn-close:hover { background: #e5e7eb; }
+.bpg-btn-close:hover { background: #dfe6e2; color: #2d3b34; }
 
 /* Legacy highlight class - kept for compatibility */
 .bpg-highlight {
@@ -333,8 +338,9 @@ function getContentCSS(): string {
   font-weight: 500;
   cursor: pointer;
   z-index: 999990;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
   transition: transform 0.15s;
+  font-family: 'DM Sans', sans-serif;
 }
 .bpg-launcher-button:hover { transform: scale(1.05); }
 
