@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Globe, MoreVertical, Trash2, ArrowRight, BookOpen, UserCircle, Menu } from "lucide-react";
+import { Plus, Globe, MoreVertical, Trash2, ArrowRight, BookOpen, UserCircle, Menu, Pencil } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -23,6 +23,7 @@ const Dashboard = () => {
   const [apps, setApps] = useState<App[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
+  const [editApp, setEditApp] = useState<App | null>(null);
   const [newName, setNewName] = useState("");
   const [newUrl, setNewUrl] = useState("");
   const [newDesc, setNewDesc] = useState("");
@@ -60,6 +61,25 @@ const Dashboard = () => {
       return;
     }
     setApps((prev) => prev.filter((a) => a.id !== id));
+  };
+
+  const openEdit = (app: App) => {
+    setEditApp(app);
+    setNewName(app.name);
+    setNewUrl(app.url || "");
+    setNewDesc(app.description || "");
+  };
+
+  const handleEdit = async () => {
+    if (!editApp || !newName.trim()) return;
+    const { error } = await supabase.from("apps").update({ name: newName, url: newUrl, description: newDesc }).eq("id", editApp.id);
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+      return;
+    }
+    await fetchApps();
+    setEditApp(null);
+    setNewName(""); setNewUrl(""); setNewDesc("");
   };
 
   return (
@@ -196,6 +216,10 @@ const Dashboard = () => {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => openEdit(app)}>
+                        <Pencil className="mr-2 h-4 w-4" />
+                        Edit
+                      </DropdownMenuItem>
                       <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(app.id)}>
                         <Trash2 className="mr-2 h-4 w-4" />
                         Delete
@@ -219,6 +243,21 @@ const Dashboard = () => {
           </div>
         )}
       </main>
+
+      {/* Edit App Dialog */}
+      <Dialog open={!!editApp} onOpenChange={(o) => { if (!o) { setEditApp(null); setNewName(""); setNewUrl(""); setNewDesc(""); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit application</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <Input placeholder="App name" value={newName} onChange={(e) => setNewName(e.target.value)} />
+            <Input placeholder="https://yourapp.com (optional)" value={newUrl} onChange={(e) => setNewUrl(e.target.value)} />
+            <Textarea placeholder="Brief description (optional)" value={newDesc} onChange={(e) => setNewDesc(e.target.value)} rows={3} />
+            <Button onClick={handleEdit} className="w-full">Save Changes</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
