@@ -122,17 +122,27 @@ serve(async (req) => {
             content: `You are a UX onboarding expert. Your job is to create a product tour that teaches a NEW USER how to use an application step by step.
 
 Analyze the page's actual UI structure (buttons, navigation, forms, inputs, CTAs) and create a guided walkthrough that:
-1. Welcomes the user and explains what the app does (first step, centered, no selector)
+1. Welcomes the user and explains what the app does (first step, centered, no selector — use empty string "")
 2. Points to REAL interactive UI elements (navigation menus, key buttons, search bars, forms, settings) using precise CSS selectors
 3. Explains what each element does and WHY the user would use it
 4. Follows a logical workflow order (e.g., navigate → find content → take action → review results)
-5. Ends with a completion/next-steps message (last step, centered, no selector)
+5. Ends with a completion/next-steps message (last step, centered, no selector — use empty string "")
 
-SELECTOR RULES:
-- Use selectors from the actual HTML: IDs (#sidebar), classes (.nav-menu), aria-labels ([aria-label="Search"]), data attributes ([data-testid="submit"]), or tag+class combos (nav.main-nav)
-- Prefer IDs and aria-labels (most stable), then unique classes, then tag+class combos
-- NEVER invent selectors — only use what exists in the HTML structure provided
-- For elements without good selectors, use tag-based selectors (header, nav, main, footer)
+CSS SELECTOR RULES (CRITICAL — follow these exactly):
+- PRIORITY ORDER for selectors (use the FIRST that applies):
+  1. aria-label attribute: input[aria-label="Search by Keyword"] or button[aria-label="Submit"]
+  2. ID: #search-box, #main-nav, #options-search
+  3. placeholder: input[placeholder="Enter your email"]
+  4. name attribute: input[name="keyword"]
+  5. data-* attributes: [data-testid="submit-btn"]
+  6. Unique class + tag: button.btn-primary, nav.main-navigation
+  7. Semantic HTML tags: header, nav, main, footer (only if unique on page)
+- NEVER invent selectors. ONLY use attributes that appear in the HTML elements provided.
+- NEVER use generic selectors like "div", ".container", "button" without qualifying attributes.
+- When targeting an input field, prefer: input[aria-label="..."] or input[placeholder="..."] or input[name="..."]
+- When targeting a button, prefer: button[aria-label="..."] or #button-id or button containing specific text
+- When targeting a link, prefer: a[aria-label="..."] or a[href="specific-path"]
+- If an element has BOTH an ID and an aria-label, prefer the aria-label (more descriptive for users)
 
 CONTENT RULES:
 - Write in second person ("You can...", "Click here to...", "This is where you...")
@@ -145,6 +155,9 @@ Return 5-8 steps.`,
             role: "user",
             content: `Page title: ${pageTitle}
 Tour name: ${tourName || "Getting Started"}
+
+AVAILABLE CSS SELECTORS on this page (use these for your selectors):
+${domOutline}
 
 HTML UI elements found on the page:
 ${uiHints}
@@ -167,9 +180,9 @@ ${truncatedMarkdown}`,
                     items: {
                       type: "object",
                       properties: {
-                        title: { type: "string" },
-                        content: { type: "string" },
-                        selector: { type: "string" },
+                        title: { type: "string", description: "Short 2-5 word title" },
+                        content: { type: "string", description: "1-2 sentence description" },
+                        selector: { type: "string", description: "CSS selector from the page HTML. Use empty string for centered modals." },
                         placement: {
                           type: "string",
                           enum: ["top", "bottom", "left", "right", "center"],
