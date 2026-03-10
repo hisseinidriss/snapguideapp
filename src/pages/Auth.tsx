@@ -111,9 +111,7 @@ const Auth = () => {
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <Card className="w-full max-w-sm p-6 space-y-6">
         <div className="text-center">
-          <div className="h-10 w-10 rounded-lg bg-primary flex items-center justify-center mx-auto mb-3">
-            <span className="text-primary-foreground font-bold text-sm">W</span>
-          </div>
+          <img src="/favicon.png" alt="IsDB Logo" className="h-10 w-10 rounded-lg object-contain mx-auto mb-3" />
           <h1 className="text-xl font-semibold">Welcome back</h1>
           <p className="text-sm text-muted-foreground mt-1">Sign in to your WalkThru account</p>
         </div>
