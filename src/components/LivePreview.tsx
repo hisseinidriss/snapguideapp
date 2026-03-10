@@ -129,33 +129,67 @@ const LivePreview = ({
         {previewActive && step && (
           <div className="absolute inset-0 z-10">
             {/* Backdrop */}
-            <div className="absolute inset-0 bg-foreground/40" onClick={onClose} />
+            <div className="absolute inset-0 bg-foreground/50" onClick={onClose} />
 
-            {/* Tooltip */}
-            <div
-              className="absolute z-20 bg-card rounded-xl shadow-2xl border p-5 max-w-xs"
-              style={getTooltipPosition(step)}
-            >
-              <button onClick={onClose} className="absolute top-2.5 right-2.5 text-muted-foreground hover:text-foreground">
-                <X className="h-3.5 w-3.5" />
-              </button>
-              <span className="text-[10px] font-semibold text-accent uppercase tracking-wider">
-                Step {previewStepIndex + 1} of {steps.length}
-              </span>
-              <h3 className="text-sm font-semibold mt-1 mb-1">{step.title}</h3>
-              <p className="text-xs text-muted-foreground mb-3">{step.content}</p>
-              {step.selector && (
-                <p className="text-[10px] font-mono text-muted-foreground/60 mb-3 truncate">
-                  🎯 {step.selector}
-                </p>
-              )}
-              <div className="flex items-center justify-between">
-                <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={onPrev} disabled={previewStepIndex === 0}>
-                  <ChevronLeft className="mr-0.5 h-3 w-3" />Back
-                </Button>
-                <Button size="sm" className="h-7 text-xs" onClick={isLast ? onClose : onNext}>
-                  {isLast ? "Done" : "Next"}
-                </Button>
+            {/* Step card - always centered and prominent */}
+            <div className="absolute inset-0 flex items-center justify-center p-6">
+              <div className="bg-card rounded-xl shadow-2xl border p-6 max-w-sm w-full relative animate-in fade-in zoom-in-95 duration-200">
+                <button onClick={onClose} className="absolute top-3 right-3 text-muted-foreground hover:text-foreground transition-colors">
+                  <X className="h-4 w-4" />
+                </button>
+                
+                {/* Progress bar */}
+                <div className="flex gap-1 mb-4">
+                  {steps.map((_, i) => (
+                    <div
+                      key={i}
+                      className={`h-1 flex-1 rounded-full transition-colors ${
+                        i <= previewStepIndex ? "bg-primary" : "bg-muted"
+                      }`}
+                    />
+                  ))}
+                </div>
+
+                <span className="text-[10px] font-semibold text-primary uppercase tracking-wider">
+                  Step {previewStepIndex + 1} of {steps.length}
+                </span>
+                <h3 className="text-base font-semibold mt-1 mb-2">{step.title}</h3>
+                <p className="text-sm text-muted-foreground mb-4 leading-relaxed">{step.content}</p>
+                
+                {step.selector && (
+                  <div className="bg-muted/50 rounded-lg px-3 py-2 mb-4 flex items-center gap-2">
+                    <span className="text-xs">🎯</span>
+                    <code className="text-[11px] font-mono text-muted-foreground truncate">{step.selector}</code>
+                  </div>
+                )}
+
+                {step.target_url && (
+                  <div className="bg-muted/50 rounded-lg px-3 py-2 mb-4 flex items-center gap-2">
+                    <span className="text-xs">🔗</span>
+                    <code className="text-[11px] font-mono text-muted-foreground truncate">{step.target_url}</code>
+                  </div>
+                )}
+
+                {step.click_selector && (
+                  <div className="bg-muted/50 rounded-lg px-3 py-2 mb-4 flex items-center gap-2">
+                    <span className="text-xs">👆</span>
+                    <code className="text-[11px] font-mono text-muted-foreground truncate">{step.click_selector}</code>
+                  </div>
+                )}
+                
+                {!step.selector && (
+                  <p className="text-[11px] text-muted-foreground/70 italic mb-4">This step shows as a centered modal (no target element)</p>
+                )}
+
+                <div className="flex items-center justify-between">
+                  <Button variant="ghost" size="sm" className="h-8 text-xs" onClick={onPrev} disabled={previewStepIndex === 0}>
+                    <ChevronLeft className="mr-0.5 h-3 w-3" />Back
+                  </Button>
+                  <Button size="sm" className="h-8 text-xs" onClick={isLast ? onClose : onNext}>
+                    {isLast ? "Done" : "Next"}
+                    {!isLast && <ChevronRight className="ml-0.5 h-3 w-3" />}
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
