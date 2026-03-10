@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, Trash2, Code, Pencil, Crosshair, Sparkles, Loader2, Upload, Circle, Square, Zap, Download, HelpCircle, CheckCircle2, ClipboardList, BarChart3, Menu } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Code, Pencil, Crosshair, Sparkles, Loader2, Upload, Circle, Square, Zap, Download, HelpCircle, CheckCircle2, ClipboardList, BarChart3, Menu, ShieldCheck, AlertTriangle, XCircle, CheckCircle } from "lucide-react";
 import { generateChromeExtension } from "@/lib/chrome-extension-generator";
+import { validateChromeExtension, type ValidationReport } from "@/lib/chrome-extension-validator";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -43,6 +44,9 @@ const AppDetail = () => {
   const [generatingFromManual, setGeneratingFromManual] = useState(false);
   const [generating, setGenerating] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [validating, setValidating] = useState(false);
+  const [validationReport, setValidationReport] = useState<ValidationReport | null>(null);
+  const [validationDialogOpen, setValidationDialogOpen] = useState(false);
 
   const [checklistOpen, setChecklistOpen] = useState(false);
   const [newChecklistName, setNewChecklistName] = useState("");
@@ -297,6 +301,26 @@ const AppDetail = () => {
               <BarChart3 className="mr-2 h-4 w-4" />
               Analytics
             </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={async () => {
+                setValidating(true);
+                try {
+                  const report = await validateChromeExtension(appId!, appName, appUrl);
+                  setValidationReport(report);
+                  setValidationDialogOpen(true);
+                } catch (e) {
+                  toast({ title: "Validation failed", description: String(e), variant: "destructive" });
+                } finally {
+                  setValidating(false);
+                }
+              }}
+              disabled={validating}
+            >
+              {validating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}
+              Validate
+            </Button>
             <Button variant="outline" size="sm" onClick={() => generateChromeExtension(appId!, appName, appUrl)}>
               <Download className="mr-2 h-4 w-4" />
               Chrome Extension
@@ -315,6 +339,20 @@ const AppDetail = () => {
                 <DropdownMenuItem onClick={() => navigate(`/app/${appId}/analytics`)}>
                   <BarChart3 className="mr-2 h-4 w-4" />Analytics
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={async () => {
+                  setValidating(true);
+                  try {
+                    const report = await validateChromeExtension(appId!, appName, appUrl);
+                    setValidationReport(report);
+                    setValidationDialogOpen(true);
+                  } catch (e) {
+                    toast({ title: "Validation failed", description: String(e), variant: "destructive" });
+                  } finally {
+                    setValidating(false);
+                  }
+                }}>
+                  <ShieldCheck className="mr-2 h-4 w-4" />Validate Extension
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => generateChromeExtension(appId!, appName, appUrl)}>
                   <Download className="mr-2 h-4 w-4" />Chrome Extension
                 </DropdownMenuItem>
@@ -323,6 +361,42 @@ const AppDetail = () => {
           </div>
         </div>
       </header>
+
+      {/* Validation Report Dialog */}
+      <Dialog open={validationDialogOpen} onOpenChange={setValidationDialogOpen}>
+        <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {validationReport?.passed ? (
+                <CheckCircle className="h-5 w-5 text-green-500" />
+              ) : (
+                <XCircle className="h-5 w-5 text-destructive" />
+              )}
+              Extension Validation {validationReport?.passed ? "Passed" : "Failed"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 pt-2">
+            {validationReport?.results.map((r, i) => (
+              <div key={i} className="flex items-start gap-2 text-sm">
+                {r.status === "pass" && <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 shrink-0" />}
+                {r.status === "warning" && <AlertTriangle className="h-4 w-4 text-yellow-500 mt-0.5 shrink-0" />}
+                {r.status === "error" && <XCircle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />}
+                <span className={r.status === "error" ? "text-destructive" : r.status === "warning" ? "text-yellow-600" : "text-muted-foreground"}>
+                  {r.message}
+                </span>
+              </div>
+            ))}
+          </div>
+          {validationReport?.passed && (
+            <div className="pt-4">
+              <Button className="w-full" onClick={() => { setValidationDialogOpen(false); generateChromeExtension(appId!, appName, appUrl); }}>
+                <Download className="mr-2 h-4 w-4" />
+                Download Extension
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <main className="container py-8 px-4">
         <Tabs defaultValue="processes" className="w-full">
