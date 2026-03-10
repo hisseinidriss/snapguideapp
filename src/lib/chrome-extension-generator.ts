@@ -172,18 +172,18 @@ function generateIcon(size: number): Promise<Uint8Array> {
     canvas.height = size;
     const ctx = canvas.getContext("2d")!;
 
-    // Background
-    ctx.fillStyle = "#6366f1";
+    // IsDB sage green background
+    ctx.fillStyle = "#4d8b6f";
     ctx.beginPath();
     ctx.roundRect(0, 0, size, size, size * 0.2);
     ctx.fill();
 
-    // Letter B
+    // Letter W for WalkThru
     ctx.fillStyle = "#ffffff";
-    ctx.font = `bold ${size * 0.6}px sans-serif`;
+    ctx.font = `bold ${size * 0.55}px sans-serif`;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText("B", size / 2, size / 2 + size * 0.03);
+    ctx.fillText("W", size / 2, size / 2 + size * 0.03);
 
     canvas.toBlob((blob) => {
       blob!.arrayBuffer().then((buf) => resolve(new Uint8Array(buf)));
@@ -194,9 +194,11 @@ function generateIcon(size: number): Promise<Uint8Array> {
 function getContentCSS(): string {
   return `
 /* Business Process Guide - Overlay Styles */
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
+
 .bpg-overlay-box {
   position: fixed;
-  background: rgba(0,0,0,0.5);
+  background: rgba(34,41,47,0.45);
   z-index: 999998;
   transition: all 0.3s ease;
   pointer-events: auto;
@@ -205,10 +207,10 @@ function getContentCSS(): string {
 .bpg-spotlight-ring {
   position: fixed;
   z-index: 999998;
-  border: 3px solid #ef4444;
-  border-radius: 6px;
+  border: 2.5px solid #4d8b6f;
+  border-radius: 8px;
   pointer-events: none;
-  box-shadow: 0 0 0 3px rgba(239,68,68,0.3);
+  box-shadow: 0 0 0 3px rgba(77,139,111,0.25), 0 0 20px rgba(77,139,111,0.15);
   transition: all 0.3s ease;
 }
 
@@ -217,12 +219,12 @@ function getContentCSS(): string {
   z-index: 999999;
   background: #fff;
   border-radius: 12px;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.05);
-  padding: 20px;
+  box-shadow: 0 20px 60px rgba(34,41,47,0.12), 0 0 0 1px rgba(77,139,111,0.1);
+  padding: 22px;
   max-width: 360px;
   min-width: 280px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  animation: bpg-fadeIn 0.2s ease;
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  animation: bpg-fadeIn 0.25s ease;
 }
 
 @keyframes bpg-fadeIn {
@@ -233,14 +235,14 @@ function getContentCSS(): string {
 .bpg-tooltip-title {
   font-size: 16px;
   font-weight: 600;
-  color: #111;
+  color: #2d3b34;
   margin: 0 0 8px;
 }
 
 .bpg-tooltip-content {
   font-size: 14px;
-  color: #555;
-  line-height: 1.5;
+  color: #5a6b62;
+  line-height: 1.6;
   margin: 0 0 16px;
 }
 
@@ -252,7 +254,8 @@ function getContentCSS(): string {
 
 .bpg-tooltip-progress {
   font-size: 12px;
-  color: #999;
+  color: #8a9b92;
+  font-weight: 500;
 }
 
 .bpg-tooltip-actions {
@@ -261,42 +264,44 @@ function getContentCSS(): string {
 }
 
 .bpg-btn {
-  padding: 8px 16px;
+  padding: 8px 18px;
   border-radius: 8px;
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
   border: none;
   transition: all 0.15s;
+  font-family: 'DM Sans', sans-serif;
 }
 
 .bpg-btn-secondary {
-  background: #f3f4f6;
-  color: #374151;
+  background: #eef2f0;
+  color: #2d3b34;
 }
-.bpg-btn-secondary:hover { background: #e5e7eb; }
+.bpg-btn-secondary:hover { background: #dfe6e2; }
 
 .bpg-btn-primary {
-  background: #6366f1;
+  background: #4d8b6f;
   color: #fff;
 }
-.bpg-btn-primary:hover { background: #4f46e5; }
+.bpg-btn-primary:hover { background: #3d7a5e; }
 
 .bpg-btn-close {
   position: absolute;
-  top: 8px; right: 8px;
+  top: 10px; right: 10px;
   width: 28px; height: 28px;
   border-radius: 50%;
   border: none;
-  background: #f3f4f6;
+  background: #eef2f0;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 14px;
-  color: #666;
+  color: #5a6b62;
+  transition: all 0.15s;
 }
-.bpg-btn-close:hover { background: #e5e7eb; }
+.bpg-btn-close:hover { background: #dfe6e2; color: #2d3b34; }
 
 /* Legacy highlight class - kept for compatibility */
 .bpg-highlight {
@@ -333,8 +338,9 @@ function getContentCSS(): string {
   font-weight: 500;
   cursor: pointer;
   z-index: 999990;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
   transition: transform 0.15s;
+  font-family: 'DM Sans', sans-serif;
 }
 .bpg-launcher-button:hover { transform: scale(1.05); }
 
@@ -500,7 +506,7 @@ function getContentJS(): string {
         const btn = document.createElement('button');
         btn.className = 'bpg-launcher-button';
         btn.setAttribute('data-bpg-launcher-id', launcher.id);
-        btn.style.backgroundColor = launcher.color || '#6366f1';
+        btn.style.backgroundColor = launcher.color || '#4d8b6f';
         btn.textContent = launcher.label || launcher.name;
         btn.addEventListener('click', () => {
           const procIndex = processes.findIndex(p => p.id === launcher.tour_id);
@@ -521,8 +527,8 @@ function getContentJS(): string {
         const dot = document.createElement('div');
         dot.className = 'bpg-beacon' + (launcher.pulse ? ' bpg-beacon-pulse' : '');
         dot.setAttribute('data-bpg-launcher-id', launcher.id);
-        dot.style.backgroundColor = launcher.color || '#6366f1';
-        dot.style.color = launcher.color || '#6366f1';
+        dot.style.backgroundColor = launcher.color || '#4d8b6f';
+        dot.style.color = launcher.color || '#4d8b6f';
         dot.addEventListener('click', () => {
           const procIndex = processes.findIndex(p => p.id === launcher.tour_id);
           if (procIndex >= 0) startProcess(procIndex);
@@ -707,11 +713,11 @@ function getContentJS(): string {
     var isFirst = index === 0;
     var isLast = index === total - 1;
     return '<button class="bpg-btn-close">&times;</button>'
-      + '<div style="font-size:11px;color:#6366f1;font-weight:600;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px">' + processName + '</div>'
+      + '<div style="font-size:11px;color:#4d8b6f;font-weight:600;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;font-family:DM Sans,sans-serif">' + processName + '</div>'
       + '<h3 class="bpg-tooltip-title">' + step.title + '</h3>'
       + '<p class="bpg-tooltip-content">' + step.content + '</p>'
       + (targetMissing
-        ? '<p style="font-size:12px;color:#b45309;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:8px 10px;margin:0 0 12px">Target element not found. Check if the selector is correct and visible on this page.</p>'
+        ? '<p style="font-size:12px;color:#b45309;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:8px 10px;margin:0 0 12px;font-family:DM Sans,sans-serif">Target element not found. Check if the selector is correct and visible on this page.</p>'
         : '')
       + '<div class="bpg-tooltip-footer">'
       + '<span class="bpg-tooltip-progress">Step ' + (index + 1) + ' of ' + total + '</span>'
@@ -807,40 +813,41 @@ function getPopupHTML(appName: string, processes: Process[]): string {
 <html>
 <head>
   <meta charset="utf-8">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       width: 320px;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #fafafa;
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f4f7f5;
     }
     .header {
-      background: #6366f1;
+      background: linear-gradient(135deg, #4d8b6f, #5a9e7e);
       color: white;
-      padding: 16px;
+      padding: 18px 16px;
     }
     .header h1 { font-size: 15px; font-weight: 600; }
-    .header p { font-size: 11px; opacity: 0.8; margin-top: 2px; }
-    .process-list { padding: 8px; }
+    .header p { font-size: 11px; opacity: 0.85; margin-top: 3px; font-weight: 400; }
+    .process-list { padding: 10px; }
     .process-item {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 12px;
+      padding: 12px 14px;
       background: white;
-      border: 1px solid #e5e7eb;
-      border-radius: 8px;
+      border: 1px solid #dfe6e2;
+      border-radius: 10px;
       margin-bottom: 6px;
       cursor: pointer;
       transition: all 0.15s;
     }
-    .process-item:hover { border-color: #6366f1; background: #f5f3ff; }
-    .process-name { font-size: 13px; font-weight: 500; color: #111; }
-    .process-steps { font-size: 11px; color: #888; margin-top: 2px; }
+    .process-item:hover { border-color: #4d8b6f; background: #f0f7f3; }
+    .process-name { font-size: 13px; font-weight: 500; color: #2d3b34; }
+    .process-steps { font-size: 11px; color: #8a9b92; margin-top: 2px; }
     .play-btn {
       width: 32px; height: 32px;
       border-radius: 50%;
-      background: #6366f1;
+      background: #4d8b6f;
       color: white;
       border: none;
       cursor: pointer;
@@ -849,12 +856,13 @@ function getPopupHTML(appName: string, processes: Process[]): string {
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
+      transition: background 0.15s;
     }
-    .play-btn:hover { background: #4f46e5; }
+    .play-btn:hover { background: #3d7a5e; }
     .empty {
       text-align: center;
       padding: 32px 16px;
-      color: #888;
+      color: #8a9b92;
       font-size: 13px;
     }
   </style>
