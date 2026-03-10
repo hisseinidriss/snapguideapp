@@ -284,7 +284,7 @@ function getContentCSS(): string {
 
 /* Highlight ring around target element */
 .bpg-highlight {
-  outline: 3px solid #6366f1 !important;
+  outline: 3px solid #ef4444 !important;
   outline-offset: 4px !important;
   border-radius: 4px;
   position: relative;
