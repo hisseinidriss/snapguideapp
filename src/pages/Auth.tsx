@@ -15,10 +15,12 @@ const Auth = () => {
   const { toast } = useToast();
   const [isLogin, setIsLogin] = useState(true);
   const [isForgot, setIsForgot] = useState(false);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email, setEmail] = useState(() => localStorage.getItem("walkthru_remembered_email") || "");
+  const [password, setPassword] = useState(() => localStorage.getItem("walkthru_remembered_pass") || "");
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(() => !!localStorage.getItem("walkthru_remembered_email"));
 
   if (authLoading) {
     return (
