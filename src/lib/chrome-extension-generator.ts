@@ -141,7 +141,7 @@ export async function generateChromeExtension(
 
   zip.file(
     "data.json",
-    JSON.stringify({ processes, launchers: activeLaunchers, appName, appId, ...trackingData }, null, 2)
+    JSON.stringify({ processes, launchers: activeLaunchers, appName, appId, appUrl: appUrl || '', ...trackingData }, null, 2)
   );
 
   // content.css
