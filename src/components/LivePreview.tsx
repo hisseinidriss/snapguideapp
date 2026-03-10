@@ -199,23 +199,5 @@ const LivePreview = ({
   );
 };
 
-function getTooltipPosition(step: TourStep): React.CSSProperties {
-  if (!step.selector || step.placement === "center") {
-    return { top: "50%", left: "50%", transform: "translate(-50%, -50%)" };
-  }
-
-  switch (step.placement) {
-    case "top":
-      return { top: "20%", left: "50%", transform: "translateX(-50%)" };
-    case "bottom":
-      return { bottom: "20%", left: "50%", transform: "translateX(-50%)" };
-    case "left":
-      return { top: "40%", left: "10%" };
-    case "right":
-      return { top: "40%", right: "10%" };
-    default:
-      return { top: "50%", left: "50%", transform: "translate(-50%, -50%)" };
-  }
-}
 
 export default LivePreview;
