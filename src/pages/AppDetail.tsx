@@ -389,7 +389,7 @@ const AppDetail = () => {
           </div>
           {validationReport?.passed && (
             <div className="pt-4">
-              <Button className="w-full" onClick={() => { setValidationDialogOpen(false); generateChromeExtension(appId!, appName, appUrl); }}>
+              <Button className="w-full" onClick={() => { setValidationDialogOpen(false); generateChromeExtension(appId!, appName, appUrl, { supabaseUrl: import.meta.env.VITE_SUPABASE_URL, supabaseKey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY }); }}>
                 <Download className="mr-2 h-4 w-4" />
                 Download Extension
               </Button>
