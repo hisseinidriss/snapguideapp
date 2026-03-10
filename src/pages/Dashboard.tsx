@@ -72,11 +72,30 @@ const Dashboard = () => {
           </div>
 
           {/* Desktop nav */}
-          <div className="hidden sm:flex gap-2 items-center">
+          <div className="hidden sm:flex gap-3 items-center">
+            <Dialog open={open} onOpenChange={setOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm" className="rounded-full px-4 shadow-sm">
+                  <Plus className="mr-1.5 h-4 w-4" />
+                  New App
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Add a new application</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 pt-2">
+                  <Input placeholder="App name" value={newName} onChange={(e) => setNewName(e.target.value)} />
+                  <Input placeholder="https://yourapp.com (optional)" value={newUrl} onChange={(e) => setNewUrl(e.target.value)} />
+                  <Textarea placeholder="Brief description (optional)" value={newDesc} onChange={(e) => setNewDesc(e.target.value)} rows={3} />
+                  <Button onClick={handleCreate} className="w-full">Create App</Button>
+                </div>
+              </DialogContent>
+            </Dialog>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon" className="h-8 w-8">
-                  <UserCircle className="h-4 w-4" />
+                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
+                  <UserCircle className="h-5 w-5" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
@@ -94,25 +113,6 @@ const Dashboard = () => {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            <Dialog open={open} onOpenChange={setOpen}>
-              <DialogTrigger asChild>
-                <Button size="sm">
-                  <Plus className="mr-2 h-4 w-4" />
-                  New App
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Add a new application</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4 pt-2">
-                  <Input placeholder="App name" value={newName} onChange={(e) => setNewName(e.target.value)} />
-                  <Input placeholder="https://yourapp.com (optional)" value={newUrl} onChange={(e) => setNewUrl(e.target.value)} />
-                  <Textarea placeholder="Brief description (optional)" value={newDesc} onChange={(e) => setNewDesc(e.target.value)} rows={3} />
-                  <Button onClick={handleCreate} className="w-full">Create App</Button>
-                </div>
-              </DialogContent>
-            </Dialog>
           </div>
 
           {/* Mobile nav */}
