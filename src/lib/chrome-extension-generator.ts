@@ -68,6 +68,7 @@ export async function generateChromeExtension(
             placement: s.placement,
             sort_order: s.sort_order,
             target_url: (s as any).target_url || null,
+            click_selector: (s as any).click_selector || null,
           })),
       });
     }
