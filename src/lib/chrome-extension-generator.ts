@@ -381,7 +381,30 @@ function getContentJS(): string {
         return;
       }
 
-      const immediate = safeQuerySelector(selector);
+      // Try multiple selector strategies
+      function tryFind() {
+        // Direct match
+        var el = safeQuerySelector(selector);
+        if (el) return el;
+        
+        // If selector looks like it could be inside an iframe, try iframes
+        try {
+          var iframes = document.querySelectorAll('iframe');
+          for (var i = 0; i < iframes.length; i++) {
+            try {
+              var iframeDoc = iframes[i].contentDocument || iframes[i].contentWindow.document;
+              if (iframeDoc) {
+                var found = iframeDoc.querySelector(selector);
+                if (found) return found;
+              }
+            } catch(e) { /* cross-origin iframe, skip */ }
+          }
+        } catch(e) {}
+        
+        return null;
+      }
+
+      const immediate = tryFind();
       if (immediate) {
         resolve(immediate);
         return;
@@ -389,7 +412,7 @@ function getContentJS(): string {
 
       const start = Date.now();
       const observer = new MutationObserver(() => {
-        const found = safeQuerySelector(selector);
+        const found = tryFind();
         if (found) {
           observer.disconnect();
           resolve(found);
@@ -399,7 +422,7 @@ function getContentJS(): string {
       observer.observe(document.documentElement, { childList: true, subtree: true, attributes: true });
 
       const tick = () => {
-        const found = safeQuerySelector(selector);
+        const found = tryFind();
         if (found) {
           observer.disconnect();
           resolve(found);
@@ -609,7 +632,7 @@ function getContentJS(): string {
 
     // Click action: click a button to open a modal/popup before looking for target
     if (step.click_selector) {
-      const clickTarget = await waitForElement(step.click_selector, 2500);
+      const clickTarget = await waitForElement(step.click_selector, 5000);
       if (clickTarget) {
         clickTarget.click();
         // Wait a moment for the popup/modal to appear
@@ -617,7 +640,7 @@ function getContentJS(): string {
       }
     }
 
-    const targetEl = step.selector ? await waitForElement(step.selector, 2500) : null;
+    const targetEl = step.selector ? await waitForElement(step.selector, 5000) : null;
 
     if (targetEl) {
       targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -897,22 +920,48 @@ document.addEventListener('DOMContentLoaded', () => {
       var appUrl = (data.appUrl || '').replace(/\\/+$/, '');
 
       function launchProcess(index) {
+        var proc = processes[index];
+        // Determine the best URL to navigate to: first step's target_url or appUrl
+        var firstStepUrl = (proc && proc.steps && proc.steps[0] && proc.steps[0].target_url) || '';
+        var navUrl = firstStepUrl || appUrl;
+
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
           var tab = tabs[0];
           var tabUrl = (tab.url || '').replace(/\\/+$/, '');
-          var needsNav = appUrl && !tabUrl.startsWith(appUrl);
+          
+          // Check if we need to navigate: either not on the app at all, or first step needs a specific page
+          var onApp = appUrl && tabUrl.startsWith(appUrl);
+          var needsNav = false;
+          
+          if (!onApp && navUrl) {
+            needsNav = true;
+          } else if (onApp && firstStepUrl) {
+            // On the app but maybe wrong page - check if first step needs a different page
+            try {
+              var targetFull = new URL(firstStepUrl, appUrl || window.location.origin).href.replace(/\\/+$/, '');
+              if (tabUrl !== targetFull && !tabUrl.startsWith(targetFull)) {
+                needsNav = true;
+                navUrl = targetFull;
+              }
+            } catch(e) {}
+          }
 
-          if (needsNav) {
-            // Navigate to app URL first, then start process after page loads
-            chrome.tabs.update(tab.id, { url: appUrl }, () => {
-              // Wait for tab to finish loading
+          if (needsNav && navUrl) {
+            // Resolve relative URLs against appUrl
+            var finalUrl = navUrl;
+            try {
+              if (navUrl && !navUrl.startsWith('http')) {
+                finalUrl = new URL(navUrl, appUrl || window.location.origin).href;
+              }
+            } catch(e) { finalUrl = navUrl; }
+            
+            chrome.tabs.update(tab.id, { url: finalUrl }, () => {
               function onUpdated(tabId, info) {
                 if (tabId === tab.id && info.status === 'complete') {
                   chrome.tabs.onUpdated.removeListener(onUpdated);
-                  // Small delay to let content script initialize
                   setTimeout(() => {
                     chrome.tabs.sendMessage(tab.id, { type: 'START_PROCESS', processIndex: index });
-                  }, 1000);
+                  }, 1500);
                 }
               }
               chrome.tabs.onUpdated.addListener(onUpdated);
