@@ -781,6 +781,10 @@ function getContentJS(): string {
   }
 
   function endProcess() {
+    if (currentProcess) {
+      trackEvent('tour_abandoned', currentStepIndex);
+      flushEvents();
+    }
     cleanup();
     currentProcess = null;
     currentStepIndex = 0;
