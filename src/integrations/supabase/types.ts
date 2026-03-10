@@ -228,6 +228,7 @@ export type Database = {
       }
       tour_steps: {
         Row: {
+          click_selector: string | null
           content: string
           created_at: string
           id: string
@@ -240,6 +241,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          click_selector?: string | null
           content?: string
           created_at?: string
           id?: string
@@ -252,6 +254,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          click_selector?: string | null
           content?: string
           created_at?: string
           id?: string
