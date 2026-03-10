@@ -321,7 +321,7 @@ const AppDetail = () => {
               {validating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}
               Validate
             </Button>
-            <Button variant="outline" size="sm" onClick={() => generateChromeExtension(appId!, appName, appUrl)}>
+            <Button variant="outline" size="sm" onClick={() => generateChromeExtension(appId!, appName, appUrl, { supabaseUrl: import.meta.env.VITE_SUPABASE_URL, supabaseKey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY })}>
               <Download className="mr-2 h-4 w-4" />
               Chrome Extension
             </Button>
