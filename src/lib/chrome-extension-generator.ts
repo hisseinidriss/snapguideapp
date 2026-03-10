@@ -548,6 +548,16 @@ function getContentJS(): string {
       }
     }
 
+    // Click action: click a button to open a modal/popup before looking for target
+    if (step.click_selector) {
+      const clickTarget = await waitForElement(step.click_selector, 2500);
+      if (clickTarget) {
+        clickTarget.click();
+        // Wait a moment for the popup/modal to appear
+        await new Promise(r => setTimeout(r, 600));
+      }
+    }
+
     const targetEl = step.selector ? await waitForElement(step.selector, 2500) : null;
 
     // Overlay
