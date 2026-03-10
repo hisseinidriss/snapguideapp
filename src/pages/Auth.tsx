@@ -35,6 +35,13 @@ const Auth = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    if (rememberMe) {
+      localStorage.setItem("walkthru_remembered_email", email);
+      localStorage.setItem("walkthru_remembered_pass", password);
+    } else {
+      localStorage.removeItem("walkthru_remembered_email");
+      localStorage.removeItem("walkthru_remembered_pass");
+    }
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       toast({ title: "Login failed", description: error.message, variant: "destructive" });
