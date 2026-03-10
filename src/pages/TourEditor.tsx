@@ -31,6 +31,7 @@ const TourEditor = () => {
   const [validationStatus, setValidationStatus] = useState<ValidationStatus>("idle");
   const [selectorResults, setSelectorResults] = useState<Record<string, SelectorResult>>({});
   const [mobileStepListOpen, setMobileStepListOpen] = useState(false);
+  const [editorVisible, setEditorVisible] = useState(true);
 
   useEffect(() => {
     if (!appId || !tourId) return;
