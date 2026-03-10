@@ -813,40 +813,41 @@ function getPopupHTML(appName: string, processes: Process[]): string {
 <html>
 <head>
   <meta charset="utf-8">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       width: 320px;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #fafafa;
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f4f7f5;
     }
     .header {
-      background: #6366f1;
+      background: linear-gradient(135deg, #4d8b6f, #5a9e7e);
       color: white;
-      padding: 16px;
+      padding: 18px 16px;
     }
     .header h1 { font-size: 15px; font-weight: 600; }
-    .header p { font-size: 11px; opacity: 0.8; margin-top: 2px; }
-    .process-list { padding: 8px; }
+    .header p { font-size: 11px; opacity: 0.85; margin-top: 3px; font-weight: 400; }
+    .process-list { padding: 10px; }
     .process-item {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 12px;
+      padding: 12px 14px;
       background: white;
-      border: 1px solid #e5e7eb;
-      border-radius: 8px;
+      border: 1px solid #dfe6e2;
+      border-radius: 10px;
       margin-bottom: 6px;
       cursor: pointer;
       transition: all 0.15s;
     }
-    .process-item:hover { border-color: #6366f1; background: #f5f3ff; }
-    .process-name { font-size: 13px; font-weight: 500; color: #111; }
-    .process-steps { font-size: 11px; color: #888; margin-top: 2px; }
+    .process-item:hover { border-color: #4d8b6f; background: #f0f7f3; }
+    .process-name { font-size: 13px; font-weight: 500; color: #2d3b34; }
+    .process-steps { font-size: 11px; color: #8a9b92; margin-top: 2px; }
     .play-btn {
       width: 32px; height: 32px;
       border-radius: 50%;
-      background: #6366f1;
+      background: #4d8b6f;
       color: white;
       border: none;
       cursor: pointer;
@@ -855,12 +856,13 @@ function getPopupHTML(appName: string, processes: Process[]): string {
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
+      transition: background 0.15s;
     }
-    .play-btn:hover { background: #4f46e5; }
+    .play-btn:hover { background: #3d7a5e; }
     .empty {
       text-align: center;
       padding: 32px 16px;
-      color: #888;
+      color: #8a9b92;
       font-size: 13px;
     }
   </style>
