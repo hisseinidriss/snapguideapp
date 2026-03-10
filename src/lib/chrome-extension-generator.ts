@@ -9,6 +9,7 @@ interface ProcessStep {
   placement: string;
   sort_order: number;
   target_url?: string | null;
+  click_selector?: string | null;
 }
 
 interface Process {
