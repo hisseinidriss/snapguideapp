@@ -47,16 +47,45 @@ const Dashboard = () => {
 
   useEffect(() => { fetchApps(); }, []);
 
+  const uploadIcon = async (file: File, appId: string): Promise<string | null> => {
+    const ext = file.name.split('.').pop();
+    const path = `${appId}/icon.${ext}`;
+    const { error } = await supabase.storage.from("app-icons").upload(path, file, { upsert: true });
+    if (error) {
+      toast({ title: "Icon upload failed", description: error.message, variant: "destructive" });
+      return null;
+    }
+    const { data: urlData } = supabase.storage.from("app-icons").getPublicUrl(path);
+    return urlData.publicUrl + "?t=" + Date.now();
+  };
+
+  const handleIconSelect = (file: File | undefined) => {
+    if (!file) return;
+    setIconFile(file);
+    setIconPreview(URL.createObjectURL(file));
+  };
+
   const handleCreate = async () => {
     if (!newName.trim()) return;
-    const { error } = await supabase.from("apps").insert({ name: newName, url: newUrl, description: newDesc });
+    const { data: inserted, error } = await supabase.from("apps").insert({ name: newName, url: newUrl, description: newDesc }).select().single();
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
       return;
     }
+    if (iconFile && inserted) {
+      const iconUrl = await uploadIcon(iconFile, inserted.id);
+      if (iconUrl) {
+        await supabase.from("apps").update({ icon_url: iconUrl } as any).eq("id", inserted.id);
+      }
+    }
     await fetchApps();
-    setNewName(""); setNewUrl(""); setNewDesc("");
+    resetForm();
     setOpen(false);
+  };
+
+  const resetForm = () => {
+    setNewName(""); setNewUrl(""); setNewDesc("");
+    setIconFile(null); setIconPreview(null);
   };
 
   const handleDelete = async (id: string) => {
