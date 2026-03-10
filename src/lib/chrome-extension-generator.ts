@@ -97,7 +97,7 @@ export async function generateChromeExtension(
     name: `${appName} - Business Process Guide`,
     version: "1.0.0",
     description: `Interactive business process guide for ${appName}`,
-    permissions: ["activeTab", "storage"],
+    permissions: ["activeTab", "storage", "tabs"],
     action: {
       default_popup: "popup.html",
       default_icon: {
