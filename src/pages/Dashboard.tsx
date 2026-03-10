@@ -246,9 +246,13 @@ const Dashboard = () => {
             {apps.map((app, i) => (
               <Card key={app.id} className="p-5 hover:shadow-md transition-shadow animate-fade-in" style={{ animationDelay: `${i * 50}ms` }}>
                 <div className="flex items-start justify-between mb-3">
-                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <span className="text-primary font-bold">{app.name.charAt(0).toUpperCase()}</span>
-                  </div>
+                  {(app as any).icon_url ? (
+                    <img src={(app as any).icon_url} alt={app.name} className="h-10 w-10 rounded-lg object-cover" />
+                  ) : (
+                    <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <span className="text-primary font-bold">{app.name.charAt(0).toUpperCase()}</span>
+                    </div>
+                  )}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="icon" className="h-8 w-8">
