@@ -886,6 +886,36 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
+      var appUrl = (data.appUrl || '').replace(/\/+$/, '');
+
+      function launchProcess(index) {
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+          var tab = tabs[0];
+          var tabUrl = (tab.url || '').replace(/\/+$/, '');
+          var needsNav = appUrl && !tabUrl.startsWith(appUrl);
+
+          if (needsNav) {
+            // Navigate to app URL first, then start process after page loads
+            chrome.tabs.update(tab.id, { url: appUrl }, () => {
+              // Wait for tab to finish loading
+              function onUpdated(tabId, info) {
+                if (tabId === tab.id && info.status === 'complete') {
+                  chrome.tabs.onUpdated.removeListener(onUpdated);
+                  // Small delay to let content script initialize
+                  setTimeout(() => {
+                    chrome.tabs.sendMessage(tab.id, { type: 'START_PROCESS', processIndex: index });
+                  }, 1000);
+                }
+              }
+              chrome.tabs.onUpdated.addListener(onUpdated);
+            });
+          } else {
+            chrome.tabs.sendMessage(tab.id, { type: 'START_PROCESS', processIndex: index });
+          }
+          window.close();
+        });
+      }
+
       processes.forEach(function(proc, index) {
         var item = document.createElement('div');
         item.className = 'process-item';
@@ -896,16 +926,10 @@ document.addEventListener('DOMContentLoaded', () => {
           + '<button class="play-btn" title="Start process">▶</button>';
         item.querySelector('.play-btn').addEventListener('click', (e) => {
           e.stopPropagation();
-          chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-            chrome.tabs.sendMessage(tabs[0].id, { type: 'START_PROCESS', processIndex: index });
-            window.close();
-          });
+          launchProcess(index);
         });
         item.addEventListener('click', () => {
-          chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-            chrome.tabs.sendMessage(tabs[0].id, { type: 'START_PROCESS', processIndex: index });
-            window.close();
-          });
+          launchProcess(index);
         });
         list.appendChild(item);
       });
