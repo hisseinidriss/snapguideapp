@@ -138,10 +138,10 @@ const Dashboard = () => {
                 </SheetHeader>
                 <div className="flex flex-col gap-2 mt-4">
                   <Button variant="outline" asChild className="justify-start">
-                    <Link to="/guide"><BookOpen className="mr-2 h-4 w-4" />User Guide</Link>
+                    <Link to="/account"><UserCircle className="mr-2 h-4 w-4" />Account</Link>
                   </Button>
                   <Button variant="outline" asChild className="justify-start">
-                    <Link to="/account"><UserCircle className="mr-2 h-4 w-4" />Account</Link>
+                    <Link to="/guide"><BookOpen className="mr-2 h-4 w-4" />User Guide</Link>
                   </Button>
                 </div>
                 {user && (
