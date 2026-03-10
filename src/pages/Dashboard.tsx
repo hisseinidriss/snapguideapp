@@ -272,48 +272,116 @@ const Dashboard = () => {
             </Button>
           </div>
         ) : (
-          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-            {apps.map((app, i) => (
-              <Card key={app.id} className="p-5 hover:shadow-md transition-shadow animate-fade-in" style={{ animationDelay: `${i * 50}ms` }}>
-                <div className="flex items-start justify-between mb-3">
-                  {(app as any).icon_url ? (
-                    <img src={(app as any).icon_url} alt={app.name} className="h-10 w-10 rounded-lg object-cover" />
-                  ) : (
-                    <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <span className="text-primary font-bold">{app.name.charAt(0).toUpperCase()}</span>
+          <div>
+            <div className="flex justify-end mb-4">
+              <div className="flex items-center border rounded-md overflow-hidden">
+                <Button
+                  variant={viewMode === "grid" ? "default" : "ghost"}
+                  size="icon"
+                  className="h-8 w-8 rounded-none"
+                  onClick={() => { setViewMode("grid"); localStorage.setItem("walkthru_view_mode", "grid"); }}
+                >
+                  <LayoutGrid className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant={viewMode === "list" ? "default" : "ghost"}
+                  size="icon"
+                  className="h-8 w-8 rounded-none"
+                  onClick={() => { setViewMode("list"); localStorage.setItem("walkthru_view_mode", "list"); }}
+                >
+                  <List className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            {viewMode === "grid" ? (
+              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                {apps.map((app, i) => (
+                  <Card key={app.id} className="p-5 hover:shadow-md transition-shadow animate-fade-in" style={{ animationDelay: `${i * 50}ms` }}>
+                    <div className="flex items-start justify-between mb-3">
+                      {(app as any).icon_url ? (
+                        <img src={(app as any).icon_url} alt={app.name} className="h-10 w-10 rounded-lg object-cover" />
+                      ) : (
+                        <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                          <span className="text-primary font-bold">{app.name.charAt(0).toUpperCase()}</span>
+                        </div>
+                      )}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => openEdit(app)}>
+                            <Pencil className="mr-2 h-4 w-4" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(app.id)}>
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
-                  )}
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <MoreVertical className="h-4 w-4" />
+                    <h3 className="font-semibold mb-1">{app.name}</h3>
+                    {app.url && <p className="text-xs text-muted-foreground mb-2 truncate">{app.url}</p>}
+                    <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{app.description || "No description"}</p>
+                    <div className="flex items-center justify-between">
+                      <Button variant="ghost" size="sm" asChild>
+                        <Link to={`/app/${app.id}`}>
+                          Open
+                          <ArrowRight className="ml-1 h-3 w-3" />
+                        </Link>
                       </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => openEdit(app)}>
-                        <Pencil className="mr-2 h-4 w-4" />
-                        Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(app.id)}>
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-                <h3 className="font-semibold mb-1">{app.name}</h3>
-                {app.url && <p className="text-xs text-muted-foreground mb-2 truncate">{app.url}</p>}
-                <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{app.description || "No description"}</p>
-                <div className="flex items-center justify-between">
-                  <Button variant="ghost" size="sm" asChild>
-                    <Link to={`/app/${app.id}`}>
-                      Open
-                      <ArrowRight className="ml-1 h-3 w-3" />
-                    </Link>
-                  </Button>
-                </div>
-              </Card>
-            ))}
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {apps.map((app, i) => (
+                  <Card key={app.id} className="p-4 hover:shadow-md transition-shadow animate-fade-in flex items-center gap-4" style={{ animationDelay: `${i * 50}ms` }}>
+                    {(app as any).icon_url ? (
+                      <img src={(app as any).icon_url} alt={app.name} className="h-9 w-9 rounded-lg object-cover shrink-0" />
+                    ) : (
+                      <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                        <span className="text-primary font-bold text-sm">{app.name.charAt(0).toUpperCase()}</span>
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-sm">{app.name}</h3>
+                      <p className="text-xs text-muted-foreground truncate">{app.url || app.description || "No description"}</p>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Button variant="ghost" size="sm" asChild>
+                        <Link to={`/app/${app.id}`}>
+                          Open
+                          <ArrowRight className="ml-1 h-3 w-3" />
+                        </Link>
+                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => openEdit(app)}>
+                            <Pencil className="mr-2 h-4 w-4" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(app.id)}>
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </main>
