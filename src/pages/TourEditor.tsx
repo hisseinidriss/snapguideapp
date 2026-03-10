@@ -269,7 +269,7 @@ const TourEditor = () => {
         </div>
 
         {/* Step Editor */}
-        <div className="w-full lg:w-80 border-r overflow-y-auto shrink-0 p-4">
+        {editorVisible && <div className="w-full lg:w-80 border-r overflow-y-auto shrink-0 p-4">
           {selectedStep ? (
             <StepEditorPanel
               step={selectedStep}
