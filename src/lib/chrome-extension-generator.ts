@@ -9,6 +9,7 @@ interface ProcessStep {
   placement: string;
   sort_order: number;
   target_url?: string | null;
+  click_selector?: string | null;
 }
 
 interface Process {
@@ -67,6 +68,7 @@ export async function generateChromeExtension(
             placement: s.placement,
             sort_order: s.sort_order,
             target_url: (s as any).target_url || null,
+            click_selector: (s as any).click_selector || null,
           })),
       });
     }
@@ -543,6 +545,16 @@ function getContentJS(): string {
         }));
         window.location.href = targetFull;
         return;
+      }
+    }
+
+    // Click action: click a button to open a modal/popup before looking for target
+    if (step.click_selector) {
+      const clickTarget = await waitForElement(step.click_selector, 2500);
+      if (clickTarget) {
+        clickTarget.click();
+        // Wait a moment for the popup/modal to appear
+        await new Promise(r => setTimeout(r, 600));
       }
     }
 

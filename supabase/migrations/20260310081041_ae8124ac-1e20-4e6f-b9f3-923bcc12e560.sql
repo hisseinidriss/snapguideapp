@@ -1,0 +1,1 @@
+ALTER TABLE public.tour_steps ADD COLUMN click_selector text DEFAULT NULL;

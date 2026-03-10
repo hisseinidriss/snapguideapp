@@ -65,6 +65,12 @@ const StepEditorPanel = ({ step, stepIndex, totalSteps, onUpdate, onRemove, onPi
       </div>
 
       <div className="space-y-2">
+        <Label>Click Selector <span className="text-muted-foreground font-normal">(optional)</span></Label>
+        <Input value={(step as any).click_selector || ""} onChange={(e) => onUpdate(step.id, { click_selector: e.target.value || null } as any)} placeholder="#create-btn or .open-modal" className="font-mono text-sm" />
+        <p className="text-xs text-muted-foreground">Click this element first to open a modal or popup before showing the step tooltip.</p>
+      </div>
+
+      <div className="space-y-2">
         <Label>Placement</Label>
         <Select value={step.placement} onValueChange={(v) => onUpdate(step.id, { placement: v })}>
           <SelectTrigger><SelectValue /></SelectTrigger>
