@@ -560,6 +560,8 @@ function getContentJS(): string {
     if (!processes[index] || !processes[index].steps.length) return;
     currentProcess = processes[index];
     currentStepIndex = 0;
+    _sessionId = 'bpg_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
+    trackEvent('tour_started', null);
     showStep();
   }
 
