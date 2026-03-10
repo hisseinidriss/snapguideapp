@@ -568,16 +568,43 @@ function getContentJS(): string {
 
     const targetEl = step.selector ? await waitForElement(step.selector, 2500) : null;
 
-    // Overlay
+    // Overlay with spotlight cutout
     overlayEl = document.createElement('div');
-    overlayEl.className = 'bpg-overlay';
+    overlayEl.className = 'bpg-overlay-bg';
     overlayEl.addEventListener('click', endProcess);
     document.body.appendChild(overlayEl);
 
-    // Highlight target
+    // Highlight target with spotlight
     if (targetEl) {
-      targetEl.classList.add('bpg-highlight');
       targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Wait for scroll to finish
+      await new Promise(r => setTimeout(r, 400));
+      
+      // Create spotlight cutout using clip-path
+      const rect = targetEl.getBoundingClientRect();
+      const pad = 6;
+      const x = rect.left - pad;
+      const y = rect.top - pad;
+      const w = rect.width + pad * 2;
+      const h = rect.height + pad * 2;
+      const r2 = 6; // border radius
+      
+      // clip-path polygon that cuts a rounded rect hole in the overlay
+      overlayEl.style.clipPath = 'polygon(evenodd, '
+        + '0% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 0%, '  // outer rect
+        + (x + r2) + 'px ' + y + 'px, '       // inner rect top-left
+        + (x + w - r2) + 'px ' + y + 'px, '   // top-right
+        + (x + w) + 'px ' + (y + r2) + 'px, '
+        + (x + w) + 'px ' + (y + h - r2) + 'px, '
+        + (x + w - r2) + 'px ' + (y + h) + 'px, '
+        + (x + r2) + 'px ' + (y + h) + 'px, '
+        + x + 'px ' + (y + h - r2) + 'px, '
+        + x + 'px ' + (y + r2) + 'px, '
+        + (x + r2) + 'px ' + y + 'px'          // close inner
+        + ')';
+      
+      // Add highlight ring
+      targetEl.classList.add('bpg-highlight');
     }
 
     // Tooltip
