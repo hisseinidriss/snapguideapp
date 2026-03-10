@@ -33,7 +33,8 @@ interface LauncherData {
 export async function generateChromeExtension(
   appId: string,
   appName: string,
-  appUrl: string
+  appUrl: string,
+  trackingConfig?: { supabaseUrl: string; supabaseKey: string }
 ) {
   // Fetch all processes and their steps
   const { data: tours } = await supabase
