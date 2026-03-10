@@ -381,7 +381,30 @@ function getContentJS(): string {
         return;
       }
 
-      const immediate = safeQuerySelector(selector);
+      // Try multiple selector strategies
+      function tryFind() {
+        // Direct match
+        var el = safeQuerySelector(selector);
+        if (el) return el;
+        
+        // If selector looks like it could be inside an iframe, try iframes
+        try {
+          var iframes = document.querySelectorAll('iframe');
+          for (var i = 0; i < iframes.length; i++) {
+            try {
+              var iframeDoc = iframes[i].contentDocument || iframes[i].contentWindow.document;
+              if (iframeDoc) {
+                var found = iframeDoc.querySelector(selector);
+                if (found) return found;
+              }
+            } catch(e) { /* cross-origin iframe, skip */ }
+          }
+        } catch(e) {}
+        
+        return null;
+      }
+
+      const immediate = tryFind();
       if (immediate) {
         resolve(immediate);
         return;
@@ -389,7 +412,7 @@ function getContentJS(): string {
 
       const start = Date.now();
       const observer = new MutationObserver(() => {
-        const found = safeQuerySelector(selector);
+        const found = tryFind();
         if (found) {
           observer.disconnect();
           resolve(found);
@@ -399,7 +422,7 @@ function getContentJS(): string {
       observer.observe(document.documentElement, { childList: true, subtree: true, attributes: true });
 
       const tick = () => {
-        const found = safeQuerySelector(selector);
+        const found = tryFind();
         if (found) {
           observer.disconnect();
           resolve(found);
