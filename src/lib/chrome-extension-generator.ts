@@ -33,7 +33,8 @@ interface LauncherData {
 export async function generateChromeExtension(
   appId: string,
   appName: string,
-  appUrl: string
+  appUrl: string,
+  trackingConfig?: { supabaseUrl: string; supabaseKey: string }
 ) {
   // Fetch all processes and their steps
   const { data: tours } = await supabase
@@ -133,9 +134,14 @@ export async function generateChromeExtension(
   zip.file("manifest.json", JSON.stringify(manifest, null, 2));
 
   // Embedded data as JSON
+  const trackingData = trackingConfig ? {
+    trackUrl: `${trackingConfig.supabaseUrl}/functions/v1/track-events`,
+    anonKey: trackingConfig.supabaseKey,
+  } : {};
+
   zip.file(
     "data.json",
-    JSON.stringify({ processes, launchers: activeLaunchers, appName }, null, 2)
+    JSON.stringify({ processes, launchers: activeLaunchers, appName, appId, ...trackingData }, null, 2)
   );
 
   // content.css
@@ -407,7 +413,39 @@ function getContentJS(): string {
     });
   }
 
-  let _bpgData = { processes: [], launchers: [], appName: '' };
+  let _bpgData = { processes: [], launchers: [], appName: '', appId: '', trackUrl: '', anonKey: '' };
+  var _sessionId = 'bpg_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
+  var _eventQueue = [];
+
+  function trackEvent(eventType, stepIndex) {
+    if (!_bpgData.trackUrl || !_bpgData.anonKey || !_bpgData.appId || !currentProcess) return;
+    _eventQueue.push({
+      tour_id: currentProcess.id,
+      app_id: _bpgData.appId,
+      event_type: eventType,
+      step_index: typeof stepIndex === 'number' ? stepIndex : null,
+      session_id: _sessionId
+    });
+    if (_eventQueue.length === 1) setTimeout(flushEvents, 1000);
+  }
+
+  function flushEvents() {
+    if (_eventQueue.length === 0) return;
+    var batch = _eventQueue.splice(0);
+    try {
+      fetch(_bpgData.trackUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': _bpgData.anonKey,
+          'Authorization': 'Bearer ' + _bpgData.anonKey
+        },
+        body: JSON.stringify({ events: batch })
+      }).catch(function(){});
+    } catch(e) {}
+  }
+
+  window.addEventListener('beforeunload', flushEvents);
 
   function init() {
     // Load data from JSON file bundled with extension
@@ -522,15 +560,22 @@ function getContentJS(): string {
     if (!processes[index] || !processes[index].steps.length) return;
     currentProcess = processes[index];
     currentStepIndex = 0;
+    _sessionId = 'bpg_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
+    trackEvent('tour_started', null);
     showStep();
   }
 
   async function showStep() {
     cleanup();
     if (!currentProcess || currentStepIndex >= currentProcess.steps.length) {
-      endProcess();
+      trackEvent('tour_completed', null);
+      flushEvents();
+      cleanup();
+      currentProcess = null;
+      currentStepIndex = 0;
       return;
     }
+    trackEvent('step_viewed', currentStepIndex);
 
     const step = currentProcess.steps[currentStepIndex];
 
@@ -738,6 +783,10 @@ function getContentJS(): string {
   }
 
   function endProcess() {
+    if (currentProcess) {
+      trackEvent('tour_abandoned', currentStepIndex);
+      flushEvents();
+    }
     cleanup();
     currentProcess = null;
     currentStepIndex = 0;
