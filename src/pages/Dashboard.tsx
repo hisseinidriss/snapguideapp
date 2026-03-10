@@ -73,18 +73,27 @@ const Dashboard = () => {
 
           {/* Desktop nav */}
           <div className="hidden sm:flex gap-2 items-center">
-            <Button variant="outline" size="sm" asChild>
-              <Link to="/account">
-                <UserCircle className="mr-2 h-4 w-4" />
-                Account
-              </Link>
-            </Button>
-            <Button variant="outline" size="sm" asChild>
-              <Link to="/guide">
-                <BookOpen className="mr-2 h-4 w-4" />
-                User Guide
-              </Link>
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon" className="h-8 w-8">
+                  <UserCircle className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem asChild>
+                  <Link to="/account" className="flex items-center gap-2">
+                    <UserCircle className="h-4 w-4" />
+                    Account
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/guide" className="flex items-center gap-2">
+                    <BookOpen className="h-4 w-4" />
+                    User Guide
+                  </Link>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger asChild>
                 <Button size="sm">
