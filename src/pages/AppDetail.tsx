@@ -353,7 +353,7 @@ const AppDetail = () => {
                 }}>
                   <ShieldCheck className="mr-2 h-4 w-4" />Validate Extension
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => generateChromeExtension(appId!, appName, appUrl)}>
+                <DropdownMenuItem onClick={() => generateChromeExtension(appId!, appName, appUrl, { supabaseUrl: import.meta.env.VITE_SUPABASE_URL, supabaseKey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY })}>
                   <Download className="mr-2 h-4 w-4" />Chrome Extension
                 </DropdownMenuItem>
               </DropdownMenuContent>
