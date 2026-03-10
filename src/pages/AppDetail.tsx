@@ -339,6 +339,20 @@ const AppDetail = () => {
                 <DropdownMenuItem onClick={() => navigate(`/app/${appId}/analytics`)}>
                   <BarChart3 className="mr-2 h-4 w-4" />Analytics
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={async () => {
+                  setValidating(true);
+                  try {
+                    const report = await validateChromeExtension(appId!, appName, appUrl);
+                    setValidationReport(report);
+                    setValidationDialogOpen(true);
+                  } catch (e) {
+                    toast({ title: "Validation failed", description: String(e), variant: "destructive" });
+                  } finally {
+                    setValidating(false);
+                  }
+                }}>
+                  <ShieldCheck className="mr-2 h-4 w-4" />Validate Extension
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => generateChromeExtension(appId!, appName, appUrl)}>
                   <Download className="mr-2 h-4 w-4" />Chrome Extension
                 </DropdownMenuItem>
