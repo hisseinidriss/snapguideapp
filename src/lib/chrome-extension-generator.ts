@@ -570,7 +570,9 @@ function getContentJS(): string {
     if (!currentProcess || currentStepIndex >= currentProcess.steps.length) {
       trackEvent('tour_completed', null);
       flushEvents();
-      endProcess();
+      cleanup();
+      currentProcess = null;
+      currentStepIndex = 0;
       return;
     }
     trackEvent('step_viewed', currentStepIndex);
