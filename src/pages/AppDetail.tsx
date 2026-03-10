@@ -44,6 +44,9 @@ const AppDetail = () => {
   const [generatingFromManual, setGeneratingFromManual] = useState(false);
   const [generating, setGenerating] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [validating, setValidating] = useState(false);
+  const [validationReport, setValidationReport] = useState<ValidationReport | null>(null);
+  const [validationDialogOpen, setValidationDialogOpen] = useState(false);
 
   const [checklistOpen, setChecklistOpen] = useState(false);
   const [newChecklistName, setNewChecklistName] = useState("");
