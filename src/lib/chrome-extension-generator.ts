@@ -568,9 +568,12 @@ function getContentJS(): string {
   async function showStep() {
     cleanup();
     if (!currentProcess || currentStepIndex >= currentProcess.steps.length) {
+      trackEvent('tour_completed', null);
+      flushEvents();
       endProcess();
       return;
     }
+    trackEvent('step_viewed', currentStepIndex);
 
     const step = currentProcess.steps[currentStepIndex];
 
