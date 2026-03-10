@@ -920,22 +920,48 @@ document.addEventListener('DOMContentLoaded', () => {
       var appUrl = (data.appUrl || '').replace(/\\/+$/, '');
 
       function launchProcess(index) {
+        var proc = processes[index];
+        // Determine the best URL to navigate to: first step's target_url or appUrl
+        var firstStepUrl = (proc && proc.steps && proc.steps[0] && proc.steps[0].target_url) || '';
+        var navUrl = firstStepUrl || appUrl;
+
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
           var tab = tabs[0];
           var tabUrl = (tab.url || '').replace(/\\/+$/, '');
-          var needsNav = appUrl && !tabUrl.startsWith(appUrl);
+          
+          // Check if we need to navigate: either not on the app at all, or first step needs a specific page
+          var onApp = appUrl && tabUrl.startsWith(appUrl);
+          var needsNav = false;
+          
+          if (!onApp && navUrl) {
+            needsNav = true;
+          } else if (onApp && firstStepUrl) {
+            // On the app but maybe wrong page - check if first step needs a different page
+            try {
+              var targetFull = new URL(firstStepUrl, appUrl || window.location.origin).href.replace(/\\/+$/, '');
+              if (tabUrl !== targetFull && !tabUrl.startsWith(targetFull)) {
+                needsNav = true;
+                navUrl = targetFull;
+              }
+            } catch(e) {}
+          }
 
-          if (needsNav) {
-            // Navigate to app URL first, then start process after page loads
-            chrome.tabs.update(tab.id, { url: appUrl }, () => {
-              // Wait for tab to finish loading
+          if (needsNav && navUrl) {
+            // Resolve relative URLs against appUrl
+            var finalUrl = navUrl;
+            try {
+              if (navUrl && !navUrl.startsWith('http')) {
+                finalUrl = new URL(navUrl, appUrl || window.location.origin).href;
+              }
+            } catch(e) { finalUrl = navUrl; }
+            
+            chrome.tabs.update(tab.id, { url: finalUrl }, () => {
               function onUpdated(tabId, info) {
                 if (tabId === tab.id && info.status === 'complete') {
                   chrome.tabs.onUpdated.removeListener(onUpdated);
-                  // Small delay to let content script initialize
                   setTimeout(() => {
                     chrome.tabs.sendMessage(tab.id, { type: 'START_PROCESS', processIndex: index });
-                  }, 1000);
+                  }, 1500);
                 }
               }
               chrome.tabs.onUpdated.addListener(onUpdated);
