@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
-import { Plus, Globe, MoreVertical, Trash2, ArrowRight, BookOpen, UserCircle, Menu, Pencil, ImagePlus } from "lucide-react";
+import { Plus, Globe, MoreVertical, Trash2, ArrowRight, BookOpen, UserCircle, Menu, Pencil, ImagePlus, LogOut } from "lucide-react";
 import { Label } from "@/components/ui/label";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -33,7 +33,8 @@ const Dashboard = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const editFileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
 
   const fetchApps = async () => {
     const { data, error } = await supabase.from("apps").select("*").order("created_at", { ascending: false });
@@ -192,6 +193,10 @@ const Dashboard = () => {
                     User Guide
                   </Link>
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={async () => { await signOut(); navigate("/auth"); }} className="text-destructive">
+                  <LogOut className="h-4 w-4" />
+                  Sign Out
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -232,6 +237,9 @@ const Dashboard = () => {
                   </Button>
                   <Button variant="outline" asChild className="justify-start">
                     <Link to="/guide"><BookOpen className="mr-2 h-4 w-4" />User Guide</Link>
+                  </Button>
+                  <Button variant="destructive" onClick={async () => { await signOut(); navigate("/auth"); }} className="justify-start">
+                    <LogOut className="mr-2 h-4 w-4" />Sign Out
                   </Button>
                 </div>
                 {user && (
