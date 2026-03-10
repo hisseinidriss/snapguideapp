@@ -148,6 +148,27 @@ const Dashboard = () => {
                   <Input placeholder="App name" value={newName} onChange={(e) => setNewName(e.target.value)} />
                   <Input placeholder="https://yourapp.com (optional)" value={newUrl} onChange={(e) => setNewUrl(e.target.value)} />
                   <Textarea placeholder="Brief description (optional)" value={newDesc} onChange={(e) => setNewDesc(e.target.value)} rows={3} />
+                  <div>
+                    <Label className="text-sm mb-1.5 block">App Icon</Label>
+                    <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleIconSelect(e.target.files?.[0])} />
+                    <div className="flex items-center gap-3">
+                      {iconPreview ? (
+                        <img src={iconPreview} alt="Icon preview" className="h-10 w-10 rounded-lg object-cover border" />
+                      ) : (
+                        <div className="h-10 w-10 rounded-lg border border-dashed border-muted-foreground/30 flex items-center justify-center">
+                          <ImagePlus className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                      )}
+                      <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
+                        {iconPreview ? "Change" : "Upload"}
+                      </Button>
+                      {iconPreview && (
+                        <Button type="button" variant="ghost" size="sm" onClick={() => { setIconFile(null); setIconPreview(null); }}>
+                          Remove
+                        </Button>
+                      )}
+                    </div>
+                  </div>
                   <Button onClick={handleCreate} className="w-full">Create App</Button>
                 </div>
               </DialogContent>
