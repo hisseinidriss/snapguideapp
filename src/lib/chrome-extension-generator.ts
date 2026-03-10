@@ -730,7 +730,9 @@ function getContentJS(): string {
   }
 
   function cleanup() {
-    if (overlayEl) { overlayEl.remove(); overlayEl = null; }
+    overlayEls.forEach(function(el) { el.remove(); });
+    overlayEls = [];
+    if (spotlightRing) { spotlightRing.remove(); spotlightRing = null; }
     if (tooltipEl) { tooltipEl.remove(); tooltipEl = null; }
     document.querySelectorAll('.bpg-highlight').forEach(el => el.classList.remove('bpg-highlight'));
   }
