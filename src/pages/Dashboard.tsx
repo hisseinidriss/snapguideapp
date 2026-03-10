@@ -72,17 +72,17 @@ const Dashboard = () => {
           </div>
 
           {/* Desktop nav */}
-          <div className="hidden sm:flex gap-2">
-            <Button variant="outline" size="sm" asChild>
-              <Link to="/guide">
-                <BookOpen className="mr-2 h-4 w-4" />
-                User Guide
-              </Link>
-            </Button>
+          <div className="hidden sm:flex gap-2 items-center">
             <Button variant="outline" size="sm" asChild>
               <Link to="/account">
                 <UserCircle className="mr-2 h-4 w-4" />
                 Account
+              </Link>
+            </Button>
+            <Button variant="outline" size="sm" asChild>
+              <Link to="/guide">
+                <BookOpen className="mr-2 h-4 w-4" />
+                User Guide
               </Link>
             </Button>
             <Dialog open={open} onOpenChange={setOpen}>
