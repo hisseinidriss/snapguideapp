@@ -292,11 +292,8 @@ function getContentCSS(): string {
 }
 .bpg-btn-close:hover { background: #e5e7eb; }
 
-/* Highlight ring around target element */
+/* Legacy highlight class - kept for compatibility */
 .bpg-highlight {
-  outline: 3px solid #ef4444 !important;
-  outline-offset: 4px !important;
-  border-radius: 4px;
   position: relative;
   z-index: 999999 !important;
 }
