@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
-import { Plus, Globe, MoreVertical, Trash2, ArrowRight, BookOpen, UserCircle, Menu, Pencil } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Plus, Globe, MoreVertical, Trash2, ArrowRight, BookOpen, UserCircle, Menu, Pencil, ImagePlus } from "lucide-react";
+import { Label } from "@/components/ui/label";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
