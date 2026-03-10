@@ -188,20 +188,22 @@ function generateIcon(size: number): Promise<Uint8Array> {
 function getContentCSS(): string {
   return `
 /* Business Process Guide - Overlay Styles */
-.bpg-overlay {
+.bpg-overlay-box {
   position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5);
   z-index: 999998;
-  transition: opacity 0.2s;
+  transition: all 0.3s ease;
   pointer-events: auto;
 }
 
-.bpg-overlay-bg {
+.bpg-spotlight-ring {
   position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.5);
   z-index: 999998;
-  pointer-events: auto;
+  border: 3px solid #ef4444;
+  border-radius: 6px;
+  pointer-events: none;
+  box-shadow: 0 0 0 3px rgba(239,68,68,0.3);
+  transition: all 0.3s ease;
 }
 
 .bpg-tooltip {
