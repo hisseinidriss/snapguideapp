@@ -506,7 +506,7 @@ function getContentJS(): string {
         const btn = document.createElement('button');
         btn.className = 'bpg-launcher-button';
         btn.setAttribute('data-bpg-launcher-id', launcher.id);
-        btn.style.backgroundColor = launcher.color || '#6366f1';
+        btn.style.backgroundColor = launcher.color || '#4d8b6f';
         btn.textContent = launcher.label || launcher.name;
         btn.addEventListener('click', () => {
           const procIndex = processes.findIndex(p => p.id === launcher.tour_id);
