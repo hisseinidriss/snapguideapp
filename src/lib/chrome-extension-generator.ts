@@ -632,7 +632,7 @@ function getContentJS(): string {
 
     // Click action: click a button to open a modal/popup before looking for target
     if (step.click_selector) {
-      const clickTarget = await waitForElement(step.click_selector, 2500);
+      const clickTarget = await waitForElement(step.click_selector, 5000);
       if (clickTarget) {
         clickTarget.click();
         // Wait a moment for the popup/modal to appear
