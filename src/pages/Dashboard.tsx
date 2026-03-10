@@ -193,6 +193,10 @@ const Dashboard = () => {
                     User Guide
                   </Link>
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={async () => { await signOut(); navigate("/auth"); }} className="text-destructive">
+                  <LogOut className="h-4 w-4" />
+                  Sign Out
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
