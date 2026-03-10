@@ -507,6 +507,7 @@ function getContentJS(): string {
     } catch(e) {}
   }
 
+  function startProcess(index) {
     const processes = getProcesses();
     if (!processes[index] || !processes[index].steps.length) return;
     currentProcess = processes[index];
