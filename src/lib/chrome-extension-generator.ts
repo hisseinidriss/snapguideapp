@@ -527,8 +527,8 @@ function getContentJS(): string {
         const dot = document.createElement('div');
         dot.className = 'bpg-beacon' + (launcher.pulse ? ' bpg-beacon-pulse' : '');
         dot.setAttribute('data-bpg-launcher-id', launcher.id);
-        dot.style.backgroundColor = launcher.color || '#6366f1';
-        dot.style.color = launcher.color || '#6366f1';
+        dot.style.backgroundColor = launcher.color || '#4d8b6f';
+        dot.style.color = launcher.color || '#4d8b6f';
         dot.addEventListener('click', () => {
           const procIndex = processes.findIndex(p => p.id === launcher.tour_id);
           if (procIndex >= 0) startProcess(procIndex);
