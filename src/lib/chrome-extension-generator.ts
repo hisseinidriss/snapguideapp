@@ -207,10 +207,10 @@ function getContentCSS(): string {
 .bpg-spotlight-ring {
   position: fixed;
   z-index: 999998;
-  border: 2.5px solid #4d8b6f;
+  border: 2.5px solid #ef4444;
   border-radius: 8px;
   pointer-events: none;
-  box-shadow: 0 0 0 3px rgba(77,139,111,0.25), 0 0 20px rgba(77,139,111,0.15);
+  box-shadow: 0 0 0 3px rgba(239,68,68,0.25), 0 0 20px rgba(239,68,68,0.15);
   transition: all 0.3s ease;
 }
 
