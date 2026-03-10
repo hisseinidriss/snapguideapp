@@ -568,43 +568,65 @@ function getContentJS(): string {
 
     const targetEl = step.selector ? await waitForElement(step.selector, 2500) : null;
 
-    // Overlay with spotlight cutout
-    overlayEl = document.createElement('div');
-    overlayEl.className = 'bpg-overlay-bg';
-    overlayEl.addEventListener('click', endProcess);
-    document.body.appendChild(overlayEl);
-
-    // Highlight target with spotlight
     if (targetEl) {
       targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      // Wait for scroll to finish
       await new Promise(r => setTimeout(r, 400));
       
-      // Create spotlight cutout using clip-path
+      // Create 4-box overlay with spotlight cutout
       const rect = targetEl.getBoundingClientRect();
-      const pad = 6;
+      const pad = 8;
       const x = rect.left - pad;
       const y = rect.top - pad;
       const w = rect.width + pad * 2;
       const h = rect.height + pad * 2;
-      const r2 = 6; // border radius
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
       
-      // clip-path polygon that cuts a rounded rect hole in the overlay
-      overlayEl.style.clipPath = 'polygon(evenodd, '
-        + '0% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 0%, '  // outer rect
-        + (x + r2) + 'px ' + y + 'px, '       // inner rect top-left
-        + (x + w - r2) + 'px ' + y + 'px, '   // top-right
-        + (x + w) + 'px ' + (y + r2) + 'px, '
-        + (x + w) + 'px ' + (y + h - r2) + 'px, '
-        + (x + w - r2) + 'px ' + (y + h) + 'px, '
-        + (x + r2) + 'px ' + (y + h) + 'px, '
-        + x + 'px ' + (y + h - r2) + 'px, '
-        + x + 'px ' + (y + r2) + 'px, '
-        + (x + r2) + 'px ' + y + 'px'          // close inner
-        + ')';
+      // Top box
+      var topBox = document.createElement('div');
+      topBox.className = 'bpg-overlay-box';
+      topBox.style.cssText = 'top:0;left:0;width:' + vw + 'px;height:' + Math.max(0, y) + 'px';
+      topBox.addEventListener('click', endProcess);
+      document.body.appendChild(topBox);
       
-      // Add highlight ring
+      // Bottom box
+      var bottomBox = document.createElement('div');
+      bottomBox.className = 'bpg-overlay-box';
+      bottomBox.style.cssText = 'top:' + (y + h) + 'px;left:0;width:' + vw + 'px;height:' + Math.max(0, vh - y - h) + 'px';
+      bottomBox.addEventListener('click', endProcess);
+      document.body.appendChild(bottomBox);
+      
+      // Left box
+      var leftBox = document.createElement('div');
+      leftBox.className = 'bpg-overlay-box';
+      leftBox.style.cssText = 'top:' + y + 'px;left:0;width:' + Math.max(0, x) + 'px;height:' + h + 'px';
+      leftBox.addEventListener('click', endProcess);
+      document.body.appendChild(leftBox);
+      
+      // Right box
+      var rightBox = document.createElement('div');
+      rightBox.className = 'bpg-overlay-box';
+      rightBox.style.cssText = 'top:' + y + 'px;left:' + (x + w) + 'px;width:' + Math.max(0, vw - x - w) + 'px;height:' + h + 'px';
+      rightBox.addEventListener('click', endProcess);
+      document.body.appendChild(rightBox);
+      
+      overlayEls = [topBox, bottomBox, leftBox, rightBox];
+      
+      // Spotlight ring around target
+      spotlightRing = document.createElement('div');
+      spotlightRing.className = 'bpg-spotlight-ring';
+      spotlightRing.style.cssText = 'top:' + y + 'px;left:' + x + 'px;width:' + w + 'px;height:' + h + 'px';
+      document.body.appendChild(spotlightRing);
+      
       targetEl.classList.add('bpg-highlight');
+    } else {
+      // No target: full overlay
+      var fullOverlay = document.createElement('div');
+      fullOverlay.className = 'bpg-overlay-box';
+      fullOverlay.style.cssText = 'top:0;left:0;width:100%;height:100%';
+      fullOverlay.addEventListener('click', endProcess);
+      document.body.appendChild(fullOverlay);
+      overlayEls = [fullOverlay];
     }
 
     // Tooltip
