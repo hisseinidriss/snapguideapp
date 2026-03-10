@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
-  ArrowLeft, Plus, GripVertical, ChevronUp, ChevronDown, Eye, AlertTriangle, CheckCircle2, ShieldCheck, Loader2, Menu,
+  ArrowLeft, Plus, GripVertical, ChevronUp, ChevronDown, Eye, AlertTriangle, CheckCircle2, ShieldCheck, Loader2, Menu, PanelLeftClose, PanelLeft,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -31,6 +31,7 @@ const TourEditor = () => {
   const [validationStatus, setValidationStatus] = useState<ValidationStatus>("idle");
   const [selectorResults, setSelectorResults] = useState<Record<string, SelectorResult>>({});
   const [mobileStepListOpen, setMobileStepListOpen] = useState(false);
+  const [editorVisible, setEditorVisible] = useState(true);
 
   useEffect(() => {
     if (!appId || !tourId) return;
@@ -238,6 +239,16 @@ const TourEditor = () => {
           <Button
             variant="outline"
             size="sm"
+            onClick={() => setEditorVisible((v) => !v)}
+            className="h-8 hidden lg:inline-flex"
+          >
+            {editorVisible ? <PanelLeftClose className="mr-1.5 h-3.5 w-3.5" /> : <PanelLeft className="mr-1.5 h-3.5 w-3.5" />}
+            <span className="hidden sm:inline">{editorVisible ? "Hide Editor" : "Show Editor"}</span>
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
             onClick={validateSelectors}
             disabled={validationStatus === "validating"}
             className="h-8"
@@ -258,7 +269,7 @@ const TourEditor = () => {
         </div>
 
         {/* Step Editor */}
-        <div className="w-full lg:w-80 border-r overflow-y-auto shrink-0 p-4">
+        {editorVisible && <div className="w-full lg:w-80 border-r overflow-y-auto shrink-0 p-4">
           {selectedStep ? (
             <StepEditorPanel
               step={selectedStep}
@@ -273,7 +284,7 @@ const TourEditor = () => {
               <p>Select a step to edit.</p>
             </div>
           )}
-        </div>
+        </div>}
 
         {/* Live Preview - hidden on mobile */}
         <div className="hidden lg:block flex-1">
