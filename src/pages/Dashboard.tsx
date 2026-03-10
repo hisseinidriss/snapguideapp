@@ -243,6 +243,21 @@ const Dashboard = () => {
           </div>
         )}
       </main>
+
+      {/* Edit App Dialog */}
+      <Dialog open={!!editApp} onOpenChange={(o) => { if (!o) { setEditApp(null); setNewName(""); setNewUrl(""); setNewDesc(""); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit application</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <Input placeholder="App name" value={newName} onChange={(e) => setNewName(e.target.value)} />
+            <Input placeholder="https://yourapp.com (optional)" value={newUrl} onChange={(e) => setNewUrl(e.target.value)} />
+            <Textarea placeholder="Brief description (optional)" value={newDesc} onChange={(e) => setNewDesc(e.target.value)} rows={3} />
+            <Button onClick={handleEdit} className="w-full">Save Changes</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
