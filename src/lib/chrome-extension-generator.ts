@@ -188,12 +188,22 @@ function generateIcon(size: number): Promise<Uint8Array> {
 function getContentCSS(): string {
   return `
 /* Business Process Guide - Overlay Styles */
-.bpg-overlay {
+.bpg-overlay-box {
   position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
   background: rgba(0,0,0,0.5);
   z-index: 999998;
-  transition: opacity 0.2s;
+  transition: all 0.3s ease;
+  pointer-events: auto;
+}
+
+.bpg-spotlight-ring {
+  position: fixed;
+  z-index: 999998;
+  border: 3px solid #ef4444;
+  border-radius: 6px;
+  pointer-events: none;
+  box-shadow: 0 0 0 3px rgba(239,68,68,0.3);
+  transition: all 0.3s ease;
 }
 
 .bpg-tooltip {
@@ -282,11 +292,8 @@ function getContentCSS(): string {
 }
 .bpg-btn-close:hover { background: #e5e7eb; }
 
-/* Highlight ring around target element */
+/* Legacy highlight class - kept for compatibility */
 .bpg-highlight {
-  outline: 3px solid #ef4444 !important;
-  outline-offset: 4px !important;
-  border-radius: 4px;
   position: relative;
   z-index: 999999 !important;
 }
@@ -342,7 +349,8 @@ function getContentJS(): string {
 
   let currentProcess = null;
   let currentStepIndex = 0;
-  let overlayEl = null;
+  let overlayEls = [];
+  let spotlightRing = null;
   let tooltipEl = null;
 
   function safeQuerySelector(selector) {
@@ -560,16 +568,65 @@ function getContentJS(): string {
 
     const targetEl = step.selector ? await waitForElement(step.selector, 2500) : null;
 
-    // Overlay
-    overlayEl = document.createElement('div');
-    overlayEl.className = 'bpg-overlay';
-    overlayEl.addEventListener('click', endProcess);
-    document.body.appendChild(overlayEl);
-
-    // Highlight target
     if (targetEl) {
-      targetEl.classList.add('bpg-highlight');
       targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      await new Promise(r => setTimeout(r, 400));
+      
+      // Create 4-box overlay with spotlight cutout
+      const rect = targetEl.getBoundingClientRect();
+      const pad = 8;
+      const x = rect.left - pad;
+      const y = rect.top - pad;
+      const w = rect.width + pad * 2;
+      const h = rect.height + pad * 2;
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      
+      // Top box
+      var topBox = document.createElement('div');
+      topBox.className = 'bpg-overlay-box';
+      topBox.style.cssText = 'top:0;left:0;width:' + vw + 'px;height:' + Math.max(0, y) + 'px';
+      topBox.addEventListener('click', endProcess);
+      document.body.appendChild(topBox);
+      
+      // Bottom box
+      var bottomBox = document.createElement('div');
+      bottomBox.className = 'bpg-overlay-box';
+      bottomBox.style.cssText = 'top:' + (y + h) + 'px;left:0;width:' + vw + 'px;height:' + Math.max(0, vh - y - h) + 'px';
+      bottomBox.addEventListener('click', endProcess);
+      document.body.appendChild(bottomBox);
+      
+      // Left box
+      var leftBox = document.createElement('div');
+      leftBox.className = 'bpg-overlay-box';
+      leftBox.style.cssText = 'top:' + y + 'px;left:0;width:' + Math.max(0, x) + 'px;height:' + h + 'px';
+      leftBox.addEventListener('click', endProcess);
+      document.body.appendChild(leftBox);
+      
+      // Right box
+      var rightBox = document.createElement('div');
+      rightBox.className = 'bpg-overlay-box';
+      rightBox.style.cssText = 'top:' + y + 'px;left:' + (x + w) + 'px;width:' + Math.max(0, vw - x - w) + 'px;height:' + h + 'px';
+      rightBox.addEventListener('click', endProcess);
+      document.body.appendChild(rightBox);
+      
+      overlayEls = [topBox, bottomBox, leftBox, rightBox];
+      
+      // Spotlight ring around target
+      spotlightRing = document.createElement('div');
+      spotlightRing.className = 'bpg-spotlight-ring';
+      spotlightRing.style.cssText = 'top:' + y + 'px;left:' + x + 'px;width:' + w + 'px;height:' + h + 'px';
+      document.body.appendChild(spotlightRing);
+      
+      targetEl.classList.add('bpg-highlight');
+    } else {
+      // No target: full overlay
+      var fullOverlay = document.createElement('div');
+      fullOverlay.className = 'bpg-overlay-box';
+      fullOverlay.style.cssText = 'top:0;left:0;width:100%;height:100%';
+      fullOverlay.addEventListener('click', endProcess);
+      document.body.appendChild(fullOverlay);
+      overlayEls = [fullOverlay];
     }
 
     // Tooltip
@@ -673,7 +730,9 @@ function getContentJS(): string {
   }
 
   function cleanup() {
-    if (overlayEl) { overlayEl.remove(); overlayEl = null; }
+    overlayEls.forEach(function(el) { el.remove(); });
+    overlayEls = [];
+    if (spotlightRing) { spotlightRing.remove(); spotlightRing = null; }
     if (tooltipEl) { tooltipEl.remove(); tooltipEl = null; }
     document.querySelectorAll('.bpg-highlight').forEach(el => el.classList.remove('bpg-highlight'));
   }
