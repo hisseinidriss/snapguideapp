@@ -640,7 +640,7 @@ function getContentJS(): string {
       }
     }
 
-    const targetEl = step.selector ? await waitForElement(step.selector, 2500) : null;
+    const targetEl = step.selector ? await waitForElement(step.selector, 5000) : null;
 
     if (targetEl) {
       targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
