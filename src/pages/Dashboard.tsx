@@ -238,6 +238,9 @@ const Dashboard = () => {
                   <Button variant="outline" asChild className="justify-start">
                     <Link to="/guide"><BookOpen className="mr-2 h-4 w-4" />User Guide</Link>
                   </Button>
+                  <Button variant="destructive" onClick={async () => { await signOut(); navigate("/auth"); }} className="justify-start">
+                    <LogOut className="mr-2 h-4 w-4" />Sign Out
+                  </Button>
                 </div>
                 {user && (
                   <p className="text-xs text-muted-foreground mt-6 truncate">{user.email}</p>
