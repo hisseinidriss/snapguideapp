@@ -23,6 +23,7 @@ const Dashboard = () => {
   const [apps, setApps] = useState<App[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
+  const [editApp, setEditApp] = useState<App | null>(null);
   const [newName, setNewName] = useState("");
   const [newUrl, setNewUrl] = useState("");
   const [newDesc, setNewDesc] = useState("");
