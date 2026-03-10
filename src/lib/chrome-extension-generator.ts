@@ -413,7 +413,39 @@ function getContentJS(): string {
     });
   }
 
-  let _bpgData = { processes: [], launchers: [], appName: '' };
+  let _bpgData = { processes: [], launchers: [], appName: '', appId: '', trackUrl: '', anonKey: '' };
+  var _sessionId = 'bpg_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
+  var _eventQueue = [];
+
+  function trackEvent(eventType, stepIndex) {
+    if (!_bpgData.trackUrl || !_bpgData.anonKey || !_bpgData.appId || !currentProcess) return;
+    _eventQueue.push({
+      tour_id: currentProcess.id,
+      app_id: _bpgData.appId,
+      event_type: eventType,
+      step_index: typeof stepIndex === 'number' ? stepIndex : null,
+      session_id: _sessionId
+    });
+    if (_eventQueue.length === 1) setTimeout(flushEvents, 1000);
+  }
+
+  function flushEvents() {
+    if (_eventQueue.length === 0) return;
+    var batch = _eventQueue.splice(0);
+    try {
+      fetch(_bpgData.trackUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': _bpgData.anonKey,
+          'Authorization': 'Bearer ' + _bpgData.anonKey
+        },
+        body: JSON.stringify({ events: batch })
+      }).catch(function(){});
+    } catch(e) {}
+  }
+
+  window.addEventListener('beforeunload', flushEvents);
 
   function init() {
     // Load data from JSON file bundled with extension
