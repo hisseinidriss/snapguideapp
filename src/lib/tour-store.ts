@@ -12,6 +12,8 @@ export function generateEmbedScript(
       content: s.content,
       selector: s.selector,
       placement: s.placement,
+      step_type: (s as any).step_type || 'standard',
+      video_url: (s as any).video_url || null,
     })),
     null,
     2
