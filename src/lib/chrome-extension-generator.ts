@@ -818,7 +818,7 @@ function getContentJS(): string {
     
     var videoHtml = '';
     if (isVideo && embedUrl) {
-      videoHtml = '<div class="bpg-video-container"><iframe src="' + embedUrl + '" allow="autoplay;fullscreen;encrypted-media" allowfullscreen></iframe></div>'
+      videoHtml = '<div class="bpg-video-container"><iframe src="' + embedUrl + '" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture;fullscreen" allowfullscreen></iframe></div>'
         + '<div class="bpg-video-actions">'
         + '<button class="bpg-btn-fullscreen" data-action="fullscreen">⛶ Full Screen</button>'
         + '<button class="bpg-btn-skip" data-action="skip-video">Skip Video ⏭</button>'

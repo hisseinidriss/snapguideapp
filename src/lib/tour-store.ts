@@ -107,7 +107,7 @@ export function generateEmbedScript(
     var videoHtml = '';
     if (isVideo && embedUrl) {
       videoHtml = '<div style="margin:12px 0;border-radius:8px;overflow:hidden;aspect-ratio:16/9;background:#000">'
-        + '<iframe src="' + embedUrl + '" style="width:100%;height:100%;border:none" allow="autoplay;fullscreen;encrypted-media" allowfullscreen></iframe>'
+        + '<iframe src="' + embedUrl + '" style="width:100%;height:100%;border:none" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture;fullscreen" allowfullscreen></iframe>'
         + '</div>'
         + '<div style="display:flex;justify-content:space-between;margin-bottom:12px">'
         + '<button onclick="document.querySelector(\'#tb-tooltip iframe\').requestFullscreen()" style="padding:4px 10px;border:1px solid #ddd;border-radius:6px;background:#fff;cursor:pointer;font-size:12px;">⛶ Full Screen</button>'
