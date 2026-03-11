@@ -12,9 +12,90 @@ import StepEditorPanel from "@/components/StepEditorPanel";
 import LivePreview from "@/components/LivePreview";
 import ElementPickerDialog from "@/components/ElementPickerDialog";
 import { useToast } from "@/hooks/use-toast";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  DragOverlay,
+  type DragStartEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 type ValidationStatus = "idle" | "validating" | "done";
 type SelectorResult = { found: boolean; context?: string };
+
+interface SortableStepItemProps {
+  step: TourStep;
+  index: number;
+  totalSteps: number;
+  isSelected: boolean;
+  validationIcon: string | null;
+  onSelect: () => void;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
+}
+
+const SortableStepItem = ({ step, index, totalSteps, isSelected, validationIcon, onSelect, onMoveUp, onMoveDown }: SortableStepItemProps) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: step.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      onClick={onSelect}
+      className={`w-full text-left p-2.5 rounded-lg flex items-center gap-2 transition-colors cursor-pointer ${
+        isSelected ? "bg-primary/10 border border-primary/20" : "hover:bg-muted border border-transparent"
+      }`}
+    >
+      <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing touch-none">
+        <GripVertical className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+      </div>
+      <span className="text-[10px] font-mono text-muted-foreground shrink-0 w-4 text-center">{index + 1}</span>
+      {(() => {
+        if (validationIcon === "loading") return <Loader2 className="h-3 w-3 text-muted-foreground animate-spin shrink-0" />;
+        if (validationIcon === "valid") return (
+          <Tooltip><TooltipTrigger asChild><span><CheckCircle2 className="h-3 w-3 text-success shrink-0" /></span></TooltipTrigger><TooltipContent>Selector found on page</TooltipContent></Tooltip>
+        );
+        if (validationIcon === "invalid") return (
+          <Tooltip><TooltipTrigger asChild><span><AlertTriangle className="h-3 w-3 text-warning shrink-0" /></span></TooltipTrigger><TooltipContent>Selector not found on page</TooltipContent></Tooltip>
+        );
+        return null;
+      })()}
+      <div className="flex-1 min-w-0">
+        <p className="text-xs font-medium truncate flex items-center gap-1">
+          {(step as any).step_type === 'video' && <Video className="h-3 w-3 text-primary shrink-0" />}
+          {step.title}
+        </p>
+        <p className="text-[10px] text-muted-foreground truncate">{step.selector || "Center modal"}</p>
+      </div>
+      <div className="flex flex-col shrink-0">
+        <button onClick={(e) => { e.stopPropagation(); onMoveUp(); }} className="p-0.5 hover:text-primary disabled:opacity-30" disabled={index === 0}>
+          <ChevronUp className="h-3 w-3" />
+        </button>
+        <button onClick={(e) => { e.stopPropagation(); onMoveDown(); }} className="p-0.5 hover:text-primary disabled:opacity-30" disabled={index === totalSteps - 1}>
+          <ChevronDown className="h-3 w-3" />
+        </button>
+      </div>
+    </div>
+  );
+};
 
 const TourEditor = () => {
   const { appId, tourId } = useParams<{ appId: string; tourId: string }>();
@@ -32,6 +113,12 @@ const TourEditor = () => {
   const [selectorResults, setSelectorResults] = useState<Record<string, SelectorResult>>({});
   const [mobileStepListOpen, setMobileStepListOpen] = useState(false);
   const [editorVisible, setEditorVisible] = useState(true);
+  const [activeId, setActiveId] = useState<string | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
 
   useEffect(() => {
     if (!appId || !tourId) return;
@@ -51,6 +138,14 @@ const TourEditor = () => {
     load();
   }, [appId, tourId]);
 
+  const persistOrder = useCallback(async (newSteps: TourStep[]) => {
+    await Promise.all(
+      newSteps.map((s, i) =>
+        supabase.from("tour_steps").update({ sort_order: i }).eq("id", s.id)
+      )
+    );
+  }, []);
+
   const addStep = async () => {
     if (!tourId) return;
     const { data, error } = await supabase
@@ -67,9 +162,7 @@ const TourEditor = () => {
     const newSteps = steps.filter((s) => s.id !== id);
     setSteps(newSteps);
     if (selectedStepId === id) setSelectedStepId(newSteps[0]?.id || null);
-    for (let i = 0; i < newSteps.length; i++) {
-      await supabase.from("tour_steps").update({ sort_order: i }).eq("id", newSteps[i].id);
-    }
+    await persistOrder(newSteps);
   };
 
   const updateStep = useCallback(async (id: string, updates: Partial<TourStep>) => {
@@ -87,16 +180,36 @@ const TourEditor = () => {
     }
   }, []);
 
-  const moveStep = async (index: number, direction: "up" | "down") => {
+  const moveStep = useCallback(async (index: number, direction: "up" | "down") => {
     const newIndex = direction === "up" ? index - 1 : index + 1;
     if (newIndex < 0 || newIndex >= steps.length) return;
-    const newSteps = [...steps];
-    [newSteps[index], newSteps[newIndex]] = [newSteps[newIndex], newSteps[index]];
+    const newSteps = arrayMove(steps, index, newIndex);
     setSteps(newSteps);
-    await Promise.all([
-      supabase.from("tour_steps").update({ sort_order: index }).eq("id", newSteps[index].id),
-      supabase.from("tour_steps").update({ sort_order: newIndex }).eq("id", newSteps[newIndex].id),
-    ]);
+    await persistOrder(newSteps);
+  }, [steps, persistOrder]);
+
+  const moveStepToPosition = useCallback(async (fromIndex: number, toPosition: number) => {
+    const toIndex = toPosition - 1;
+    if (toIndex < 0 || toIndex >= steps.length || toIndex === fromIndex) return;
+    const newSteps = arrayMove(steps, fromIndex, toIndex);
+    setSteps(newSteps);
+    await persistOrder(newSteps);
+  }, [steps, persistOrder]);
+
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    setActiveId(null);
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = steps.findIndex((s) => s.id === active.id);
+    const newIndex = steps.findIndex((s) => s.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+    const newSteps = arrayMove(steps, oldIndex, newIndex);
+    setSteps(newSteps);
+    await persistOrder(newSteps);
   };
 
   const validateSelectors = async () => {
@@ -137,6 +250,7 @@ const TourEditor = () => {
   };
 
   const selectedStep = steps.find((s) => s.id === selectedStepId);
+  const activeStep = activeId ? steps.find((s) => s.id === activeId) : null;
 
   if (loading) {
     return (
@@ -165,43 +279,39 @@ const TourEditor = () => {
         </Button>
       </div>
       <div className="flex-1 overflow-y-auto p-2 space-y-1">
-        {steps.map((step, index) => (
-          <button
-            key={step.id}
-            onClick={() => { setSelectedStepId(step.id); setMobileStepListOpen(false); }}
-            className={`w-full text-left p-2.5 rounded-lg flex items-center gap-2 transition-colors ${
-              selectedStepId === step.id ? "bg-primary/10 border border-primary/20" : "hover:bg-muted"
-            }`}
-          >
-            <GripVertical className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-            {(() => {
-              const icon = getStepValidationIcon(step.selector);
-              if (icon === "loading") return <Loader2 className="h-3 w-3 text-muted-foreground animate-spin shrink-0" />;
-              if (icon === "valid") return (
-                <Tooltip><TooltipTrigger asChild><span><CheckCircle2 className="h-3 w-3 text-success shrink-0" /></span></TooltipTrigger><TooltipContent>Selector found on page</TooltipContent></Tooltip>
-              );
-              if (icon === "invalid") return (
-                <Tooltip><TooltipTrigger asChild><span><AlertTriangle className="h-3 w-3 text-warning shrink-0" /></span></TooltipTrigger><TooltipContent>Selector not found on page</TooltipContent></Tooltip>
-              );
-              return null;
-            })()}
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium truncate flex items-center gap-1">
-                {(step as any).step_type === 'video' && <Video className="h-3 w-3 text-primary shrink-0" />}
-                {step.title}
-              </p>
-              <p className="text-[10px] text-muted-foreground truncate">{step.selector || "Center modal"}</p>
-            </div>
-            <div className="flex flex-col shrink-0">
-              <button onClick={(e) => { e.stopPropagation(); moveStep(index, "up"); }} className="p-0.5 hover:text-primary" disabled={index === 0}>
-                <ChevronUp className="h-3 w-3" />
-              </button>
-              <button onClick={(e) => { e.stopPropagation(); moveStep(index, "down"); }} className="p-0.5 hover:text-primary" disabled={index === steps.length - 1}>
-                <ChevronDown className="h-3 w-3" />
-              </button>
-            </div>
-          </button>
-        ))}
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext items={steps.map((s) => s.id)} strategy={verticalListSortingStrategy}>
+            {steps.map((step, index) => (
+              <SortableStepItem
+                key={step.id}
+                step={step}
+                index={index}
+                totalSteps={steps.length}
+                isSelected={selectedStepId === step.id}
+                validationIcon={getStepValidationIcon(step.selector)}
+                onSelect={() => { setSelectedStepId(step.id); setMobileStepListOpen(false); }}
+                onMoveUp={() => moveStep(index, "up")}
+                onMoveDown={() => moveStep(index, "down")}
+              />
+            ))}
+          </SortableContext>
+          <DragOverlay>
+            {activeStep ? (
+              <div className="p-2.5 rounded-lg flex items-center gap-2 bg-card border border-primary/30 shadow-lg opacity-90">
+                <GripVertical className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium truncate">{activeStep.title}</p>
+                  <p className="text-[10px] text-muted-foreground truncate">{activeStep.selector || "Center modal"}</p>
+                </div>
+              </div>
+            ) : null}
+          </DragOverlay>
+        </DndContext>
         {steps.length === 0 && (
           <p className="text-xs text-muted-foreground text-center py-8">No steps yet.</p>
         )}
@@ -281,6 +391,7 @@ const TourEditor = () => {
               onUpdate={updateStep}
               onRemove={removeStep}
               onPickElement={() => setPickerOpen(true)}
+              onMoveToPosition={moveStepToPosition}
             />
           ) : (
             <div className="flex items-center justify-center h-full text-muted-foreground text-sm">

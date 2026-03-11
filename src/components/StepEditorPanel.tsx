@@ -1,11 +1,15 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Trash2, MousePointer2, Video } from "lucide-react";
+import { Trash2, MousePointer2, Video, ArrowUpDown } from "lucide-react";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import {
+  Popover, PopoverContent, PopoverTrigger,
+} from "@/components/ui/popover";
 import type { TourStep, Placement } from "@/types/tour";
 
 const PLACEMENTS: { value: Placement; label: string }[] = [
@@ -28,33 +32,85 @@ interface StepEditorPanelProps {
   onUpdate: (id: string, updates: Partial<TourStep>) => void;
   onRemove: (id: string) => void;
   onPickElement?: () => void;
+  onMoveToPosition?: (fromIndex: number, toPosition: number) => void;
 }
 
 function getVideoEmbedUrl(url: string): string | null {
   if (!url) return null;
-  // YouTube
   const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
   if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}`;
-  // OneDrive embed
   if (url.includes("onedrive.live.com") || url.includes("1drv.ms") || url.includes("sharepoint.com")) {
     return url.replace("/redir?", "/embed?").replace("resid=", "resid=");
   }
-  // Generic embed URL (already an embed)
   if (url.includes("/embed")) return url;
   return url;
 }
 
-const StepEditorPanel = ({ step, stepIndex, totalSteps, onUpdate, onRemove, onPickElement }: StepEditorPanelProps) => {
+const StepEditorPanel = ({ step, stepIndex, totalSteps, onUpdate, onRemove, onPickElement, onMoveToPosition }: StepEditorPanelProps) => {
   const stepType = (step as any).step_type || "standard";
   const videoUrl = (step as any).video_url || "";
+  const [moveToValue, setMoveToValue] = useState("");
+  const [movePopoverOpen, setMovePopoverOpen] = useState(false);
+
+  const handleMoveTo = () => {
+    const pos = parseInt(moveToValue, 10);
+    if (!isNaN(pos) && pos >= 1 && pos <= totalSteps && pos !== stepIndex + 1 && onMoveToPosition) {
+      onMoveToPosition(stepIndex, pos);
+      setMoveToValue("");
+      setMovePopoverOpen(false);
+    }
+  };
 
   return (
     <div className="space-y-5 animate-fade-in">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Edit Step</h2>
-        <Button variant="ghost" size="sm" className="text-destructive" onClick={() => onRemove(step.id)}>
-          <Trash2 className="mr-1 h-3 w-3" />Remove
-        </Button>
+        <div className="flex items-center gap-2">
+          <h2 className="text-lg font-semibold">Edit Step</h2>
+          <span className="text-xs text-muted-foreground font-mono bg-muted px-1.5 py-0.5 rounded">
+            {stepIndex + 1}/{totalSteps}
+          </span>
+        </div>
+        <div className="flex items-center gap-1">
+          {onMoveToPosition && totalSteps > 1 && (
+            <Popover open={movePopoverOpen} onOpenChange={setMovePopoverOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-7 text-xs">
+                  <ArrowUpDown className="mr-1 h-3 w-3" />Move
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-56 p-3" align="end">
+                <p className="text-xs font-medium mb-2">Move to position</p>
+                <div className="flex gap-2">
+                  <Input
+                    type="number"
+                    min={1}
+                    max={totalSteps}
+                    value={moveToValue}
+                    onChange={(e) => setMoveToValue(e.target.value)}
+                    placeholder={`1–${totalSteps}`}
+                    className="h-8 text-sm"
+                    onKeyDown={(e) => { if (e.key === "Enter") handleMoveTo(); }}
+                  />
+                  <Button size="sm" className="h-8" onClick={handleMoveTo}>Go</Button>
+                </div>
+                <div className="flex flex-wrap gap-1 mt-2">
+                  {Array.from({ length: totalSteps }, (_, i) => i + 1).filter(p => p !== stepIndex + 1).slice(0, 10).map((pos) => (
+                    <button
+                      key={pos}
+                      onClick={() => { onMoveToPosition(stepIndex, pos); setMovePopoverOpen(false); }}
+                      className="h-6 w-6 text-[10px] rounded bg-muted hover:bg-primary/10 hover:text-primary transition-colors font-mono"
+                    >
+                      {pos}
+                    </button>
+                  ))}
+                </div>
+              </PopoverContent>
+            </Popover>
+          )}
+          <Button variant="ghost" size="sm" className="text-destructive h-7 text-xs" onClick={() => onRemove(step.id)}>
+            <Trash2 className="mr-1 h-3 w-3" />Remove
+          </Button>
+        </div>
       </div>
 
       <div className="space-y-2">
