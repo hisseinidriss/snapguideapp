@@ -790,9 +790,45 @@ function getContentJS(): string {
     // Video-specific events
     if (step_isVideo) {
       trackEvent('video_started', currentStepIndex);
+      
+      // Detect iframe load failure and show fallback
+      var videoIframe = tooltipEl.querySelector('.bpg-video-container iframe');
+      var videoFallback = tooltipEl.querySelector('.bpg-video-fallback');
+      if (videoIframe && videoFallback) {
+        var iframeLoaded = false;
+        videoIframe.addEventListener('load', function() { iframeLoaded = true; });
+        setTimeout(function() {
+          if (!iframeLoaded || videoIframe.contentDocument === null) {
+            try {
+              // Check if iframe is accessible (same-origin) - if not, it may be blocked
+              var doc = videoIframe.contentDocument || videoIframe.contentWindow?.document;
+              if (doc && doc.body && doc.body.innerHTML === '') {
+                videoIframe.style.display = 'none';
+                videoFallback.style.display = 'flex';
+              }
+            } catch(e) {
+              // Cross-origin iframe loaded successfully (YouTube etc)
+            }
+          }
+        }, 3000);
+      }
+      
+      // Fallback click opens video in new tab
+      tooltipEl.querySelector('[data-action="open-video"]')?.addEventListener('click', function() {
+        var container = tooltipEl.querySelector('.bpg-video-container');
+        var videoUrl = container?.getAttribute('data-video-url');
+        if (videoUrl) window.open(videoUrl, '_blank');
+      });
+      
       tooltipEl.querySelector('[data-action="fullscreen"]')?.addEventListener('click', () => {
-        var iframe = tooltipEl.querySelector('iframe');
-        if (iframe) iframe.requestFullscreen();
+        var iframe = tooltipEl.querySelector('.bpg-video-container iframe');
+        if (iframe && iframe.style.display !== 'none') {
+          iframe.requestFullscreen();
+        } else {
+          var container = tooltipEl.querySelector('.bpg-video-container');
+          var videoUrl = container?.getAttribute('data-video-url');
+          if (videoUrl) window.open(videoUrl, '_blank');
+        }
       });
       tooltipEl.querySelector('[data-action="skip-video"]')?.addEventListener('click', () => {
         trackEvent('video_skipped', currentStepIndex);
