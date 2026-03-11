@@ -10,6 +10,8 @@ interface ProcessStep {
   sort_order: number;
   target_url?: string | null;
   click_selector?: string | null;
+  step_type?: string;
+  video_url?: string | null;
 }
 
 interface Process {
@@ -70,6 +72,8 @@ export async function generateChromeExtension(
             sort_order: s.sort_order,
             target_url: (s as any).target_url || null,
             click_selector: (s as any).click_selector || null,
+            step_type: (s as any).step_type || 'standard',
+            video_url: (s as any).video_url || null,
           })),
       });
     }
@@ -349,6 +353,54 @@ function getContentCSS(): string {
   position: fixed;
   top: 50%; left: 50%;
   transform: translate(-50%, -50%);
+}
+
+/* Video step styles */
+.bpg-video-container {
+  margin: 12px 0;
+  border-radius: 8px;
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+  background: #000;
+}
+.bpg-video-container iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+.bpg-video-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.bpg-btn-skip {
+  padding: 4px 10px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+  font-size: 12px;
+  color: #8a9b92;
+  font-family: 'DM Sans', sans-serif;
+  transition: color 0.15s;
+}
+.bpg-btn-skip:hover { color: #2d3b34; }
+.bpg-btn-fullscreen {
+  padding: 4px 10px;
+  border: 1px solid #dfe6e2;
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 12px;
+  color: #5a6b62;
+  font-family: 'DM Sans', sans-serif;
+  transition: all 0.15s;
+}
+.bpg-btn-fullscreen:hover { border-color: #4d8b6f; color: #2d3b34; }
+
+.bpg-tooltip.bpg-video-tooltip {
+  max-width: 480px;
+  min-width: 380px;
 }
 `;
 }
@@ -704,8 +756,9 @@ function getContentJS(): string {
     }
 
     // Tooltip
+    var step_isVideo = step.step_type === 'video' && step.video_url;
     tooltipEl = document.createElement('div');
-    tooltipEl.className = 'bpg-tooltip' + (!targetEl ? ' bpg-center-modal' : '');
+    tooltipEl.className = 'bpg-tooltip' + (!targetEl ? ' bpg-center-modal' : '') + (step_isVideo ? ' bpg-video-tooltip' : '');
     tooltipEl.innerHTML = buildTooltipHTML(
       step,
       currentStepIndex,
@@ -730,15 +783,53 @@ function getContentJS(): string {
       currentStepIndex++;
       showStep();
     });
+
+    // Video-specific events
+    if (step_isVideo) {
+      trackEvent('video_started', currentStepIndex);
+      tooltipEl.querySelector('[data-action="fullscreen"]')?.addEventListener('click', () => {
+        var iframe = tooltipEl.querySelector('iframe');
+        if (iframe) iframe.requestFullscreen();
+      });
+      tooltipEl.querySelector('[data-action="skip-video"]')?.addEventListener('click', () => {
+        trackEvent('video_skipped', currentStepIndex);
+        currentStepIndex++;
+        showStep();
+      });
+    }
+  }
+
+  function getVideoEmbedUrl(url) {
+    if (!url) return null;
+    var ytMatch = url.match(/(?:youtube\\.com\\/watch\\?v=|youtu\\.be\\/|youtube\\.com\\/embed\\/)([a-zA-Z0-9_-]{11})/);
+    if (ytMatch) return 'https://www.youtube.com/embed/' + ytMatch[1] + '?enablejsapi=1';
+    if (url.indexOf('onedrive.live.com') >= 0 || url.indexOf('1drv.ms') >= 0 || url.indexOf('sharepoint.com') >= 0) {
+      return url.replace('/redir?', '/embed?');
+    }
+    if (url.indexOf('/embed') >= 0) return url;
+    return url;
   }
 
   function buildTooltipHTML(step, index, total, processName, targetMissing) {
     var isFirst = index === 0;
     var isLast = index === total - 1;
+    var isVideo = step.step_type === 'video' && step.video_url;
+    var embedUrl = isVideo ? getVideoEmbedUrl(step.video_url) : null;
+    
+    var videoHtml = '';
+    if (isVideo && embedUrl) {
+      videoHtml = '<div class="bpg-video-container"><iframe src="' + embedUrl + '" allow="autoplay;fullscreen;encrypted-media" allowfullscreen></iframe></div>'
+        + '<div class="bpg-video-actions">'
+        + '<button class="bpg-btn-fullscreen" data-action="fullscreen">⛶ Full Screen</button>'
+        + '<button class="bpg-btn-skip" data-action="skip-video">Skip Video ⏭</button>'
+        + '</div>';
+    }
+
     return '<button class="bpg-btn-close">&times;</button>'
       + '<div style="font-size:11px;color:#4d8b6f;font-weight:600;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;font-family:DM Sans,sans-serif">' + processName + '</div>'
       + '<h3 class="bpg-tooltip-title">' + step.title + '</h3>'
       + '<p class="bpg-tooltip-content">' + step.content + '</p>'
+      + videoHtml
       + (targetMissing
         ? '<p style="font-size:12px;color:#b45309;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:8px 10px;margin:0 0 12px;font-family:DM Sans,sans-serif">Target element not found. Check if the selector is correct and visible on this page.</p>'
         : '')

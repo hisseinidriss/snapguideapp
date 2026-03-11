@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
-  ArrowLeft, Plus, GripVertical, ChevronUp, ChevronDown, Eye, AlertTriangle, CheckCircle2, ShieldCheck, Loader2, Menu, PanelLeftClose, PanelLeft,
+  ArrowLeft, Plus, GripVertical, ChevronUp, ChevronDown, Eye, AlertTriangle, CheckCircle2, ShieldCheck, Loader2, Menu, PanelLeftClose, PanelLeft, Video,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -186,7 +186,10 @@ const TourEditor = () => {
               return null;
             })()}
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium truncate">{step.title}</p>
+              <p className="text-xs font-medium truncate flex items-center gap-1">
+                {(step as any).step_type === 'video' && <Video className="h-3 w-3 text-primary shrink-0" />}
+                {step.title}
+              </p>
               <p className="text-[10px] text-muted-foreground truncate">{step.selector || "Center modal"}</p>
             </div>
             <div className="flex flex-col shrink-0">

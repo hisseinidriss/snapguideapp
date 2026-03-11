@@ -12,6 +12,8 @@ export function generateEmbedScript(
       content: s.content,
       selector: s.selector,
       placement: s.placement,
+      step_type: (s as any).step_type || 'standard',
+      video_url: (s as any).video_url || null,
     })),
     null,
     2
@@ -78,19 +80,44 @@ export function generateEmbedScript(
     document.body.appendChild(overlay);
   }
 
+  function getVideoEmbedUrl(url) {
+    if (!url) return null;
+    var ytMatch = url.match(/(?:youtube\\.com\\/watch\\?v=|youtu\\.be\\/|youtube\\.com\\/embed\\/)([a-zA-Z0-9_-]{11})/);
+    if (ytMatch) return 'https://www.youtube.com/embed/' + ytMatch[1] + '?enablejsapi=1';
+    if (url.indexOf('onedrive.live.com') >= 0 || url.indexOf('1drv.ms') >= 0 || url.indexOf('sharepoint.com') >= 0) {
+      return url.replace('/redir?', '/embed?');
+    }
+    if (url.indexOf('/embed') >= 0) return url;
+    return url;
+  }
+
   function showStep(index) {
     if (index >= steps.length) { track('tour_completed', null); flushEvents(); cleanup(); return; }
     var step = steps[index];
     var target = step.selector ? document.querySelector(step.selector) : null;
     track('step_viewed', index);
+    var isVideo = step.step_type === 'video' && step.video_url;
+    var embedUrl = isVideo ? getVideoEmbedUrl(step.video_url) : null;
     
     if (tooltip) tooltip.remove();
     tooltip = document.createElement('div');
     tooltip.id = 'tb-tooltip';
-    tooltip.style.cssText = 'position:fixed;z-index:99999;background:#fff;border-radius:10px;padding:20px;max-width:320px;box-shadow:0 8px 32px rgba(0,0,0,0.15);font-family:system-ui;animation:tb-fade 0.2s ease;';
+    tooltip.style.cssText = 'position:fixed;z-index:99999;background:#fff;border-radius:10px;padding:20px;max-width:' + (isVideo ? '480px' : '320px') + ';box-shadow:0 8px 32px rgba(0,0,0,0.15);font-family:system-ui;animation:tb-fade 0.2s ease;';
     
+    var videoHtml = '';
+    if (isVideo && embedUrl) {
+      videoHtml = '<div style="margin:12px 0;border-radius:8px;overflow:hidden;aspect-ratio:16/9;background:#000">'
+        + '<iframe src="' + embedUrl + '" style="width:100%;height:100%;border:none" allow="autoplay;fullscreen;encrypted-media" allowfullscreen></iframe>'
+        + '</div>'
+        + '<div style="display:flex;justify-content:space-between;margin-bottom:12px">'
+        + '<button onclick="document.querySelector(\'#tb-tooltip iframe\').requestFullscreen()" style="padding:4px 10px;border:1px solid #ddd;border-radius:6px;background:#fff;cursor:pointer;font-size:12px;">⛶ Full Screen</button>'
+        + '<button onclick="window.__tb_skip_video()" style="padding:4px 10px;border:none;border-radius:6px;background:transparent;cursor:pointer;font-size:12px;color:#999;">Skip Video ⏭</button>'
+        + '</div>';
+    }
+
     tooltip.innerHTML = '<h3 style="margin:0 0 8px;font-size:16px;font-weight:600;">' + step.title + '</h3>' +
-      '<p style="margin:0 0 16px;font-size:14px;color:#666;">' + step.content + '</p>' +
+      '<p style="margin:0 0 ' + (isVideo ? '8' : '16') + 'px;font-size:14px;color:#666;">' + step.content + '</p>' +
+      videoHtml +
       '<div style="display:flex;justify-content:space-between;align-items:center;">' +
       '<span style="font-size:12px;color:#999;">' + (index + 1) + ' of ' + steps.length + '</span>' +
       '<div>' +
@@ -100,6 +127,17 @@ export function generateEmbedScript(
     
     document.body.appendChild(tooltip);
     positionTooltip(tooltip, target, step.placement);
+
+    // Track video events
+    if (isVideo && embedUrl) {
+      track('video_started', index);
+      var iframe = tooltip.querySelector('iframe');
+      if (iframe) {
+        iframe.addEventListener('load', function() {
+          // Mark video as started
+        });
+      }
+    }
   }
 
   function calcPos(rect, tw, th, gap, side) {
@@ -140,6 +178,7 @@ export function generateEmbedScript(
   window.__tb_next = function() { currentStep++; showStep(currentStep); };
   window.__tb_prev = function() { currentStep--; showStep(currentStep); };
   window.__tb_start = function() { currentStep = 0; track('tour_started', null); createOverlay(); showStep(0); };
+  window.__tb_skip_video = function() { track('video_skipped', currentStep); currentStep++; showStep(currentStep); };
 
   // Add CSS animation
   var style = document.createElement('style');

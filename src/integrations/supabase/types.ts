@@ -238,10 +238,12 @@ export type Database = {
           placement: string
           selector: string | null
           sort_order: number
+          step_type: string
           target_url: string | null
           title: string
           tour_id: string
           updated_at: string
+          video_url: string | null
         }
         Insert: {
           click_selector?: string | null
@@ -251,10 +253,12 @@ export type Database = {
           placement?: string
           selector?: string | null
           sort_order?: number
+          step_type?: string
           target_url?: string | null
           title?: string
           tour_id: string
           updated_at?: string
+          video_url?: string | null
         }
         Update: {
           click_selector?: string | null
@@ -264,10 +268,12 @@ export type Database = {
           placement?: string
           selector?: string | null
           sort_order?: number
+          step_type?: string
           target_url?: string | null
           title?: string
           tour_id?: string
           updated_at?: string
+          video_url?: string | null
         }
         Relationships: [
           {
