@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
-  ArrowLeft, Plus, GripVertical, ChevronUp, ChevronDown, Eye, AlertTriangle, CheckCircle2, ShieldCheck, Loader2, Menu, PanelLeftClose, PanelLeft,
+  ArrowLeft, Plus, GripVertical, ChevronUp, ChevronDown, Eye, AlertTriangle, CheckCircle2, ShieldCheck, Loader2, Menu, PanelLeftClose, PanelLeft, Video,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
