@@ -802,7 +802,7 @@ function getContentJS(): string {
   function getVideoEmbedUrl(url) {
     if (!url) return null;
     var ytMatch = url.match(/(?:youtube\\.com\\/watch\\?v=|youtu\\.be\\/|youtube\\.com\\/embed\\/)([a-zA-Z0-9_-]{11})/);
-    if (ytMatch) return 'https://www.youtube.com/embed/' + ytMatch[1] + '?enablejsapi=1';
+    if (ytMatch) return 'https://www.youtube.com/embed/' + ytMatch[1] + '?rel=0&modestbranding=1';
     if (url.indexOf('onedrive.live.com') >= 0 || url.indexOf('1drv.ms') >= 0 || url.indexOf('sharepoint.com') >= 0) {
       return url.replace('/redir?', '/embed?');
     }
@@ -818,7 +818,7 @@ function getContentJS(): string {
     
     var videoHtml = '';
     if (isVideo && embedUrl) {
-      videoHtml = '<div class="bpg-video-container"><iframe src="' + embedUrl + '" allow="autoplay;fullscreen;encrypted-media" allowfullscreen></iframe></div>'
+      videoHtml = '<div class="bpg-video-container"><iframe src="' + embedUrl + '" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture;fullscreen" allowfullscreen></iframe></div>'
         + '<div class="bpg-video-actions">'
         + '<button class="bpg-btn-fullscreen" data-action="fullscreen">⛶ Full Screen</button>'
         + '<button class="bpg-btn-skip" data-action="skip-video">Skip Video ⏭</button>'

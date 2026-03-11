@@ -38,7 +38,7 @@ interface StepEditorPanelProps {
 function getVideoEmbedUrl(url: string): string | null {
   if (!url) return null;
   const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
-  if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}`;
+  if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}?rel=0&modestbranding=1`;
   if (url.includes("onedrive.live.com") || url.includes("1drv.ms") || url.includes("sharepoint.com")) {
     return url.replace("/redir?", "/embed?").replace("resid=", "resid=");
   }
