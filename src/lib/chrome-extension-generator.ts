@@ -10,6 +10,8 @@ interface ProcessStep {
   sort_order: number;
   target_url?: string | null;
   click_selector?: string | null;
+  step_type?: string;
+  video_url?: string | null;
 }
 
 interface Process {
