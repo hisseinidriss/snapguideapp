@@ -756,8 +756,9 @@ function getContentJS(): string {
     }
 
     // Tooltip
+    var step_isVideo = step.step_type === 'video' && step.video_url;
     tooltipEl = document.createElement('div');
-    tooltipEl.className = 'bpg-tooltip' + (!targetEl ? ' bpg-center-modal' : '');
+    tooltipEl.className = 'bpg-tooltip' + (!targetEl ? ' bpg-center-modal' : '') + (step_isVideo ? ' bpg-video-tooltip' : '');
     tooltipEl.innerHTML = buildTooltipHTML(
       step,
       currentStepIndex,
@@ -782,6 +783,20 @@ function getContentJS(): string {
       currentStepIndex++;
       showStep();
     });
+
+    // Video-specific events
+    if (step_isVideo) {
+      trackEvent('video_started', currentStepIndex);
+      tooltipEl.querySelector('[data-action="fullscreen"]')?.addEventListener('click', () => {
+        var iframe = tooltipEl.querySelector('iframe');
+        if (iframe) iframe.requestFullscreen();
+      });
+      tooltipEl.querySelector('[data-action="skip-video"]')?.addEventListener('click', () => {
+        trackEvent('video_skipped', currentStepIndex);
+        currentStepIndex++;
+        showStep();
+      });
+    }
   }
 
   function getVideoEmbedUrl(url) {
