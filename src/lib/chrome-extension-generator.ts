@@ -96,12 +96,15 @@ export async function generateChromeExtension(
   const zip = new JSZip();
 
   // manifest.json
-  const manifest = {
+   const manifest = {
     manifest_version: 3,
     name: `${appName} - Business Process Guide`,
     version: "1.0.0",
     description: `Interactive business process guide for ${appName}`,
     permissions: ["activeTab", "storage", "tabs"],
+    content_security_policy: {
+      extension_pages: "script-src 'self'; object-src 'self'; frame-src https://www.youtube.com https://youtube.com https://onedrive.live.com https://*.sharepoint.com https://*.1drv.ms",
+    },
     action: {
       default_popup: "popup.html",
       default_icon: {
@@ -787,9 +790,45 @@ function getContentJS(): string {
     // Video-specific events
     if (step_isVideo) {
       trackEvent('video_started', currentStepIndex);
+      
+      // Detect iframe load failure and show fallback
+      var videoIframe = tooltipEl.querySelector('.bpg-video-container iframe');
+      var videoFallback = tooltipEl.querySelector('.bpg-video-fallback');
+      if (videoIframe && videoFallback) {
+        var iframeLoaded = false;
+        videoIframe.addEventListener('load', function() { iframeLoaded = true; });
+        setTimeout(function() {
+          if (!iframeLoaded || videoIframe.contentDocument === null) {
+            try {
+              // Check if iframe is accessible (same-origin) - if not, it may be blocked
+              var doc = videoIframe.contentDocument || videoIframe.contentWindow?.document;
+              if (doc && doc.body && doc.body.innerHTML === '') {
+                videoIframe.style.display = 'none';
+                videoFallback.style.display = 'flex';
+              }
+            } catch(e) {
+              // Cross-origin iframe loaded successfully (YouTube etc)
+            }
+          }
+        }, 3000);
+      }
+      
+      // Fallback click opens video in new tab
+      tooltipEl.querySelector('[data-action="open-video"]')?.addEventListener('click', function() {
+        var container = tooltipEl.querySelector('.bpg-video-container');
+        var videoUrl = container?.getAttribute('data-video-url');
+        if (videoUrl) window.open(videoUrl, '_blank');
+      });
+      
       tooltipEl.querySelector('[data-action="fullscreen"]')?.addEventListener('click', () => {
-        var iframe = tooltipEl.querySelector('iframe');
-        if (iframe) iframe.requestFullscreen();
+        var iframe = tooltipEl.querySelector('.bpg-video-container iframe');
+        if (iframe && iframe.style.display !== 'none') {
+          iframe.requestFullscreen();
+        } else {
+          var container = tooltipEl.querySelector('.bpg-video-container');
+          var videoUrl = container?.getAttribute('data-video-url');
+          if (videoUrl) window.open(videoUrl, '_blank');
+        }
       });
       tooltipEl.querySelector('[data-action="skip-video"]')?.addEventListener('click', () => {
         trackEvent('video_skipped', currentStepIndex);
@@ -818,7 +857,10 @@ function getContentJS(): string {
     
     var videoHtml = '';
     if (isVideo && embedUrl) {
-      videoHtml = '<div class="bpg-video-container"><iframe src="' + embedUrl + '" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture;fullscreen" allowfullscreen></iframe></div>'
+      videoHtml = '<div class="bpg-video-container" data-video-url="' + step.video_url + '"><iframe src="' + embedUrl + '" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture;fullscreen" allowfullscreen></iframe>'
+        + '<div class="bpg-video-fallback" style="display:none;position:absolute;inset:0;background:#f1f5f1;border-radius:8px;display:none;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;font-family:DM Sans,sans-serif" data-action="open-video">'
+        + '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#4d8b6f" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>'
+        + '<span style="margin-top:8px;color:#4d8b6f;font-size:13px;font-weight:500">Click to watch video</span></div></div>'
         + '<div class="bpg-video-actions">'
         + '<button class="bpg-btn-fullscreen" data-action="fullscreen">⛶ Full Screen</button>'
         + '<button class="bpg-btn-skip" data-action="skip-video">Skip Video ⏭</button>'
