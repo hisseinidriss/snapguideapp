@@ -178,6 +178,7 @@ export function generateEmbedScript(
   window.__tb_next = function() { currentStep++; showStep(currentStep); };
   window.__tb_prev = function() { currentStep--; showStep(currentStep); };
   window.__tb_start = function() { currentStep = 0; track('tour_started', null); createOverlay(); showStep(0); };
+  window.__tb_skip_video = function() { track('video_skipped', currentStep); currentStep++; showStep(currentStep); };
 
   // Add CSS animation
   var style = document.createElement('style');

@@ -30,7 +30,7 @@ Deno.serve(async (req) => {
       .filter(
         (e: any) =>
           e.tour_id && e.app_id && e.event_type && e.session_id &&
-          ["tour_started", "step_viewed", "tour_completed", "tour_abandoned"].includes(e.event_type)
+          ["tour_started", "step_viewed", "tour_completed", "tour_abandoned", "video_started", "video_completed", "video_skipped"].includes(e.event_type)
       )
       .map((e: any) => ({
         tour_id: e.tour_id,
