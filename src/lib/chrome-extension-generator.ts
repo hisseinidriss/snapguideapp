@@ -96,12 +96,15 @@ export async function generateChromeExtension(
   const zip = new JSZip();
 
   // manifest.json
-  const manifest = {
+   const manifest = {
     manifest_version: 3,
     name: `${appName} - Business Process Guide`,
     version: "1.0.0",
     description: `Interactive business process guide for ${appName}`,
     permissions: ["activeTab", "storage", "tabs"],
+    content_security_policy: {
+      extension_pages: "script-src 'self'; object-src 'self'; frame-src https://www.youtube.com https://youtube.com https://onedrive.live.com https://*.sharepoint.com https://*.1drv.ms",
+    },
     action: {
       default_popup: "popup.html",
       default_icon: {
