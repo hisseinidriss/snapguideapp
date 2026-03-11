@@ -784,13 +784,37 @@ function getContentJS(): string {
     });
   }
 
+  function getVideoEmbedUrl(url) {
+    if (!url) return null;
+    var ytMatch = url.match(/(?:youtube\\.com\\/watch\\?v=|youtu\\.be\\/|youtube\\.com\\/embed\\/)([a-zA-Z0-9_-]{11})/);
+    if (ytMatch) return 'https://www.youtube.com/embed/' + ytMatch[1] + '?enablejsapi=1';
+    if (url.indexOf('onedrive.live.com') >= 0 || url.indexOf('1drv.ms') >= 0 || url.indexOf('sharepoint.com') >= 0) {
+      return url.replace('/redir?', '/embed?');
+    }
+    if (url.indexOf('/embed') >= 0) return url;
+    return url;
+  }
+
   function buildTooltipHTML(step, index, total, processName, targetMissing) {
     var isFirst = index === 0;
     var isLast = index === total - 1;
+    var isVideo = step.step_type === 'video' && step.video_url;
+    var embedUrl = isVideo ? getVideoEmbedUrl(step.video_url) : null;
+    
+    var videoHtml = '';
+    if (isVideo && embedUrl) {
+      videoHtml = '<div class="bpg-video-container"><iframe src="' + embedUrl + '" allow="autoplay;fullscreen;encrypted-media" allowfullscreen></iframe></div>'
+        + '<div class="bpg-video-actions">'
+        + '<button class="bpg-btn-fullscreen" data-action="fullscreen">⛶ Full Screen</button>'
+        + '<button class="bpg-btn-skip" data-action="skip-video">Skip Video ⏭</button>'
+        + '</div>';
+    }
+
     return '<button class="bpg-btn-close">&times;</button>'
       + '<div style="font-size:11px;color:#4d8b6f;font-weight:600;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;font-family:DM Sans,sans-serif">' + processName + '</div>'
       + '<h3 class="bpg-tooltip-title">' + step.title + '</h3>'
       + '<p class="bpg-tooltip-content">' + step.content + '</p>'
+      + videoHtml
       + (targetMissing
         ? '<p style="font-size:12px;color:#b45309;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:8px 10px;margin:0 0 12px;font-family:DM Sans,sans-serif">Target element not found. Check if the selector is correct and visible on this page.</p>'
         : '')
