@@ -72,6 +72,8 @@ export async function generateChromeExtension(
             sort_order: s.sort_order,
             target_url: (s as any).target_url || null,
             click_selector: (s as any).click_selector || null,
+            step_type: (s as any).step_type || 'standard',
+            video_url: (s as any).video_url || null,
           })),
       });
     }
