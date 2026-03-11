@@ -802,7 +802,7 @@ function getContentJS(): string {
   function getVideoEmbedUrl(url) {
     if (!url) return null;
     var ytMatch = url.match(/(?:youtube\\.com\\/watch\\?v=|youtu\\.be\\/|youtube\\.com\\/embed\\/)([a-zA-Z0-9_-]{11})/);
-    if (ytMatch) return 'https://www.youtube.com/embed/' + ytMatch[1] + '?enablejsapi=1';
+    if (ytMatch) return 'https://www.youtube.com/embed/' + ytMatch[1] + '?rel=0&modestbranding=1';
     if (url.indexOf('onedrive.live.com') >= 0 || url.indexOf('1drv.ms') >= 0 || url.indexOf('sharepoint.com') >= 0) {
       return url.replace('/redir?', '/embed?');
     }
