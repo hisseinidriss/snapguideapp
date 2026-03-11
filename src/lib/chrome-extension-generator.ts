@@ -855,10 +855,13 @@ function getContentJS(): string {
     
     var videoHtml = '';
     if (isVideo && embedUrl) {
-      videoHtml = '<div class="bpg-video-container" data-video-url="' + step.video_url + '"><iframe src="' + embedUrl + '" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture;fullscreen" allowfullscreen></iframe>'
-        + '<div class="bpg-video-fallback" style="display:none;position:absolute;inset:0;background:#f1f5f1;border-radius:8px;display:none;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;font-family:DM Sans,sans-serif" data-action="open-video">'
-        + '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#4d8b6f" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>'
-        + '<span style="margin-top:8px;color:#4d8b6f;font-size:13px;font-weight:500">Click to watch video</span></div></div>'
+      videoHtml = '<div class="bpg-video-container" data-video-url="' + step.video_url + '">'
+        + '<iframe src="' + embedUrl + '" allow="accelerometer;autoplay;clipboard-write;encrypted-media;gyroscope;picture-in-picture;fullscreen" allowfullscreen></iframe>'
+        + '<div class="bpg-video-fallback" style="display:none;flex-direction:column;align-items:center;justify-content:center;background:#f1f5f1;border-radius:8px;padding:24px;font-family:DM Sans,sans-serif;min-height:160px" data-action="open-video">'
+        + '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#4d8b6f" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>'
+        + '<span style="margin-top:8px;color:#4d8b6f;font-size:13px;font-weight:500">Video could not load</span>'
+        + '<span style="margin-top:4px;color:#6b7280;font-size:11px">Click to open in a new tab</span>'
+        + '</div></div>'
         + '<div class="bpg-video-actions">'
         + '<button class="bpg-btn-fullscreen" data-action="fullscreen">⛶ Full Screen</button>'
         + '<button class="bpg-btn-skip" data-action="skip-video">Skip Video ⏭</button>'
