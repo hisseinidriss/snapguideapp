@@ -24,21 +24,22 @@ function getVideoEmbedUrl(url: string): string | null {
 }
 
 const StepPreview = ({ steps, currentIndex, onNext, onPrev, onClose, onDone }: StepPreviewProps) => {
-  const step = steps[currentIndex];
   const [videoFinished, setVideoFinished] = useState(false);
   const [videoStarted, setVideoStarted] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
-
-  if (!step) return null;
-  const isLast = currentIndex === steps.length - 1;
-  const isVideo = (step as any).step_type === "video" && (step as any).video_url;
-  const embedUrl = isVideo ? getVideoEmbedUrl((step as any).video_url) : null;
 
   // Reset video state when step changes
   useEffect(() => {
     setVideoFinished(false);
     setVideoStarted(false);
   }, [currentIndex]);
+
+  const step = steps[currentIndex];
+  if (!step) return null;
+
+  const isLast = currentIndex === steps.length - 1;
+  const isVideo = (step as any).step_type === "video" && (step as any).video_url;
+  const embedUrl = isVideo ? getVideoEmbedUrl((step as any).video_url) : null;
 
   const handleFullscreen = () => {
     iframeRef.current?.requestFullscreen?.();
