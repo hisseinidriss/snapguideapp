@@ -797,20 +797,18 @@ function getContentJS(): string {
       if (videoIframe && videoFallback) {
         var iframeLoaded = false;
         videoIframe.addEventListener('load', function() { iframeLoaded = true; });
+        videoIframe.addEventListener('error', function() {
+          videoIframe.style.display = 'none';
+          videoFallback.style.display = 'flex';
+        });
         setTimeout(function() {
-          if (!iframeLoaded || videoIframe.contentDocument === null) {
-            try {
-              // Check if iframe is accessible (same-origin) - if not, it may be blocked
-              var doc = videoIframe.contentDocument || videoIframe.contentWindow?.document;
-              if (doc && doc.body && doc.body.innerHTML === '') {
-                videoIframe.style.display = 'none';
-                videoFallback.style.display = 'flex';
-              }
-            } catch(e) {
-              // Cross-origin iframe loaded successfully (YouTube etc)
-            }
+          if (!iframeLoaded) {
+            // iframe never fired load - likely blocked
+            videoIframe.style.display = 'none';
+            videoFallback.style.display = 'flex';
           }
-        }, 3000);
+          // If iframeLoaded is true, the embed is working (cross-origin is fine)
+        }, 5000);
       }
       
       // Fallback click opens video in new tab
