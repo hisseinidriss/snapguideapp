@@ -961,6 +961,222 @@ function getContentJS(): string {
   } else {
     init();
   }
+
+  // ==================== SCRIBE RECORDER ====================
+  var _scribeRecording = false;
+  var _scribeSteps = [];
+  var _scribeRecordingId = null;
+  var _scribeOverlay = null;
+
+  function scribeGetSelector(el) {
+    if (!el || el === document.body || el === document.documentElement) return '';
+    if (el.id) return '#' + CSS.escape(el.id);
+    if (el.getAttribute('name')) return el.tagName.toLowerCase() + '[name="' + el.getAttribute('name') + '"]';
+    if (el.getAttribute('data-testid')) return '[data-testid="' + el.getAttribute('data-testid') + '"]';
+    // Class-based
+    if (el.className && typeof el.className === 'string') {
+      var classes = el.className.trim().split(/\\s+/).filter(function(c) { return c && !c.startsWith('bpg-') && !c.startsWith('scribe-'); }).slice(0, 2);
+      if (classes.length) {
+        var sel = el.tagName.toLowerCase() + '.' + classes.join('.');
+        try { if (document.querySelectorAll(sel).length === 1) return sel; } catch(e) {}
+      }
+    }
+    // nth-child fallback
+    var parent = el.parentElement;
+    if (parent) {
+      var children = Array.from(parent.children);
+      var idx = children.indexOf(el);
+      return scribeGetSelector(parent) + ' > ' + el.tagName.toLowerCase() + ':nth-child(' + (idx + 1) + ')';
+    }
+    return el.tagName.toLowerCase();
+  }
+
+  function scribeGetElementText(el) {
+    if (!el) return '';
+    var text = (el.textContent || el.innerText || '').trim();
+    if (text.length > 80) text = text.substring(0, 77) + '...';
+    // For inputs, use placeholder or label
+    if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+      var label = document.querySelector('label[for="' + el.id + '"]');
+      if (label) return (label.textContent || '').trim();
+      if (el.placeholder) return el.placeholder;
+      if (el.getAttribute('aria-label')) return el.getAttribute('aria-label');
+    }
+    return text;
+  }
+
+  function scribeCaptureScreenshot(el) {
+    // Use html2canvas-like approach: capture visible area
+    // Since we can't load external libs, we'll capture element bounds info
+    // The screenshot will be taken by the background/popup via chrome API
+    return null; // screenshots handled server-side or via extension tab capture
+  }
+
+  function scribeGenerateInstruction(actionType, tag, text, inputValue) {
+    tag = (tag || '').toLowerCase();
+    text = (text || '').trim();
+    if (text.length > 50) text = text.substring(0, 47) + '...';
+    switch (actionType) {
+      case 'click':
+        if (tag === 'button' || tag === 'a') return 'Click "' + (text || 'button') + '"';
+        if (text) return 'Click "' + text + '"';
+        return 'Click the ' + (tag || 'element');
+      case 'type':
+        if (inputValue) return 'Enter "' + (inputValue.length > 40 ? inputValue.substring(0, 37) + '...' : inputValue) + '" in the ' + (text || 'field');
+        return 'Type in the ' + (text || 'field');
+      case 'select':
+        if (inputValue) return 'Select "' + inputValue + '" from the ' + (text || 'dropdown');
+        return 'Make a selection from the ' + (text || 'dropdown');
+      case 'navigate':
+        return 'Navigate to ' + (text || 'a new page');
+      case 'scroll':
+        return 'Scroll down the page';
+      default:
+        return text ? 'Interact with "' + text + '"' : 'Perform an action';
+    }
+  }
+
+  function scribeAddStep(actionType, el, extra) {
+    if (!_scribeRecording) return;
+    extra = extra || {};
+    var tag = el ? el.tagName : '';
+    var text = el ? scribeGetElementText(el) : (extra.text || '');
+    var selector = el ? scribeGetSelector(el) : '';
+    var inputValue = extra.inputValue || '';
+    var instruction = scribeGenerateInstruction(actionType, tag, text, inputValue);
+
+    _scribeSteps.push({
+      action_type: actionType,
+      instruction: instruction,
+      selector: selector,
+      target_url: extra.targetUrl || window.location.href,
+      element_text: text,
+      element_tag: tag,
+      input_value: inputValue,
+    });
+
+    // Update overlay counter
+    if (_scribeOverlay) {
+      var counter = _scribeOverlay.querySelector('.scribe-count');
+      if (counter) counter.textContent = _scribeSteps.length + ' steps';
+    }
+  }
+
+  var _scribeClickHandler = function(e) {
+    if (!_scribeRecording) return;
+    var el = e.target;
+    // Ignore scribe UI clicks
+    if (el.closest && el.closest('.scribe-toolbar')) return;
+    // Determine action type
+    var tag = el.tagName;
+    if (tag === 'SELECT') {
+      setTimeout(function() {
+        scribeAddStep('select', el, { inputValue: el.options?.[el.selectedIndex]?.text || el.value });
+      }, 100);
+    } else {
+      scribeAddStep('click', el);
+    }
+  };
+
+  var _scribeInputHandler = function(e) {
+    if (!_scribeRecording) return;
+    var el = e.target;
+    if (el.closest && el.closest('.scribe-toolbar')) return;
+    // Debounce - only capture when user pauses typing
+    clearTimeout(el._scribeTimer);
+    el._scribeTimer = setTimeout(function() {
+      scribeAddStep('type', el, { inputValue: el.value });
+    }, 800);
+  };
+
+  var _lastUrl = window.location.href;
+  var _scribeNavHandler = function() {
+    if (!_scribeRecording) return;
+    var newUrl = window.location.href;
+    if (newUrl !== _lastUrl) {
+      scribeAddStep('navigate', null, { text: newUrl, targetUrl: newUrl });
+      _lastUrl = newUrl;
+    }
+  };
+
+  function scribeStartRecording(recordingId) {
+    _scribeRecordingId = recordingId;
+    _scribeSteps = [];
+    _scribeRecording = true;
+    _lastUrl = window.location.href;
+
+    // Add event listeners
+    document.addEventListener('click', _scribeClickHandler, true);
+    document.addEventListener('input', _scribeInputHandler, true);
+    
+    // Poll for URL changes (for SPAs)
+    _scribeNavInterval = setInterval(_scribeNavHandler, 500);
+
+    // Show recording toolbar
+    _scribeOverlay = document.createElement('div');
+    _scribeOverlay.className = 'scribe-toolbar';
+    _scribeOverlay.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:2147483647;display:flex;align-items:center;gap:10px;padding:10px 18px;background:#fff;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.15);font-family:DM Sans,sans-serif;border:2px solid #ef4444';
+    _scribeOverlay.innerHTML = '<div style="width:10px;height:10px;border-radius:50%;background:#ef4444;animation:bpg-pulse 1.5s infinite"></div>'
+      + '<span style="font-size:13px;font-weight:600;color:#2d3b34">Recording</span>'
+      + '<span class="scribe-count" style="font-size:12px;color:#8a9b92;min-width:60px">0 steps</span>'
+      + '<button class="scribe-stop-btn" style="padding:6px 14px;border-radius:8px;border:none;background:#ef4444;color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif">⏹ Stop</button>';
+    document.body.appendChild(_scribeOverlay);
+
+    _scribeOverlay.querySelector('.scribe-stop-btn').addEventListener('click', function() {
+      scribeStopRecording();
+    });
+  }
+
+  var _scribeNavInterval;
+
+  function scribeStopRecording() {
+    _scribeRecording = false;
+    document.removeEventListener('click', _scribeClickHandler, true);
+    document.removeEventListener('input', _scribeInputHandler, true);
+    clearInterval(_scribeNavInterval);
+
+    if (_scribeOverlay) { _scribeOverlay.remove(); _scribeOverlay = null; }
+
+    // Save steps to server
+    if (_scribeSteps.length > 0 && _scribeRecordingId && _bpgData.trackUrl) {
+      var saveUrl = _bpgData.trackUrl.replace('/track-events', '/save-recording-step');
+      fetch(saveUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': _bpgData.anonKey,
+          'Authorization': 'Bearer ' + _bpgData.anonKey
+        },
+        body: JSON.stringify({
+          recording_id: _scribeRecordingId,
+          steps: _scribeSteps
+        })
+      }).then(function(r) { return r.json(); })
+        .then(function() {
+          // Show success
+          var msg = document.createElement('div');
+          msg.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:2147483647;padding:12px 24px;background:#4d8b6f;color:#fff;border-radius:10px;font-family:DM Sans,sans-serif;font-size:13px;font-weight:500;box-shadow:0 8px 24px rgba(0,0,0,0.15)';
+          msg.textContent = '✓ ' + _scribeSteps.length + ' steps saved to recording';
+          document.body.appendChild(msg);
+          setTimeout(function() { msg.remove(); }, 3000);
+        })
+        .catch(function() {});
+    }
+
+    _scribeSteps = [];
+    _scribeRecordingId = null;
+  }
+
+  // Listen for scribe commands from popup
+  chrome.runtime.onMessage.addListener((msg) => {
+    if (msg.type === 'START_SCRIBE') {
+      scribeStartRecording(msg.recordingId);
+    }
+    if (msg.type === 'STOP_SCRIBE') {
+      scribeStopRecording();
+    }
+  });
+
 })();
 `;
 }
