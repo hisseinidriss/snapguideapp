@@ -37,12 +37,14 @@ interface SortableTourCardProps {
   setEditingTourId: (id: string | null) => void;
   setEditingTourName: (name: string) => void;
   handleRenameProcess: (id: string) => void;
+  handleAutoGenerate: (id: string) => void;
   handleDeleteProcess: (id: string) => void;
+  generating: boolean;
   navigate: (path: string) => void;
   appId: string;
 }
 
-const SortableTourCard = ({ tour, index, stepCount, editingTourId, editingTourName, setEditingTourId, setEditingTourName, handleRenameProcess, handleDeleteProcess, navigate, appId }: SortableTourCardProps) => {
+const SortableTourCard = ({ tour, index, stepCount, editingTourId, editingTourName, setEditingTourId, setEditingTourName, handleRenameProcess, handleAutoGenerate, handleDeleteProcess, generating, navigate, appId }: SortableTourCardProps) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: tour.id });
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
 
@@ -86,6 +88,13 @@ const SortableTourCard = ({ tour, index, stepCount, editingTourId, editingTourNa
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => navigate(`/app/${appId}/tour/${tour.id}`)}>
+              <Pencil className="mr-2 h-4 w-4" />Edit Steps
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleAutoGenerate(tour.id)} disabled={generating}>
+              {generating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+              Generate Steps with AI
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => navigate(`/app/${appId}/tour/${tour.id}/embed`)}>
               <Code className="mr-2 h-4 w-4" />Source Code
             </DropdownMenuItem>
@@ -114,6 +123,7 @@ const AppDetail = () => {
   const [processName, setProcessName] = useState("");
   const [stepCounts, setStepCounts] = useState<Record<string, number>>({});
   const [generatingFromManual, setGeneratingFromManual] = useState(false);
+  const [generating, setGenerating] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [validating, setValidating] = useState(false);
   const [validationReport, setValidationReport] = useState<ValidationReport | null>(null);
@@ -171,6 +181,39 @@ const AppDetail = () => {
     if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); }
     else { setTours((prev) => prev.map((t) => t.id === id ? { ...t, name: editingTourName.trim() } : t)); }
     setEditingTourId(null);
+  };
+
+  const handleAutoGenerate = async (tourId: string) => {
+    if (!appUrl) {
+      toast({ title: "No URL", description: "This app has no URL configured. Edit the app to add one.", variant: "destructive" });
+      return;
+    }
+    setGenerating(true);
+    try {
+      const tour = tours.find((t) => t.id === tourId);
+      const { data, error } = await supabase.functions.invoke("generate-tour-steps", {
+        body: { url: appUrl, tourName: tour?.name || "Onboarding" },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      const steps = data.steps || [];
+      if (steps.length === 0) {
+        toast({ title: "No steps generated", description: "AI couldn't generate steps from this page.", variant: "destructive" });
+        return;
+      }
+      const inserts = steps.map((s: any, i: number) => ({
+        tour_id: tourId, title: s.title, content: s.content,
+        selector: s.selector || "", placement: s.placement || "bottom", sort_order: i,
+      }));
+      const { error: insertError } = await supabase.from("tour_steps").insert(inserts);
+      if (insertError) throw insertError;
+      toast({ title: "Steps generated!", description: `${steps.length} steps were created from your page content.` });
+      setStepCounts((prev) => ({ ...prev, [tourId]: (prev[tourId] || 0) + steps.length }));
+    } catch (err: any) {
+      toast({ title: "Generation failed", description: err.message || "Something went wrong", variant: "destructive" });
+    } finally {
+      setGenerating(false);
+    }
   };
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }), useSensor(KeyboardSensor));
@@ -446,7 +489,9 @@ const AppDetail = () => {
                     setEditingTourId={setEditingTourId}
                     setEditingTourName={setEditingTourName}
                     handleRenameProcess={handleRenameProcess}
+                    handleAutoGenerate={handleAutoGenerate}
                     handleDeleteProcess={handleDeleteProcess}
+                    generating={generating}
                     navigate={navigate}
                     appId={appId!}
                   />
