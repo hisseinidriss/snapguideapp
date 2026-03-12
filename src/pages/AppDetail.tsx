@@ -88,6 +88,13 @@ const SortableTourCard = ({ tour, index, stepCount, editingTourId, editingTourNa
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => navigate(`/app/${appId}/tour/${tour.id}`)}>
+              <Pencil className="mr-2 h-4 w-4" />Edit Steps
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleAutoGenerate(tour.id)} disabled={generating}>
+              {generating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+              Generate Steps with AI
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => navigate(`/app/${appId}/tour/${tour.id}/embed`)}>
               <Code className="mr-2 h-4 w-4" />Source Code
             </DropdownMenuItem>
