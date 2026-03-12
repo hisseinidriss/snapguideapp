@@ -275,19 +275,19 @@ const AppDetail = () => {
               </DialogTrigger>
               <DialogContent className="sm:max-w-lg">
                 <DialogHeader>
-                  <DialogTitle>Install Chrome Extension</DialogTitle>
+                  <DialogTitle>Install Browser Extension</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4 pt-2">
                   <p className="text-sm text-muted-foreground">
-                    Follow these steps to install the downloaded extension in Google Chrome:
+                    Follow these steps to install the downloaded extension:
                   </p>
                   <ol className="space-y-3">
                     {[
-                      { step: "Click the \"Chrome Extension\" button to download the ZIP file." },
+                      { step: "Click \"Download Extension\" and choose your browser (Chrome, Edge, or Firefox)." },
                       { step: "Extract/unzip the downloaded file to a folder on your computer." },
-                      { step: "Open Chrome and navigate to chrome://extensions" },
-                      { step: "Enable \"Developer mode\" using the toggle in the top-right corner." },
-                      { step: "Click \"Load unpacked\" and select the extracted folder." },
+                      { step: "Chrome/Edge: Go to chrome://extensions or edge://extensions and enable \"Developer mode\"." },
+                      { step: "Firefox: Go to about:debugging#/runtime/this-firefox and click \"Load Temporary Add-on\"." },
+                      { step: "Chrome/Edge: Click \"Load unpacked\" and select the extracted folder. Firefox: Select any file in the folder." },
                       { step: "The extension icon will appear in your toolbar. Visit your app URL to see it in action!" },
                     ].map((item, i) => (
                       <li key={i} className="flex gap-3 text-sm">
