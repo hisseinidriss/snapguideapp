@@ -50,6 +50,9 @@ const AppDetail = () => {
   const [validationReport, setValidationReport] = useState<ValidationReport | null>(null);
   const [validationDialogOpen, setValidationDialogOpen] = useState(false);
 
+  const [editingTourId, setEditingTourId] = useState<string | null>(null);
+  const [editingTourName, setEditingTourName] = useState("");
+
   const [checklistOpen, setChecklistOpen] = useState(false);
   const [newChecklistName, setNewChecklistName] = useState("");
 
@@ -98,6 +101,14 @@ const AppDetail = () => {
   const handleDeleteProcess = async (id: string) => {
     await supabase.from("tours").delete().eq("id", id);
     setTours((prev) => prev.filter((t) => t.id !== id));
+  };
+
+  const handleRenameProcess = async (id: string) => {
+    if (!editingTourName.trim()) { setEditingTourId(null); return; }
+    const { error } = await supabase.from("tours").update({ name: editingTourName.trim() }).eq("id", id);
+    if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); }
+    else { setTours((prev) => prev.map((t) => t.id === id ? { ...t, name: editingTourName.trim() } : t)); }
+    setEditingTourId(null);
   };
 
   const handleAutoGenerate = async (tourId: string) => {
@@ -490,7 +501,26 @@ const AppDetail = () => {
                   <Card key={tour.id} className="p-4 animate-fade-in" style={{ animationDelay: `${i * 50}ms` }}>
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div className="min-w-0">
-                        <h3 className="font-medium truncate">{tour.name}</h3>
+                        {editingTourId === tour.id ? (
+                          <Input
+                            autoFocus
+                            value={editingTourName}
+                            onChange={(e) => setEditingTourName(e.target.value)}
+                            onBlur={() => handleRenameProcess(tour.id)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") handleRenameProcess(tour.id);
+                              if (e.key === "Escape") setEditingTourId(null);
+                            }}
+                            className="h-8 text-sm font-medium"
+                          />
+                        ) : (
+                          <h3
+                            className="font-medium truncate cursor-pointer hover:text-primary transition-colors"
+                            onDoubleClick={() => { setEditingTourId(tour.id); setEditingTourName(tour.name); }}
+                          >
+                            {tour.name}
+                          </h3>
+                        )}
                         <p className="text-sm text-muted-foreground">
                           {stepCounts[tour.id] || 0} step{(stepCounts[tour.id] || 0) !== 1 ? "s" : ""} · Updated {new Date(tour.updated_at).toLocaleDateString()}
                         </p>
