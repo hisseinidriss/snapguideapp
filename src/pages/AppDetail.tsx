@@ -406,7 +406,6 @@ const AppDetail = () => {
         <Tabs defaultValue="processes" className="w-full">
           <TabsList className="mb-6 w-full sm:w-auto">
             <TabsTrigger value="processes" className="text-xs sm:text-sm">Processes ({tours.length})</TabsTrigger>
-            <TabsTrigger value="scribe" className="text-xs sm:text-sm">Scribe ({recordings.length})</TabsTrigger>
             <TabsTrigger value="checklists" className="text-xs sm:text-sm">Checklists ({checklists.length})</TabsTrigger>
             <TabsTrigger value="extensions" className="text-xs sm:text-sm">Extensions ({launchers.length})</TabsTrigger>
           </TabsList>
