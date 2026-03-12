@@ -98,48 +98,53 @@ export async function generateChromeExtension(
 
   const zip = new JSZip();
 
-  // manifest.json
-   const manifest = {
-    manifest_version: 3,
+  // manifest.json – browser-specific
+  const manifest: Record<string, any> = {
+    manifest_version: browser === 'firefox' ? 2 : 3,
     name: `${appName} - Business Process Guide`,
     version: "1.0.0",
     description: `Interactive business process guide for ${appName}`,
-    permissions: ["activeTab", "storage", "tabs"],
-    content_security_policy: {
-      extension_pages: "script-src 'self'; object-src 'self'; frame-src https://www.youtube.com https://youtube.com https://onedrive.live.com https://*.sharepoint.com https://*.1drv.ms",
-    },
-    action: {
+  };
+
+  if (browser === 'firefox') {
+    // Firefox uses Manifest V2
+    manifest.permissions = ["activeTab", "storage", "tabs"];
+    manifest.content_security_policy = "script-src 'self'; object-src 'self'; frame-src https://www.youtube.com https://youtube.com https://onedrive.live.com https://*.sharepoint.com https://*.1drv.ms;";
+    manifest.browser_action = {
       default_popup: "popup.html",
-      default_icon: {
-        "16": "icon16.png",
-        "48": "icon48.png",
-        "128": "icon128.png",
-      },
-    },
-    content_scripts: [
-      {
-        matches: appUrl
-          ? [`${appUrl.replace(/\/+$/, "")}/*`]
-          : ["<all_urls>"],
-        js: ["content.js"],
-        css: ["content.css"],
-        run_at: "document_idle",
-      },
-    ],
-    icons: {
-      "16": "icon16.png",
-      "48": "icon48.png",
-      "128": "icon128.png",
-    },
-    web_accessible_resources: [
+      default_icon: { "16": "icon16.png", "48": "icon48.png", "128": "icon128.png" },
+    };
+    manifest.browser_specific_settings = {
+      gecko: { id: `walkthru-${appId.slice(0, 8)}@walkthru.app`, strict_min_version: "109.0" },
+    };
+    manifest.web_accessible_resources = ["data.json"];
+  } else {
+    // Chrome & Edge use Manifest V3
+    manifest.permissions = ["activeTab", "storage", "tabs"];
+    manifest.content_security_policy = {
+      extension_pages: "script-src 'self'; object-src 'self'; frame-src https://www.youtube.com https://youtube.com https://onedrive.live.com https://*.sharepoint.com https://*.1drv.ms",
+    };
+    manifest.action = {
+      default_popup: "popup.html",
+      default_icon: { "16": "icon16.png", "48": "icon48.png", "128": "icon128.png" },
+    };
+    manifest.web_accessible_resources = [
       {
         resources: ["data.json"],
-        matches: appUrl
-          ? [`${appUrl.replace(/\/+$/, "")}/*`]
-          : ["<all_urls>"],
+        matches: appUrl ? [`${appUrl.replace(/\/+$/, "")}/*`] : ["<all_urls>"],
       },
-    ],
-  };
+    ];
+  }
+
+  manifest.content_scripts = [
+    {
+      matches: appUrl ? [`${appUrl.replace(/\/+$/, "")}/*`] : ["<all_urls>"],
+      js: ["content.js"],
+      css: ["content.css"],
+      run_at: "document_idle",
+    },
+  ];
+  manifest.icons = { "16": "icon16.png", "48": "icon48.png", "128": "icon128.png" };
 
   zip.file("manifest.json", JSON.stringify(manifest, null, 2));
 
