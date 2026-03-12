@@ -1310,6 +1310,82 @@ function getPopupJS(): string {
   return `
 document.addEventListener('DOMContentLoaded', () => {
   const list = document.getElementById('processList');
+  var _scribeRecording = false;
+
+  // Tab switching
+  document.querySelectorAll('.tab').forEach(function(tab) {
+    tab.addEventListener('click', function() {
+      document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
+      document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
+      tab.classList.add('active');
+      document.getElementById(tab.dataset.tab + 'Tab').classList.add('active');
+    });
+  });
+
+  // Scribe recording
+  var scribeBtn = document.getElementById('scribeBtn');
+  var recordingInput = document.getElementById('recordingName');
+  
+  scribeBtn.addEventListener('click', function() {
+    if (_scribeRecording) {
+      // Stop recording
+      chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+        chrome.tabs.sendMessage(tabs[0].id, { type: 'STOP_SCRIBE' });
+      });
+      scribeBtn.innerHTML = '<span>⏺</span> Start Recording';
+      scribeBtn.classList.remove('recording');
+      _scribeRecording = false;
+      return;
+    }
+
+    // Start recording - first create a recording in the backend
+    fetch(chrome.runtime.getURL('data.json'))
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        if (!data.trackUrl || !data.anonKey || !data.appId) {
+          alert('Recording requires tracking to be configured. Please re-download the extension.');
+          return;
+        }
+
+        // Create recording via Supabase REST API
+        var supabaseUrl = data.trackUrl.replace('/functions/v1/track-events', '');
+        var recName = recordingInput.value.trim() || 'Recording ' + new Date().toLocaleString();
+        
+        fetch(supabaseUrl + '/rest/v1/process_recordings', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': data.anonKey,
+            'Authorization': 'Bearer ' + data.anonKey,
+            'Prefer': 'return=representation'
+          },
+          body: JSON.stringify({
+            app_id: data.appId,
+            title: recName,
+            status: 'recording'
+          })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(recs) {
+          var rec = Array.isArray(recs) ? recs[0] : recs;
+          if (!rec || !rec.id) {
+            alert('Failed to create recording');
+            return;
+          }
+
+          _scribeRecording = true;
+          scribeBtn.innerHTML = '<span>⏹</span> Stop Recording';
+          scribeBtn.classList.add('recording');
+
+          chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+            chrome.tabs.sendMessage(tabs[0].id, { type: 'START_SCRIBE', recordingId: rec.id });
+          });
+
+          window.close();
+        })
+        .catch(function(err) { alert('Error: ' + err.message); });
+      });
+  });
 
   // Load data directly from the bundled JSON file
   fetch(chrome.runtime.getURL('data.json'))
@@ -1322,28 +1398,25 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      var appUrl = (data.appUrl || '').replace(/\\/+$/, '');
+      var appUrl = (data.appUrl || '').replace(/\\\\/+$/, '');
 
       function launchProcess(index) {
         var proc = processes[index];
-        // Determine the best URL to navigate to: first step's target_url or appUrl
         var firstStepUrl = (proc && proc.steps && proc.steps[0] && proc.steps[0].target_url) || '';
         var navUrl = firstStepUrl || appUrl;
 
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
           var tab = tabs[0];
-          var tabUrl = (tab.url || '').replace(/\\/+$/, '');
+          var tabUrl = (tab.url || '').replace(/\\\\/+$/, '');
           
-          // Check if we need to navigate: either not on the app at all, or first step needs a specific page
           var onApp = appUrl && tabUrl.startsWith(appUrl);
           var needsNav = false;
           
           if (!onApp && navUrl) {
             needsNav = true;
           } else if (onApp && firstStepUrl) {
-            // On the app but maybe wrong page - check if first step needs a different page
             try {
-              var targetFull = new URL(firstStepUrl, appUrl || window.location.origin).href.replace(/\\/+$/, '');
+              var targetFull = new URL(firstStepUrl, appUrl || window.location.origin).href.replace(/\\\\/+$/, '');
               if (tabUrl !== targetFull && !tabUrl.startsWith(targetFull)) {
                 needsNav = true;
                 navUrl = targetFull;
@@ -1352,7 +1425,6 @@ document.addEventListener('DOMContentLoaded', () => {
           }
 
           if (needsNav && navUrl) {
-            // Resolve relative URLs against appUrl
             var finalUrl = navUrl;
             try {
               if (navUrl && !navUrl.startsWith('http')) {
