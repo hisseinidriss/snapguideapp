@@ -498,6 +498,84 @@ const AppDetail = () => {
             )}
           </TabsContent>
 
+          {/* === Scribe Tab === */}
+          <TabsContent value="scribe">
+            <div className="flex items-center justify-end mb-6">
+              <Button onClick={async () => {
+                if (!appId) return;
+                const { data, error } = await supabase
+                  .from("process_recordings")
+                  .insert({ app_id: appId, title: "New Recording" })
+                  .select()
+                  .single();
+                if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
+                if (data) {
+                  setRecordings(prev => [data as unknown as ProcessRecording, ...prev]);
+                  navigate(`/app/${appId}/recording/${data.id}`);
+                }
+              }}>
+                <Plus className="mr-2 h-4 w-4" />New Recording
+              </Button>
+            </div>
+
+            {recordings.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-24 text-center animate-fade-in">
+                <div className="h-16 w-16 rounded-2xl bg-accent/10 flex items-center justify-center mb-6">
+                  <FileText className="h-8 w-8 text-accent" />
+                </div>
+                <h2 className="text-2xl font-semibold mb-2">No recordings yet</h2>
+                <p className="text-muted-foreground max-w-md mb-6">
+                  Use Scribe Mode to record browser actions and auto-generate step-by-step documentation and SOPs.
+                </p>
+                <Button onClick={async () => {
+                  if (!appId) return;
+                  const { data, error } = await supabase
+                    .from("process_recordings")
+                    .insert({ app_id: appId, title: "New Recording" })
+                    .select()
+                    .single();
+                  if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
+                  if (data) navigate(`/app/${appId}/recording/${data.id}`);
+                }}>
+                  <Plus className="mr-2 h-4 w-4" />Start Recording
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {recordings.map((rec, i) => (
+                  <Card key={rec.id} className="p-4 animate-fade-in" style={{ animationDelay: `${i * 50}ms` }}>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-medium truncate">{rec.title}</h3>
+                          {rec.tour_id && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
+                              Linked
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          {rec.status} · Updated {new Date(rec.updated_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button size="sm" onClick={() => navigate(`/app/${appId}/recording/${rec.id}`)}>
+                          <Pencil className="mr-1 h-3 w-3" />Edit
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={async () => {
+                          await supabase.from("process_recordings").delete().eq("id", rec.id);
+                          setRecordings(prev => prev.filter(r => r.id !== rec.id));
+                        }}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
           {/* === Checklists Tab === */}
           <TabsContent value="checklists">
             <div className="flex items-center justify-end mb-6">
