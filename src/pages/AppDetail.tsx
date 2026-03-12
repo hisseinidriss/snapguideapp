@@ -684,9 +684,7 @@ const AppDetail = () => {
               </div>
             )}
           </TabsContent>
-
-          {/* === Extensions Tab === */}
-          <TabsContent value="extensions">
+        </Tabs>
             <div className="flex items-center justify-end mb-6">
               <Dialog open={launcherOpen} onOpenChange={setLauncherOpen}>
                 <DialogTrigger asChild>
