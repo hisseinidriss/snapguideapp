@@ -501,7 +501,26 @@ const AppDetail = () => {
                   <Card key={tour.id} className="p-4 animate-fade-in" style={{ animationDelay: `${i * 50}ms` }}>
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div className="min-w-0">
-                        <h3 className="font-medium truncate">{tour.name}</h3>
+                        {editingTourId === tour.id ? (
+                          <Input
+                            autoFocus
+                            value={editingTourName}
+                            onChange={(e) => setEditingTourName(e.target.value)}
+                            onBlur={() => handleRenameProcess(tour.id)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") handleRenameProcess(tour.id);
+                              if (e.key === "Escape") setEditingTourId(null);
+                            }}
+                            className="h-8 text-sm font-medium"
+                          />
+                        ) : (
+                          <h3
+                            className="font-medium truncate cursor-pointer hover:text-primary transition-colors"
+                            onDoubleClick={() => { setEditingTourId(tour.id); setEditingTourName(tour.name); }}
+                          >
+                            {tour.name}
+                          </h3>
+                        )}
                         <p className="text-sm text-muted-foreground">
                           {stepCounts[tour.id] || 0} step{(stepCounts[tour.id] || 0) !== 1 ? "s" : ""} · Updated {new Date(tour.updated_at).toLocaleDateString()}
                         </p>
