@@ -517,55 +517,30 @@ const AppDetail = () => {
                 </div>
               </div>
             ) : (
-              <div className="space-y-3">
-                {tours.map((tour, i) => (
-                  <Card key={tour.id} className="p-4 animate-fade-in" style={{ animationDelay: `${i * 50}ms` }}>
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                      <div className="min-w-0">
-                        {editingTourId === tour.id ? (
-                          <Input
-                            autoFocus
-                            value={editingTourName}
-                            onChange={(e) => setEditingTourName(e.target.value)}
-                            onBlur={() => handleRenameProcess(tour.id)}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") handleRenameProcess(tour.id);
-                              if (e.key === "Escape") setEditingTourId(null);
-                            }}
-                            className="h-8 text-sm font-medium"
-                          />
-                        ) : (
-                          <h3
-                            className="font-medium truncate cursor-pointer hover:text-primary transition-colors"
-                            onDoubleClick={() => { setEditingTourId(tour.id); setEditingTourName(tour.name); }}
-                          >
-                            {tour.name}
-                          </h3>
-                        )}
-                        <p className="text-sm text-muted-foreground">
-                          {stepCounts[tour.id] || 0} step{(stepCounts[tour.id] || 0) !== 1 ? "s" : ""} · Updated {new Date(tour.updated_at).toLocaleDateString()}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <Button variant="outline" size="sm" onClick={() => handleAutoGenerate(tour.id)} disabled={generating}>
-                          {generating ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Sparkles className="mr-1 h-3 w-3" />}
-                          <span className="hidden sm:inline">AI Generate</span>
-                          <span className="sm:hidden">AI</span>
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => navigate(`/app/${appId}/tour/${tour.id}/embed`)}>
-                          <Code className="mr-1 h-3 w-3" /><span className="hidden sm:inline">Embed</span>
-                        </Button>
-                        <Button size="sm" onClick={() => navigate(`/app/${appId}/tour/${tour.id}`)}>
-                          <Pencil className="mr-1 h-3 w-3" />Edit
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDeleteProcess(tour.id)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </Card>
-                ))}
-              </div>
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <SortableContext items={tours.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+                  <div className="space-y-3">
+                    {tours.map((tour, i) => (
+                      <SortableTourCard
+                        key={tour.id}
+                        tour={tour}
+                        index={i}
+                        stepCount={stepCounts[tour.id] || 0}
+                        editingTourId={editingTourId}
+                        editingTourName={editingTourName}
+                        setEditingTourId={setEditingTourId}
+                        setEditingTourName={setEditingTourName}
+                        handleRenameProcess={handleRenameProcess}
+                        handleAutoGenerate={handleAutoGenerate}
+                        handleDeleteProcess={handleDeleteProcess}
+                        generating={generating}
+                        navigate={navigate}
+                        appId={appId!}
+                      />
+                    ))}
+                  </div>
+                </SortableContext>
+              </DndContext>
             )}
           </TabsContent>
 
