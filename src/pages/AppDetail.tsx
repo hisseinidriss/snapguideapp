@@ -99,7 +99,7 @@ const SortableTourCard = ({ tour, index, stepCount, editingTourId, editingTourNa
               Generate Steps with AI
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => navigate(`/app/${appId}/tour/${tour.id}/embed`)}>
-              <Code className="mr-2 h-4 w-4" />Embed Code
+              <Code className="mr-2 h-4 w-4" />Source Code
             </DropdownMenuItem>
             <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => handleDeleteProcess(tour.id)}>
               <Trash2 className="mr-2 h-4 w-4" />Delete Tour
