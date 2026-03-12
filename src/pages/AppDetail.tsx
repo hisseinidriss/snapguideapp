@@ -325,10 +325,25 @@ const AppDetail = () => {
               {validating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}
               Validate
             </Button>
-            <Button variant="outline" size="sm" onClick={() => generateChromeExtension(appId!, appName, appUrl, { supabaseUrl: import.meta.env.VITE_SUPABASE_URL, supabaseKey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY })}>
-              <Download className="mr-2 h-4 w-4" />
-              Chrome Extension
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Download className="mr-2 h-4 w-4" />
+                  Download Extension
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {([
+                  { browser: 'chrome' as BrowserTarget, label: 'Chrome Extension' },
+                  { browser: 'edge' as BrowserTarget, label: 'Edge Extension' },
+                  { browser: 'firefox' as BrowserTarget, label: 'Firefox Extension' },
+                ]).map(({ browser, label }) => (
+                  <DropdownMenuItem key={browser} onClick={() => generateChromeExtension(appId!, appName, appUrl, { supabaseUrl: import.meta.env.VITE_SUPABASE_URL, supabaseKey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY }, browser)}>
+                    <Download className="mr-2 h-4 w-4" />{label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           {/* Mobile menu */}
