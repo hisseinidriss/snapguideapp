@@ -123,6 +123,7 @@ const AppDetail = () => {
   const [processName, setProcessName] = useState("");
   const [stepCounts, setStepCounts] = useState<Record<string, number>>({});
   const [generatingFromManual, setGeneratingFromManual] = useState(false);
+  const [generating, setGenerating] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [validating, setValidating] = useState(false);
   const [validationReport, setValidationReport] = useState<ValidationReport | null>(null);
