@@ -17,6 +17,7 @@ import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
 import Account from "./pages/Account";
 import NotFound from "./pages/NotFound";
+import ScribeRecording from "./pages/ScribeRecording";
 
 const queryClient = new QueryClient();
 
