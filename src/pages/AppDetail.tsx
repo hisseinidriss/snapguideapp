@@ -372,9 +372,15 @@ const AppDetail = () => {
                 }}>
                   <ShieldCheck className="mr-2 h-4 w-4" />Validate Extension
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => generateChromeExtension(appId!, appName, appUrl, { supabaseUrl: import.meta.env.VITE_SUPABASE_URL, supabaseKey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY })}>
-                  <Download className="mr-2 h-4 w-4" />Chrome Extension
-                </DropdownMenuItem>
+                {([
+                  { browser: 'chrome' as BrowserTarget, label: 'Chrome Extension' },
+                  { browser: 'edge' as BrowserTarget, label: 'Edge Extension' },
+                  { browser: 'firefox' as BrowserTarget, label: 'Firefox Extension' },
+                ]).map(({ browser, label }) => (
+                  <DropdownMenuItem key={browser} onClick={() => generateChromeExtension(appId!, appName, appUrl, { supabaseUrl: import.meta.env.VITE_SUPABASE_URL, supabaseKey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY }, browser)}>
+                    <Download className="mr-2 h-4 w-4" />{label}
+                  </DropdownMenuItem>
+                ))}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
