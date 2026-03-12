@@ -69,7 +69,7 @@ const AppDetail = () => {
     const load = async () => {
       const [appRes, toursRes, launchersRes, checklistsRes, recordingsRes] = await Promise.all([
         supabase.from("apps").select("*").eq("id", appId).single(),
-        supabase.from("tours").select("*").eq("app_id", appId).order("created_at", { ascending: false }),
+        supabase.from("tours").select("*").eq("app_id", appId).order("sort_order", { ascending: true }).order("created_at", { ascending: false }),
         supabase.from("launchers").select("*").eq("app_id", appId).order("created_at", { ascending: false }),
         supabase.from("checklists").select("*").eq("app_id", appId).order("created_at", { ascending: false }),
         supabase.from("process_recordings").select("*").eq("app_id", appId).order("created_at", { ascending: false }),
