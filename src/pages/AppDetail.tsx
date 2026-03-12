@@ -115,6 +115,9 @@ const AppDetail = () => {
   const [stepCounts, setStepCounts] = useState<Record<string, number>>({});
   const [generatingFromManual, setGeneratingFromManual] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [validating, setValidating] = useState(false);
+  const [validationReport, setValidationReport] = useState<ValidationReport | null>(null);
+  const [validationDialogOpen, setValidationDialogOpen] = useState(false);
 
   const [editingTourId, setEditingTourId] = useState<string | null>(null);
   const [editingTourName, setEditingTourName] = useState("");
