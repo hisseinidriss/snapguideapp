@@ -94,9 +94,10 @@ const AppDetail = () => {
 
   const handleCreateProcess = async () => {
     if (!processName.trim() || !appId) return;
-    const { error } = await supabase.from("tours").insert({ app_id: appId, name: processName });
+    const maxOrder = tours.reduce((max, t) => Math.max(max, (t as any).sort_order ?? 0), -1);
+    const { error } = await supabase.from("tours").insert({ app_id: appId, name: processName, sort_order: maxOrder + 1 });
     if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
-    const { data } = await supabase.from("tours").select("*").eq("app_id", appId).order("created_at", { ascending: false });
+    const { data } = await supabase.from("tours").select("*").eq("app_id", appId).order("sort_order", { ascending: true }).order("created_at", { ascending: false });
     setTours(data || []);
     setProcessName(""); setOpen(false);
   };
