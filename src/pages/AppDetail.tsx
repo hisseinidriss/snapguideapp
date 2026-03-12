@@ -103,6 +103,14 @@ const AppDetail = () => {
     setTours((prev) => prev.filter((t) => t.id !== id));
   };
 
+  const handleRenameProcess = async (id: string) => {
+    if (!editingTourName.trim()) { setEditingTourId(null); return; }
+    const { error } = await supabase.from("tours").update({ name: editingTourName.trim() }).eq("id", id);
+    if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); }
+    else { setTours((prev) => prev.map((t) => t.id === id ? { ...t, name: editingTourName.trim() } : t)); }
+    setEditingTourId(null);
+  };
+
   const handleAutoGenerate = async (tourId: string) => {
     if (!appUrl) {
       toast({ title: "No URL", description: "This app has no URL configured. Edit the app to add one.", variant: "destructive" });
