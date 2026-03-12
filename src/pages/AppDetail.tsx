@@ -205,7 +205,7 @@ const AppDetail = () => {
     await Promise.all(updates);
   };
 
-
+  const handleAutoGenerate = async (tourId: string) => {
     if (!appUrl) {
       toast({ title: "No URL", description: "This app has no URL configured. Edit the app to add one.", variant: "destructive" });
       return;
