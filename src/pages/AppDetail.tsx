@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tour, Launcher, LauncherType, Checklist } from "@/types/tour";
+import type { ProcessRecording } from "@/types/recording";
 import { useToast } from "@/hooks/use-toast";
 
 const LAUNCHER_TYPES: { value: LauncherType; label: string; icon: typeof Circle; desc: string }[] = [
