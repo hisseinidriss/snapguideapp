@@ -4,6 +4,8 @@ import { ArrowLeft, Plus, Trash2, Code, Pencil, Crosshair, Sparkles, Loader2, Up
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { generateChromeExtension, type BrowserTarget } from "@/lib/chrome-extension-generator";
+import { validateChromeExtension, type ValidationReport } from "@/lib/chrome-extension-validator";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -113,6 +115,9 @@ const AppDetail = () => {
   const [stepCounts, setStepCounts] = useState<Record<string, number>>({});
   const [generatingFromManual, setGeneratingFromManual] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [validating, setValidating] = useState(false);
+  const [validationReport, setValidationReport] = useState<ValidationReport | null>(null);
+  const [validationDialogOpen, setValidationDialogOpen] = useState(false);
 
   const [editingTourId, setEditingTourId] = useState<string | null>(null);
   const [editingTourName, setEditingTourName] = useState("");
@@ -273,8 +278,117 @@ const AppDetail = () => {
               <p className="text-xs text-muted-foreground">{appUrl || "No URL configured"}</p>
             </div>
           </div>
+          <div className="flex items-center gap-2">
+            {/* Desktop buttons */}
+            <div className="hidden md:flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => navigate(`/app/${appId}/analytics`)}>
+                <BarChart3 className="mr-2 h-4 w-4" />Analytics
+              </Button>
+              <Button variant="outline" size="sm" onClick={async () => {
+                setValidating(true);
+                try {
+                  const report = await validateChromeExtension(appId!, appName, appUrl);
+                  setValidationReport(report);
+                  setValidationDialogOpen(true);
+                } catch (e) {
+                  toast({ title: "Validation failed", description: String(e), variant: "destructive" });
+                } finally {
+                  setValidating(false);
+                }
+              }} disabled={validating}>
+                {validating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}
+                Validate
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Download className="mr-2 h-4 w-4" />
+                    Download Extension
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  {([
+                    { browser: 'chrome' as BrowserTarget, label: 'Chrome Extension' },
+                    { browser: 'edge' as BrowserTarget, label: 'Edge Extension' },
+                    { browser: 'firefox' as BrowserTarget, label: 'Firefox Extension' },
+                  ]).map(({ browser, label }) => (
+                    <DropdownMenuItem key={browser} onClick={() => generateChromeExtension(appId!, appName, appUrl, { supabaseUrl: import.meta.env.VITE_SUPABASE_URL, supabaseKey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY }, browser)}>
+                      <Download className="mr-2 h-4 w-4" />{label}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+
+            {/* Mobile menu */}
+            <div className="md:hidden">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="icon">
+                    <Menu className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => navigate(`/app/${appId}/analytics`)}>
+                    <BarChart3 className="mr-2 h-4 w-4" />Analytics
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={async () => {
+                    setValidating(true);
+                    try {
+                      const report = await validateChromeExtension(appId!, appName, appUrl);
+                      setValidationReport(report);
+                      setValidationDialogOpen(true);
+                    } catch (e) {
+                      toast({ title: "Validation failed", description: String(e), variant: "destructive" });
+                    } finally {
+                      setValidating(false);
+                    }
+                  }}>
+                    <ShieldCheck className="mr-2 h-4 w-4" />Validate
+                  </DropdownMenuItem>
+                  {([
+                    { browser: 'chrome' as BrowserTarget, label: 'Chrome Extension' },
+                    { browser: 'edge' as BrowserTarget, label: 'Edge Extension' },
+                    { browser: 'firefox' as BrowserTarget, label: 'Firefox Extension' },
+                  ]).map(({ browser, label }) => (
+                    <DropdownMenuItem key={browser} onClick={() => generateChromeExtension(appId!, appName, appUrl, { supabaseUrl: import.meta.env.VITE_SUPABASE_URL, supabaseKey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY }, browser)}>
+                      <Download className="mr-2 h-4 w-4" />{label}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
         </div>
       </header>
+
+      {/* Validation Report Dialog */}
+      <Dialog open={validationDialogOpen} onOpenChange={setValidationDialogOpen}>
+        <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {validationReport?.passed ? (
+                <CheckCircle className="h-5 w-5 text-green-500" />
+              ) : (
+                <XCircle className="h-5 w-5 text-destructive" />
+              )}
+              Extension Validation {validationReport?.passed ? "Passed" : "Failed"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 pt-2">
+            {validationReport?.results.map((r, i) => (
+              <div key={i} className="flex items-start gap-2 text-sm">
+                {r.status === "pass" && <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 shrink-0" />}
+                {r.status === "warning" && <AlertTriangle className="h-4 w-4 text-yellow-500 mt-0.5 shrink-0" />}
+                {r.status === "error" && <XCircle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />}
+                <span className={r.status === "error" ? "text-destructive" : r.status === "warning" ? "text-yellow-600" : "text-muted-foreground"}>
+                  {r.message}
+                </span>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <main className="container py-8 px-4">
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 mb-6">
