@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Plus, Trash2, Code, Pencil, Crosshair, Sparkles, Loader2, Upload, Circle, Square, Zap, Download, HelpCircle, CheckCircle2, ClipboardList, BarChart3, Menu, ShieldCheck, AlertTriangle, XCircle, CheckCircle, FileText, Video as VideoIcon } from "lucide-react";
-import { generateChromeExtension } from "@/lib/chrome-extension-generator";
+import { generateChromeExtension, type BrowserTarget } from "@/lib/chrome-extension-generator";
 import { validateChromeExtension, type ValidationReport } from "@/lib/chrome-extension-validator";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -275,19 +275,19 @@ const AppDetail = () => {
               </DialogTrigger>
               <DialogContent className="sm:max-w-lg">
                 <DialogHeader>
-                  <DialogTitle>Install Chrome Extension</DialogTitle>
+                  <DialogTitle>Install Browser Extension</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4 pt-2">
                   <p className="text-sm text-muted-foreground">
-                    Follow these steps to install the downloaded extension in Google Chrome:
+                    Follow these steps to install the downloaded extension:
                   </p>
                   <ol className="space-y-3">
                     {[
-                      { step: "Click the \"Chrome Extension\" button to download the ZIP file." },
+                      { step: "Click \"Download Extension\" and choose your browser (Chrome, Edge, or Firefox)." },
                       { step: "Extract/unzip the downloaded file to a folder on your computer." },
-                      { step: "Open Chrome and navigate to chrome://extensions" },
-                      { step: "Enable \"Developer mode\" using the toggle in the top-right corner." },
-                      { step: "Click \"Load unpacked\" and select the extracted folder." },
+                      { step: "Chrome/Edge: Go to chrome://extensions or edge://extensions and enable \"Developer mode\"." },
+                      { step: "Firefox: Go to about:debugging#/runtime/this-firefox and click \"Load Temporary Add-on\"." },
+                      { step: "Chrome/Edge: Click \"Load unpacked\" and select the extracted folder. Firefox: Select any file in the folder." },
                       { step: "The extension icon will appear in your toolbar. Visit your app URL to see it in action!" },
                     ].map((item, i) => (
                       <li key={i} className="flex gap-3 text-sm">
@@ -325,10 +325,25 @@ const AppDetail = () => {
               {validating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}
               Validate
             </Button>
-            <Button variant="outline" size="sm" onClick={() => generateChromeExtension(appId!, appName, appUrl, { supabaseUrl: import.meta.env.VITE_SUPABASE_URL, supabaseKey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY })}>
-              <Download className="mr-2 h-4 w-4" />
-              Chrome Extension
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Download className="mr-2 h-4 w-4" />
+                  Download Extension
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {([
+                  { browser: 'chrome' as BrowserTarget, label: 'Chrome Extension' },
+                  { browser: 'edge' as BrowserTarget, label: 'Edge Extension' },
+                  { browser: 'firefox' as BrowserTarget, label: 'Firefox Extension' },
+                ]).map(({ browser, label }) => (
+                  <DropdownMenuItem key={browser} onClick={() => generateChromeExtension(appId!, appName, appUrl, { supabaseUrl: import.meta.env.VITE_SUPABASE_URL, supabaseKey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY }, browser)}>
+                    <Download className="mr-2 h-4 w-4" />{label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
           {/* Mobile menu */}
@@ -357,9 +372,15 @@ const AppDetail = () => {
                 }}>
                   <ShieldCheck className="mr-2 h-4 w-4" />Validate Extension
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => generateChromeExtension(appId!, appName, appUrl, { supabaseUrl: import.meta.env.VITE_SUPABASE_URL, supabaseKey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY })}>
-                  <Download className="mr-2 h-4 w-4" />Chrome Extension
-                </DropdownMenuItem>
+                {([
+                  { browser: 'chrome' as BrowserTarget, label: 'Chrome Extension' },
+                  { browser: 'edge' as BrowserTarget, label: 'Edge Extension' },
+                  { browser: 'firefox' as BrowserTarget, label: 'Firefox Extension' },
+                ]).map(({ browser, label }) => (
+                  <DropdownMenuItem key={browser} onClick={() => generateChromeExtension(appId!, appName, appUrl, { supabaseUrl: import.meta.env.VITE_SUPABASE_URL, supabaseKey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY }, browser)}>
+                    <Download className="mr-2 h-4 w-4" />{label}
+                  </DropdownMenuItem>
+                ))}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -406,7 +427,6 @@ const AppDetail = () => {
         <Tabs defaultValue="processes" className="w-full">
           <TabsList className="mb-6 w-full sm:w-auto">
             <TabsTrigger value="processes" className="text-xs sm:text-sm">Processes ({tours.length})</TabsTrigger>
-            <TabsTrigger value="scribe" className="text-xs sm:text-sm">Scribe ({recordings.length})</TabsTrigger>
             <TabsTrigger value="checklists" className="text-xs sm:text-sm">Checklists ({checklists.length})</TabsTrigger>
             <TabsTrigger value="extensions" className="text-xs sm:text-sm">Extensions ({launchers.length})</TabsTrigger>
           </TabsList>
