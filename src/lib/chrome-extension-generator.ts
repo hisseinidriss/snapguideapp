@@ -1305,7 +1305,6 @@ function getPopupHTML(appName: string, processes: Process[]): string {
 </body>
 </html>`;
 }
-}
 
 function getPopupJS(): string {
   return `
