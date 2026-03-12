@@ -38,6 +38,7 @@ const AppDetail = () => {
   const [tours, setTours] = useState<Tour[]>([]);
   const [launchers, setLaunchers] = useState<Launcher[]>([]);
   const [checklists, setChecklists] = useState<Checklist[]>([]);
+  const [recordings, setRecordings] = useState<ProcessRecording[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [processName, setProcessName] = useState("");
