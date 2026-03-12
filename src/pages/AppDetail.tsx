@@ -316,26 +316,6 @@ const AppDetail = () => {
             <p className="text-muted-foreground max-w-md mb-6">
               Create your first business process to get started. You can also import from a manual or documentation.
             </p>
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
-                <Upload className="mr-2 h-4 w-4" />Import from Manual
-              </Button>
-              <Dialog open={open} onOpenChange={setOpen}>
-                <DialogTrigger asChild>
-                  <Button><Plus className="mr-2 h-4 w-4" />Create Process</Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader><DialogTitle>Create a new process</DialogTitle></DialogHeader>
-                  <div className="space-y-4 pt-2">
-                    <div className="space-y-2">
-                      <Label>Process Name</Label>
-                      <Input placeholder="e.g. Employee Onboarding" value={processName} onChange={(e) => setProcessName(e.target.value)} />
-                    </div>
-                    <Button onClick={handleCreateProcess} className="w-full" disabled={!processName.trim()}>Create Process</Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
-            </div>
           </div>
         ) : (
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
