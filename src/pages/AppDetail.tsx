@@ -37,12 +37,14 @@ interface SortableTourCardProps {
   setEditingTourId: (id: string | null) => void;
   setEditingTourName: (name: string) => void;
   handleRenameProcess: (id: string) => void;
+  handleAutoGenerate: (id: string) => void;
   handleDeleteProcess: (id: string) => void;
+  generating: boolean;
   navigate: (path: string) => void;
   appId: string;
 }
 
-const SortableTourCard = ({ tour, index, stepCount, editingTourId, editingTourName, setEditingTourId, setEditingTourName, handleRenameProcess, handleDeleteProcess, navigate, appId }: SortableTourCardProps) => {
+const SortableTourCard = ({ tour, index, stepCount, editingTourId, editingTourName, setEditingTourId, setEditingTourName, handleRenameProcess, handleAutoGenerate, handleDeleteProcess, generating, navigate, appId }: SortableTourCardProps) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: tour.id });
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
 
