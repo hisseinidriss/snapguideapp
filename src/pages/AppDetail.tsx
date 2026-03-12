@@ -50,6 +50,9 @@ const AppDetail = () => {
   const [validationReport, setValidationReport] = useState<ValidationReport | null>(null);
   const [validationDialogOpen, setValidationDialogOpen] = useState(false);
 
+  const [editingTourId, setEditingTourId] = useState<string | null>(null);
+  const [editingTourName, setEditingTourName] = useState("");
+
   const [checklistOpen, setChecklistOpen] = useState(false);
   const [newChecklistName, setNewChecklistName] = useState("");
 
