@@ -183,6 +183,39 @@ const AppDetail = () => {
     setEditingTourId(null);
   };
 
+  const handleAutoGenerate = async (tourId: string) => {
+    if (!appUrl) {
+      toast({ title: "No URL", description: "This app has no URL configured. Edit the app to add one.", variant: "destructive" });
+      return;
+    }
+    setGenerating(true);
+    try {
+      const tour = tours.find((t) => t.id === tourId);
+      const { data, error } = await supabase.functions.invoke("generate-tour-steps", {
+        body: { url: appUrl, tourName: tour?.name || "Onboarding" },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      const steps = data.steps || [];
+      if (steps.length === 0) {
+        toast({ title: "No steps generated", description: "AI couldn't generate steps from this page.", variant: "destructive" });
+        return;
+      }
+      const inserts = steps.map((s: any, i: number) => ({
+        tour_id: tourId, title: s.title, content: s.content,
+        selector: s.selector || "", placement: s.placement || "bottom", sort_order: i,
+      }));
+      const { error: insertError } = await supabase.from("tour_steps").insert(inserts);
+      if (insertError) throw insertError;
+      toast({ title: "Steps generated!", description: `${steps.length} steps were created from your page content.` });
+      setStepCounts((prev) => ({ ...prev, [tourId]: (prev[tourId] || 0) + steps.length }));
+    } catch (err: any) {
+      toast({ title: "Generation failed", description: err.message || "Something went wrong", variant: "destructive" });
+    } finally {
+      setGenerating(false);
+    }
+  };
+
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }), useSensor(KeyboardSensor));
 
   const handleDragEnd = async (event: DragEndEvent) => {
