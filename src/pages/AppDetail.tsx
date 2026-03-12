@@ -4,8 +4,6 @@ import { ArrowLeft, Plus, Trash2, Code, Pencil, Crosshair, Sparkles, Loader2, Up
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { generateChromeExtension, type BrowserTarget } from "@/lib/chrome-extension-generator";
-import { validateChromeExtension, type ValidationReport } from "@/lib/chrome-extension-validator";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -15,9 +13,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -40,14 +35,12 @@ interface SortableTourCardProps {
   setEditingTourId: (id: string | null) => void;
   setEditingTourName: (name: string) => void;
   handleRenameProcess: (id: string) => void;
-  handleAutoGenerate: (id: string) => void;
   handleDeleteProcess: (id: string) => void;
-  generating: boolean;
   navigate: (path: string) => void;
   appId: string;
 }
 
-const SortableTourCard = ({ tour, index, stepCount, editingTourId, editingTourName, setEditingTourId, setEditingTourName, handleRenameProcess, handleAutoGenerate, handleDeleteProcess, generating, navigate, appId }: SortableTourCardProps) => {
+const SortableTourCard = ({ tour, index, stepCount, editingTourId, editingTourName, setEditingTourId, setEditingTourName, handleRenameProcess, handleDeleteProcess, navigate, appId }: SortableTourCardProps) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: tour.id });
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
 
@@ -91,13 +84,6 @@ const SortableTourCard = ({ tour, index, stepCount, editingTourId, editingTourNa
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => navigate(`/app/${appId}/tour/${tour.id}`)}>
-              <Pencil className="mr-2 h-4 w-4" />Edit Steps
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleAutoGenerate(tour.id)} disabled={generating}>
-              {generating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-              Generate Steps with AI
-            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => navigate(`/app/${appId}/tour/${tour.id}/embed`)}>
               <Code className="mr-2 h-4 w-4" />Source Code
             </DropdownMenuItem>
@@ -126,22 +112,10 @@ const AppDetail = () => {
   const [processName, setProcessName] = useState("");
   const [stepCounts, setStepCounts] = useState<Record<string, number>>({});
   const [generatingFromManual, setGeneratingFromManual] = useState(false);
-  const [generating, setGenerating] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [validating, setValidating] = useState(false);
-  const [validationReport, setValidationReport] = useState<ValidationReport | null>(null);
-  const [validationDialogOpen, setValidationDialogOpen] = useState(false);
 
   const [editingTourId, setEditingTourId] = useState<string | null>(null);
   const [editingTourName, setEditingTourName] = useState("");
-
-  const [checklistOpen, setChecklistOpen] = useState(false);
-  const [newChecklistName, setNewChecklistName] = useState("");
-
-  const [launcherOpen, setLauncherOpen] = useState(false);
-  const [newLauncherName, setNewLauncherName] = useState("");
-  const [newLauncherType, setNewLauncherType] = useState<LauncherType>("beacon");
-  const [selectedLauncherId, setSelectedLauncherId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!appId) return;
@@ -206,42 +180,8 @@ const AppDetail = () => {
     const [moved] = reordered.splice(oldIndex, 1);
     reordered.splice(newIndex, 0, moved);
     setTours(reordered);
-    // Persist sort_order
     const updates = reordered.map((t, i) => supabase.from("tours").update({ sort_order: i }).eq("id", t.id));
     await Promise.all(updates);
-  };
-
-  const handleAutoGenerate = async (tourId: string) => {
-    if (!appUrl) {
-      toast({ title: "No URL", description: "This app has no URL configured. Edit the app to add one.", variant: "destructive" });
-      return;
-    }
-    setGenerating(true);
-    try {
-      const tour = tours.find((t) => t.id === tourId);
-      const { data, error } = await supabase.functions.invoke("generate-tour-steps", {
-        body: { url: appUrl, tourName: tour?.name || "Onboarding" },
-      });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      const steps = data.steps || [];
-      if (steps.length === 0) {
-        toast({ title: "No steps generated", description: "AI couldn't generate steps from this page.", variant: "destructive" });
-        return;
-      }
-      const inserts = steps.map((s: any, i: number) => ({
-        tour_id: tourId, title: s.title, content: s.content,
-        selector: s.selector || "", placement: s.placement || "bottom", sort_order: i,
-      }));
-      const { error: insertError } = await supabase.from("tour_steps").insert(inserts);
-      if (insertError) throw insertError;
-      toast({ title: "Steps generated!", description: `${steps.length} steps were created from your page content.` });
-      setStepCounts((prev) => ({ ...prev, [tourId]: (prev[tourId] || 0) + steps.length }));
-    } catch (err: any) {
-      toast({ title: "Generation failed", description: err.message || "Something went wrong", variant: "destructive" });
-    } finally {
-      setGenerating(false);
-    }
   };
 
   const handleManualUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -301,50 +241,6 @@ const AppDetail = () => {
     }
   };
 
-  const handleCreateLauncher = async () => {
-    if (!newLauncherName.trim() || !appId) return;
-    const { data, error } = await supabase
-      .from("launchers").insert({ app_id: appId, name: newLauncherName, type: newLauncherType }).select().single();
-    if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
-    if (data) {
-      setLaunchers((prev) => [data, ...prev]);
-      setSelectedLauncherId(data.id);
-    }
-    setNewLauncherName(""); setNewLauncherType("beacon"); setLauncherOpen(false);
-  };
-
-  const handleDeleteLauncher = async (id: string) => {
-    await supabase.from("launchers").delete().eq("id", id);
-    const next = launchers.filter((l) => l.id !== id);
-    setLaunchers(next);
-    if (selectedLauncherId === id) setSelectedLauncherId(next[0]?.id || null);
-  };
-
-  const updateLauncher = async (id: string, updates: Partial<Launcher>) => {
-    setLaunchers((prev) => prev.map((l) => (l.id === id ? { ...l, ...updates } : l)));
-    const cleanUpdates: Record<string, unknown> = {};
-    for (const [k, v] of Object.entries(updates)) {
-      if (!["id", "created_at", "updated_at", "app_id"].includes(k)) cleanUpdates[k] = v;
-    }
-    await supabase.from("launchers").update(cleanUpdates).eq("id", id);
-  };
-
-  const handleCreateChecklist = async () => {
-    if (!newChecklistName.trim() || !appId) return;
-    const { data, error } = await supabase
-      .from("checklists").insert({ app_id: appId, name: newChecklistName }).select().single();
-    if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
-    if (data) setChecklists((prev) => [data, ...prev]);
-    setNewChecklistName(""); setChecklistOpen(false);
-  };
-
-  const handleDeleteChecklist = async (id: string) => {
-    await supabase.from("checklists").delete().eq("id", id);
-    setChecklists((prev) => prev.filter((c) => c.id !== id));
-  };
-
-  const selectedLauncher = launchers.find((l) => l.id === selectedLauncherId);
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -367,199 +263,51 @@ const AppDetail = () => {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card">
-        <div className="container flex h-16 items-center gap-4 px-4">
-          <Button variant="ghost" size="icon" asChild>
-            <Link to="/"><ArrowLeft className="h-4 w-4" /></Link>
-          </Button>
-          <div className="flex-1 min-w-0">
-            <h1 className="text-lg font-semibold truncate">{appName}</h1>
-            {appUrl && <p className="text-xs text-muted-foreground truncate">{appUrl}</p>}
-          </div>
-          
-          {/* Desktop actions */}
-          <div className="hidden md:flex gap-2">
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button variant="ghost" size="icon" title="Installation instructions">
-                  <HelpCircle className="h-4 w-4" />
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-lg">
-                <DialogHeader>
-                  <DialogTitle>Install Browser Extension</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4 pt-2">
-                  <p className="text-sm text-muted-foreground">
-                    Follow these steps to install the downloaded extension:
-                  </p>
-                  <ol className="space-y-3">
-                    {[
-                      { step: "Click \"Download Extension\" and choose your browser (Chrome, Edge, or Firefox)." },
-                      { step: "Extract/unzip the downloaded file to a folder on your computer." },
-                      { step: "Chrome/Edge: Go to chrome://extensions or edge://extensions and enable \"Developer mode\"." },
-                      { step: "Firefox: Go to about:debugging#/runtime/this-firefox and click \"Load Temporary Add-on\"." },
-                      { step: "Chrome/Edge: Click \"Load unpacked\" and select the extracted folder. Firefox: Select any file in the folder." },
-                      { step: "The extension icon will appear in your toolbar. Visit your app URL to see it in action!" },
-                    ].map((item, i) => (
-                      <li key={i} className="flex gap-3 text-sm">
-                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-medium">
-                          {i + 1}
-                        </span>
-                        <span className="pt-0.5">{item.step}</span>
-                      </li>
-                    ))}
-                  </ol>
-                </div>
-              </DialogContent>
-            </Dialog>
-            <Button variant="outline" size="sm" onClick={() => navigate(`/app/${appId}/analytics`)}>
-              <BarChart3 className="mr-2 h-4 w-4" />
-              Analytics
+        <div className="container flex h-14 items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" asChild>
+              <Link to="/"><ArrowLeft className="h-4 w-4" /></Link>
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={async () => {
-                setValidating(true);
-                try {
-                  const report = await validateChromeExtension(appId!, appName, appUrl);
-                  setValidationReport(report);
-                  setValidationDialogOpen(true);
-                } catch (e) {
-                  toast({ title: "Validation failed", description: String(e), variant: "destructive" });
-                } finally {
-                  setValidating(false);
-                }
-              }}
-              disabled={validating}
-            >
-              {validating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}
-              Validate
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Download className="mr-2 h-4 w-4" />
-                  Download Extension
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {([
-                  { browser: 'chrome' as BrowserTarget, label: 'Chrome Extension' },
-                  { browser: 'edge' as BrowserTarget, label: 'Edge Extension' },
-                  { browser: 'firefox' as BrowserTarget, label: 'Firefox Extension' },
-                ]).map(({ browser, label }) => (
-                  <DropdownMenuItem key={browser} onClick={() => generateChromeExtension(appId!, appName, appUrl, { supabaseUrl: import.meta.env.VITE_SUPABASE_URL, supabaseKey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY }, browser)}>
-                    <Download className="mr-2 h-4 w-4" />{label}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-
-          {/* Mobile menu */}
-          <div className="md:hidden">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon">
-                  <Menu className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => navigate(`/app/${appId}/analytics`)}>
-                  <BarChart3 className="mr-2 h-4 w-4" />Analytics
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={async () => {
-                  setValidating(true);
-                  try {
-                    const report = await validateChromeExtension(appId!, appName, appUrl);
-                    setValidationReport(report);
-                    setValidationDialogOpen(true);
-                  } catch (e) {
-                    toast({ title: "Validation failed", description: String(e), variant: "destructive" });
-                  } finally {
-                    setValidating(false);
-                  }
-                }}>
-                  <ShieldCheck className="mr-2 h-4 w-4" />Validate Extension
-                </DropdownMenuItem>
-                {([
-                  { browser: 'chrome' as BrowserTarget, label: 'Chrome Extension' },
-                  { browser: 'edge' as BrowserTarget, label: 'Edge Extension' },
-                  { browser: 'firefox' as BrowserTarget, label: 'Firefox Extension' },
-                ]).map(({ browser, label }) => (
-                  <DropdownMenuItem key={browser} onClick={() => generateChromeExtension(appId!, appName, appUrl, { supabaseUrl: import.meta.env.VITE_SUPABASE_URL, supabaseKey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY }, browser)}>
-                    <Download className="mr-2 h-4 w-4" />{label}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <div>
+              <h1 className="text-sm font-semibold">{appName}</h1>
+              <p className="text-xs text-muted-foreground">{appUrl || "No URL configured"}</p>
+            </div>
           </div>
         </div>
       </header>
-
-      {/* Validation Report Dialog */}
-      <Dialog open={validationDialogOpen} onOpenChange={setValidationDialogOpen}>
-        <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              {validationReport?.passed ? (
-                <CheckCircle className="h-5 w-5 text-green-500" />
-              ) : (
-                <XCircle className="h-5 w-5 text-destructive" />
-              )}
-              Extension Validation {validationReport?.passed ? "Passed" : "Failed"}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-2 pt-2">
-            {validationReport?.results.map((r, i) => (
-              <div key={i} className="flex items-start gap-2 text-sm">
-                {r.status === "pass" && <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 shrink-0" />}
-                {r.status === "warning" && <AlertTriangle className="h-4 w-4 text-yellow-500 mt-0.5 shrink-0" />}
-                {r.status === "error" && <XCircle className="h-4 w-4 text-destructive mt-0.5 shrink-0" />}
-                <span className={r.status === "error" ? "text-destructive" : r.status === "warning" ? "text-yellow-600" : "text-muted-foreground"}>
-                  {r.message}
-                </span>
-              </div>
-            ))}
-          </div>
-        </DialogContent>
-      </Dialog>
 
       <main className="container py-8 px-4">
         <Tabs defaultValue="processes" className="w-full">
           <TabsList className="mb-6 w-full sm:w-auto">
             <TabsTrigger value="processes" className="text-xs sm:text-sm">Processes ({tours.length})</TabsTrigger>
-            
-            <TabsTrigger value="extensions" className="text-xs sm:text-sm">Extensions ({launchers.length})</TabsTrigger>
           </TabsList>
 
-          {/* === Business Processes Tab === */}
           <TabsContent value="processes">
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 mb-6">
               <input
-                ref={fileInputRef}
                 type="file"
+                ref={fileInputRef}
                 accept=".pdf,.doc,.docx,.txt,.md"
                 className="hidden"
                 onChange={handleManualUpload}
               />
-              <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={generatingFromManual} className="w-full sm:w-auto">
-                {generatingFromManual ? (
-                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Extracting...</>
-                ) : (
-                  <><Upload className="mr-2 h-4 w-4" />Upload Manual</>
-                )}
+              <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={generatingFromManual}>
+                {generatingFromManual ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+                Import from Manual
               </Button>
+
               <Dialog open={open} onOpenChange={setOpen}>
                 <DialogTrigger asChild>
-                  <Button className="w-full sm:w-auto"><Plus className="mr-2 h-4 w-4" />New Business Process</Button>
+                  <Button size="sm"><Plus className="mr-2 h-4 w-4" />Create Process</Button>
                 </DialogTrigger>
                 <DialogContent>
-                  <DialogHeader><DialogTitle>Create a new business process</DialogTitle></DialogHeader>
+                  <DialogHeader><DialogTitle>Create a new process</DialogTitle></DialogHeader>
                   <div className="space-y-4 pt-2">
-                    <Input placeholder="Process name (e.g. Add New Record)" value={processName} onChange={(e) => setProcessName(e.target.value)} />
-                    <Button onClick={handleCreateProcess} className="w-full">Create Process</Button>
+                    <div className="space-y-2">
+                      <Label>Process Name</Label>
+                      <Input placeholder="e.g. Employee Onboarding" value={processName} onChange={(e) => setProcessName(e.target.value)} />
+                    </div>
+                    <Button onClick={handleCreateProcess} className="w-full" disabled={!processName.trim()}>Create Process</Button>
                   </div>
                 </DialogContent>
               </Dialog>
@@ -568,23 +316,31 @@ const AppDetail = () => {
             {tours.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-24 text-center animate-fade-in">
                 <div className="h-16 w-16 rounded-2xl bg-accent/10 flex items-center justify-center mb-6">
-                  <Pencil className="h-8 w-8 text-accent" />
+                  <HelpCircle className="h-8 w-8 text-accent" />
                 </div>
-                <h2 className="text-2xl font-semibold mb-2">No business processes yet</h2>
+                <h2 className="text-2xl font-semibold mb-2">No processes yet</h2>
                 <p className="text-muted-foreground max-w-md mb-6">
-                  Upload a user manual to auto-extract processes, or create one manually.
+                  Create your first business process to get started. You can also import from a manual or documentation.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3">
-                  <Button variant="outline" onClick={() => fileInputRef.current?.click()} disabled={generatingFromManual}>
-                    {generatingFromManual ? (
-                      <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Extracting...</>
-                    ) : (
-                      <><Upload className="mr-2 h-4 w-4" />Upload Manual</>
-                    )}
+                  <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
+                    <Upload className="mr-2 h-4 w-4" />Import from Manual
                   </Button>
-                  <Button onClick={() => setOpen(true)}>
-                    <Plus className="mr-2 h-4 w-4" />Create Manually
-                  </Button>
+                  <Dialog open={open} onOpenChange={setOpen}>
+                    <DialogTrigger asChild>
+                      <Button><Plus className="mr-2 h-4 w-4" />Create Process</Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader><DialogTitle>Create a new process</DialogTitle></DialogHeader>
+                      <div className="space-y-4 pt-2">
+                        <div className="space-y-2">
+                          <Label>Process Name</Label>
+                          <Input placeholder="e.g. Employee Onboarding" value={processName} onChange={(e) => setProcessName(e.target.value)} />
+                        </div>
+                        <Button onClick={handleCreateProcess} className="w-full" disabled={!processName.trim()}>Create Process</Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                 </div>
               </div>
             ) : (
@@ -602,9 +358,7 @@ const AppDetail = () => {
                         setEditingTourId={setEditingTourId}
                         setEditingTourName={setEditingTourName}
                         handleRenameProcess={handleRenameProcess}
-                        handleAutoGenerate={handleAutoGenerate}
                         handleDeleteProcess={handleDeleteProcess}
-                        generating={generating}
                         navigate={navigate}
                         appId={appId!}
                       />
@@ -614,352 +368,10 @@ const AppDetail = () => {
               </DndContext>
             )}
           </TabsContent>
-
-          {/* === Scribe Tab === */}
-          <TabsContent value="scribe">
-            <div className="flex items-center justify-end mb-6">
-              <Button onClick={async () => {
-                if (!appId) return;
-                const { data, error } = await supabase
-                  .from("process_recordings")
-                  .insert({ app_id: appId, title: "New Recording" })
-                  .select()
-                  .single();
-                if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
-                if (data) {
-                  setRecordings(prev => [data as unknown as ProcessRecording, ...prev]);
-                  navigate(`/app/${appId}/recording/${data.id}`);
-                }
-              }}>
-                <Plus className="mr-2 h-4 w-4" />New Recording
-              </Button>
-            </div>
-
-            {recordings.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-24 text-center animate-fade-in">
-                <div className="h-16 w-16 rounded-2xl bg-accent/10 flex items-center justify-center mb-6">
-                  <FileText className="h-8 w-8 text-accent" />
-                </div>
-                <h2 className="text-2xl font-semibold mb-2">No recordings yet</h2>
-                <p className="text-muted-foreground max-w-md mb-6">
-                  Use Scribe Mode to record browser actions and auto-generate step-by-step documentation and SOPs.
-                </p>
-                <Button onClick={async () => {
-                  if (!appId) return;
-                  const { data, error } = await supabase
-                    .from("process_recordings")
-                    .insert({ app_id: appId, title: "New Recording" })
-                    .select()
-                    .single();
-                  if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
-                  if (data) navigate(`/app/${appId}/recording/${data.id}`);
-                }}>
-                  <Plus className="mr-2 h-4 w-4" />Start Recording
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {recordings.map((rec, i) => (
-                  <Card key={rec.id} className="p-4 animate-fade-in" style={{ animationDelay: `${i * 50}ms` }}>
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-medium truncate">{rec.title}</h3>
-                          {rec.tour_id && (
-                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
-                              Linked
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                          {rec.status} · Updated {new Date(rec.updated_at).toLocaleDateString()}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button size="sm" onClick={() => navigate(`/app/${appId}/recording/${rec.id}`)}>
-                          <Pencil className="mr-1 h-3 w-3" />Edit
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={async () => {
-                          await supabase.from("process_recordings").delete().eq("id", rec.id);
-                          setRecordings(prev => prev.filter(r => r.id !== rec.id));
-                        }}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </TabsContent>
-
-          {/* === Checklists Tab === */}
-          <TabsContent value="checklists">
-            <div className="flex items-center justify-end mb-6">
-              <Dialog open={checklistOpen} onOpenChange={setChecklistOpen}>
-                <DialogTrigger asChild>
-                  <Button><Plus className="mr-2 h-4 w-4" />New Checklist</Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader><DialogTitle>Create a checklist</DialogTitle></DialogHeader>
-                  <div className="space-y-4 pt-2">
-                    <Input placeholder="e.g. New Employee Onboarding" value={newChecklistName} onChange={(e) => setNewChecklistName(e.target.value)} />
-                    <Button onClick={handleCreateChecklist} className="w-full">Create Checklist</Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
-            </div>
-
-            {checklists.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-24 text-center animate-fade-in">
-                <div className="h-16 w-16 rounded-2xl bg-accent/10 flex items-center justify-center mb-6">
-                  <ClipboardList className="h-8 w-8 text-accent" />
-                </div>
-                <h2 className="text-2xl font-semibold mb-2">No checklists yet</h2>
-                <p className="text-muted-foreground max-w-md mb-6">
-                  Group your business processes into checklists so users can track their progress through multi-step workflows.
-                </p>
-                <Button onClick={() => setChecklistOpen(true)}>
-                  <Plus className="mr-2 h-4 w-4" />Create Checklist
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {checklists.map((checklist, i) => (
-                  <Card key={checklist.id} className="p-4 animate-fade-in" style={{ animationDelay: `${i * 50}ms` }}>
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                      <div className="flex items-center gap-3">
-                        <div className={`h-2.5 w-2.5 rounded-full shrink-0 ${checklist.is_active ? "bg-success" : "bg-muted-foreground/30"}`} />
-                        <div>
-                          <h3 className="font-medium">{checklist.name}</h3>
-                          <p className="text-sm text-muted-foreground">
-                            {checklist.is_active ? "Active" : "Inactive"} · Updated {new Date(checklist.updated_at).toLocaleDateString()}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button size="sm" onClick={() => navigate(`/app/${appId}/checklist/${checklist.id}`)}>
-                          <Pencil className="mr-1 h-3 w-3" />Edit
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDeleteChecklist(checklist.id)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </TabsContent>
-
-          {/* === Extensions Tab === */}
-          <TabsContent value="extensions">
-            <div className="flex items-center justify-end mb-6">
-              <Dialog open={launcherOpen} onOpenChange={setLauncherOpen}>
-                <DialogTrigger asChild>
-                  <Button><Plus className="mr-2 h-4 w-4" />Add Extension</Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader><DialogTitle>Create an extension</DialogTitle></DialogHeader>
-                  <div className="space-y-4 pt-2">
-                    <div className="space-y-2">
-                      <Label>Name</Label>
-                      <Input placeholder="e.g. Help beacon" value={newLauncherName} onChange={(e) => setNewLauncherName(e.target.value)} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Type</Label>
-                      <div className="grid grid-cols-3 gap-2">
-                        {LAUNCHER_TYPES.map((t) => (
-                          <button
-                            key={t.value}
-                            onClick={() => setNewLauncherType(t.value)}
-                            className={`p-3 rounded-lg border text-center transition-colors ${
-                              newLauncherType === t.value ? "border-primary bg-primary/5" : "hover:bg-muted"
-                            }`}
-                          >
-                            <t.icon className="h-5 w-5 mx-auto mb-1 text-primary" />
-                            <p className="text-xs font-medium">{t.label}</p>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    <Button onClick={handleCreateLauncher} className="w-full">Create Extension</Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
-            </div>
-
-            {launchers.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-24 text-center animate-fade-in">
-                <div className="h-16 w-16 rounded-2xl bg-accent/10 flex items-center justify-center mb-6">
-                  <Zap className="h-8 w-8 text-accent" />
-                </div>
-                <h2 className="text-2xl font-semibold mb-2">No extensions yet</h2>
-                <p className="text-muted-foreground max-w-md mb-6">
-                  Add beacons, hotspots, or buttons to trigger business processes in your app.
-                </p>
-                <Button onClick={() => setLauncherOpen(true)}>
-                  <Plus className="mr-2 h-4 w-4" />Add Extension
-                </Button>
-              </div>
-            ) : (
-              <div className="flex flex-col lg:flex-row gap-6">
-                {/* Extension list */}
-                <div className="flex lg:flex-col gap-2 lg:w-64 overflow-x-auto lg:overflow-x-visible shrink-0">
-                  {launchers.map((launcher) => (
-                    <button
-                      key={launcher.id}
-                      onClick={() => setSelectedLauncherId(launcher.id)}
-                      className={`text-left p-3 rounded-lg flex items-center gap-3 transition-colors shrink-0 lg:w-full ${
-                        selectedLauncherId === launcher.id ? "bg-primary/10 border border-primary/20" : "hover:bg-muted border border-transparent"
-                      }`}
-                    >
-                      <div
-                        className="h-4 w-4 rounded-full shrink-0"
-                        style={{ backgroundColor: launcher.color || "#1e6b45", opacity: launcher.is_active ? 1 : 0.3 }}
-                      />
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium truncate">{launcher.name}</p>
-                        <p className="text-xs text-muted-foreground capitalize">{launcher.type}{!launcher.is_active ? " · Inactive" : ""}</p>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-
-                {/* Extension editor */}
-                <div className="flex-1">
-                  {selectedLauncher ? (
-                    <Card className="p-6 animate-fade-in">
-                      <div className="max-w-lg space-y-5">
-                        <div className="flex items-center justify-between">
-                          <h2 className="text-lg font-semibold">Edit Extension</h2>
-                          <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleDeleteLauncher(selectedLauncher.id)}>
-                            <Trash2 className="mr-1 h-3 w-3" />Remove
-                          </Button>
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label>Name</Label>
-                          <Input value={selectedLauncher.name} onChange={(e) => updateLauncher(selectedLauncher.id, { name: e.target.value })} />
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label>Type</Label>
-                          <Select value={selectedLauncher.type} onValueChange={(v) => updateLauncher(selectedLauncher.id, { type: v })}>
-                            <SelectTrigger><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              {LAUNCHER_TYPES.map((t) => (
-                                <SelectItem key={t.value} value={t.value}>{t.label} — {t.desc}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label>CSS Selector</Label>
-                          <Input
-                            value={selectedLauncher.selector}
-                            onChange={(e) => updateLauncher(selectedLauncher.id, { selector: e.target.value })}
-                            placeholder=".help-btn or #sidebar-trigger"
-                            className="font-mono text-sm"
-                          />
-                          <p className="text-xs text-muted-foreground">Element to attach the extension to.</p>
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label>Linked Process</Label>
-                          <Select
-                            value={selectedLauncher.tour_id || "none"}
-                            onValueChange={(v) => updateLauncher(selectedLauncher.id, { tour_id: v === "none" ? null : v })}
-                          >
-                            <SelectTrigger><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="none">No process linked</SelectItem>
-                              {tours.map((t) => (
-                                <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        {selectedLauncher.type === "button" && (
-                          <div className="space-y-2">
-                            <Label>Button Label</Label>
-                            <Input
-                              value={selectedLauncher.label || ""}
-                              onChange={(e) => updateLauncher(selectedLauncher.id, { label: e.target.value })}
-                              placeholder="Help"
-                            />
-                          </div>
-                        )}
-
-                        <div className="space-y-2">
-                          <Label>Color</Label>
-                          <div className="flex items-center gap-3">
-                            <input
-                              type="color"
-                              value={selectedLauncher.color || "#1e6b45"}
-                              onChange={(e) => updateLauncher(selectedLauncher.id, { color: e.target.value })}
-                              className="h-10 w-14 rounded border cursor-pointer"
-                            />
-                            <Input
-                              value={selectedLauncher.color || "#1e6b45"}
-                              onChange={(e) => updateLauncher(selectedLauncher.id, { color: e.target.value })}
-                              className="font-mono text-sm w-32"
-                            />
-                          </div>
-                        </div>
-
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <Label>Pulse Animation</Label>
-                            <p className="text-xs text-muted-foreground">Add a pulsing glow effect</p>
-                          </div>
-                          <Switch checked={selectedLauncher.pulse ?? true} onCheckedChange={(v) => updateLauncher(selectedLauncher.id, { pulse: v })} />
-                        </div>
-
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <Label>Active</Label>
-                            <p className="text-xs text-muted-foreground">Include in embed script</p>
-                          </div>
-                          <Switch checked={selectedLauncher.is_active ?? true} onCheckedChange={(v) => updateLauncher(selectedLauncher.id, { is_active: v })} />
-                        </div>
-
-                        <Card className="p-4 bg-muted/50">
-                          <p className="text-xs font-medium text-muted-foreground mb-3 uppercase tracking-wider">Preview</p>
-                          <div className="relative bg-card rounded-lg p-8 border min-h-[100px] flex items-center justify-center">
-                            {selectedLauncher.type === "button" ? (
-                              <button
-                                className="px-4 py-2 rounded-full text-sm font-medium shadow-md"
-                                style={{ backgroundColor: selectedLauncher.color || "#1e6b45", color: "#fff" }}
-                              >
-                                {selectedLauncher.label || "Help"}
-                              </button>
-                            ) : (
-                              <div
-                                className={`h-4 w-4 rounded-full ${selectedLauncher.pulse ? "animate-pulse-soft" : ""}`}
-                                style={{ backgroundColor: selectedLauncher.color || "#1e6b45" }}
-                              />
-                            )}
-                          </div>
-                        </Card>
-                      </div>
-                    </Card>
-                  ) : (
-                    <div className="flex items-center justify-center h-48 text-muted-foreground">
-                      <p>Select an extension to edit, or add a new one.</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </TabsContent>
         </Tabs>
       </main>
     </div>
   );
 };
-
 
 export default AppDetail;
