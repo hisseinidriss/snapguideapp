@@ -61,16 +61,18 @@ const AppDetail = () => {
   useEffect(() => {
     if (!appId) return;
     const load = async () => {
-      const [appRes, toursRes, launchersRes, checklistsRes] = await Promise.all([
+      const [appRes, toursRes, launchersRes, checklistsRes, recordingsRes] = await Promise.all([
         supabase.from("apps").select("*").eq("id", appId).single(),
         supabase.from("tours").select("*").eq("app_id", appId).order("created_at", { ascending: false }),
         supabase.from("launchers").select("*").eq("app_id", appId).order("created_at", { ascending: false }),
         supabase.from("checklists").select("*").eq("app_id", appId).order("created_at", { ascending: false }),
+        supabase.from("process_recordings").select("*").eq("app_id", appId).order("created_at", { ascending: false }),
       ]);
       if (appRes.data) { setAppName(appRes.data.name); setAppUrl(appRes.data.url || ""); }
       setTours(toursRes.data || []);
       setLaunchers(launchersRes.data || []);
       setChecklists(checklistsRes.data || []);
+      setRecordings((recordingsRes.data || []) as unknown as ProcessRecording[]);
 
       if (toursRes.data?.length) {
         const ids = toursRes.data.map((t) => t.id);
