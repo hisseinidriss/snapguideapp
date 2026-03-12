@@ -184,6 +184,113 @@ export type Database = {
           },
         ]
       }
+      process_recording_steps: {
+        Row: {
+          action_type: string
+          created_at: string
+          element_tag: string | null
+          element_text: string | null
+          id: string
+          input_value: string | null
+          instruction: string
+          notes: string | null
+          recording_id: string
+          screenshot_url: string | null
+          selector: string | null
+          sort_order: number
+          target_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          action_type?: string
+          created_at?: string
+          element_tag?: string | null
+          element_text?: string | null
+          id?: string
+          input_value?: string | null
+          instruction?: string
+          notes?: string | null
+          recording_id: string
+          screenshot_url?: string | null
+          selector?: string | null
+          sort_order?: number
+          target_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          element_tag?: string | null
+          element_text?: string | null
+          id?: string
+          input_value?: string | null
+          instruction?: string
+          notes?: string | null
+          recording_id?: string
+          screenshot_url?: string | null
+          selector?: string | null
+          sort_order?: number
+          target_url?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "process_recording_steps_recording_id_fkey"
+            columns: ["recording_id"]
+            isOneToOne: false
+            referencedRelation: "process_recordings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      process_recordings: {
+        Row: {
+          app_id: string
+          created_at: string
+          description: string | null
+          id: string
+          status: string
+          title: string
+          tour_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          app_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          status?: string
+          title?: string
+          tour_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          app_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          status?: string
+          title?: string
+          tour_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "process_recordings_app_id_fkey"
+            columns: ["app_id"]
+            isOneToOne: false
+            referencedRelation: "apps"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "process_recordings_tour_id_fkey"
+            columns: ["tour_id"]
+            isOneToOne: false
+            referencedRelation: "tours"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tour_events: {
         Row: {
           app_id: string
