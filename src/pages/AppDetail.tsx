@@ -31,6 +31,79 @@ const LAUNCHER_TYPES: { value: LauncherType; label: string; icon: typeof Circle;
   { value: "hotspot", label: "Hotspot", icon: Crosshair, desc: "Static indicator on an element" },
   { value: "button", label: "Button", icon: Square, desc: "Labeled button users click to start" },
 ];
+interface SortableTourCardProps {
+  tour: Tour;
+  index: number;
+  stepCount: number;
+  editingTourId: string | null;
+  editingTourName: string;
+  setEditingTourId: (id: string | null) => void;
+  setEditingTourName: (name: string) => void;
+  handleRenameProcess: (id: string) => void;
+  handleAutoGenerate: (id: string) => void;
+  handleDeleteProcess: (id: string) => void;
+  generating: boolean;
+  navigate: (path: string) => void;
+  appId: string;
+}
+
+const SortableTourCard = ({ tour, index, stepCount, editingTourId, editingTourName, setEditingTourId, setEditingTourName, handleRenameProcess, handleAutoGenerate, handleDeleteProcess, generating, navigate, appId }: SortableTourCardProps) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: tour.id });
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
+
+  return (
+    <Card ref={setNodeRef} style={style} className="p-4 animate-fade-in">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          <button {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground touch-none">
+            <GripVertical className="h-5 w-5" />
+          </button>
+          <div className="min-w-0">
+            {editingTourId === tour.id ? (
+              <Input
+                autoFocus
+                value={editingTourName}
+                onChange={(e) => setEditingTourName(e.target.value)}
+                onBlur={() => handleRenameProcess(tour.id)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleRenameProcess(tour.id);
+                  if (e.key === "Escape") setEditingTourId(null);
+                }}
+                className="h-8 text-sm font-medium"
+              />
+            ) : (
+              <h3
+                className="font-medium truncate cursor-pointer hover:text-primary transition-colors"
+                onDoubleClick={() => { setEditingTourId(tour.id); setEditingTourName(tour.name); }}
+              >
+                {tour.name}
+              </h3>
+            )}
+            <p className="text-sm text-muted-foreground">
+              {stepCount} step{stepCount !== 1 ? "s" : ""} · Updated {new Date(tour.updated_at).toLocaleDateString()}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button variant="outline" size="sm" onClick={() => handleAutoGenerate(tour.id)} disabled={generating}>
+            {generating ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Sparkles className="mr-1 h-3 w-3" />}
+            <span className="hidden sm:inline">AI Generate</span>
+            <span className="sm:hidden">AI</span>
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => navigate(`/app/${appId}/tour/${tour.id}/embed`)}>
+            <Code className="mr-1 h-3 w-3" /><span className="hidden sm:inline">Embed</span>
+          </Button>
+          <Button size="sm" onClick={() => navigate(`/app/${appId}/tour/${tour.id}`)}>
+            <Pencil className="mr-1 h-3 w-3" />Edit
+          </Button>
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDeleteProcess(tour.id)}>
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    </Card>
+  );
+};
 
 const AppDetail = () => {
   const { appId } = useParams<{ appId: string }>();
