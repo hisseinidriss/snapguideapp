@@ -32,11 +32,14 @@ interface LauncherData {
   tour_id: string | null;
 }
 
+export type BrowserTarget = 'chrome' | 'edge' | 'firefox';
+
 export async function generateChromeExtension(
   appId: string,
   appName: string,
   appUrl: string,
-  trackingConfig?: { supabaseUrl: string; supabaseKey: string }
+  trackingConfig?: { supabaseUrl: string; supabaseKey: string },
+  browser: BrowserTarget = 'chrome'
 ) {
   // Fetch all processes and their steps
   const { data: tours } = await supabase
