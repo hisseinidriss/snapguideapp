@@ -115,7 +115,24 @@ const AppDetail = () => {
     setEditingTourId(null);
   };
 
-  const handleAutoGenerate = async (tourId: string) => {
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }), useSensor(KeyboardSensor));
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = tours.findIndex((t) => t.id === active.id);
+    const newIndex = tours.findIndex((t) => t.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+    const reordered = [...tours];
+    const [moved] = reordered.splice(oldIndex, 1);
+    reordered.splice(newIndex, 0, moved);
+    setTours(reordered);
+    // Persist sort_order
+    const updates = reordered.map((t, i) => supabase.from("tours").update({ sort_order: i } as any).eq("id", t.id));
+    await Promise.all(updates);
+  };
+
+
     if (!appUrl) {
       toast({ title: "No URL", description: "This app has no URL configured. Edit the app to add one.", variant: "destructive" });
       return;
