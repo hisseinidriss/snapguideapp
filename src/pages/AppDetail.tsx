@@ -456,7 +456,9 @@ const AppDetail = () => {
                     setEditingTourId={setEditingTourId}
                     setEditingTourName={setEditingTourName}
                     handleRenameProcess={handleRenameProcess}
+                    handleAutoGenerate={handleAutoGenerate}
                     handleDeleteProcess={handleDeleteProcess}
+                    generating={generating}
                     navigate={navigate}
                     appId={appId!}
                   />
