@@ -4,6 +4,8 @@ import { ArrowLeft, Plus, Trash2, Code, Pencil, Crosshair, Sparkles, Loader2, Up
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { generateChromeExtension, type BrowserTarget } from "@/lib/chrome-extension-generator";
+import { validateChromeExtension, type ValidationReport } from "@/lib/chrome-extension-validator";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
