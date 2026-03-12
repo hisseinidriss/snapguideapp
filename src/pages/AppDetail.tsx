@@ -429,64 +429,6 @@ const AppDetail = () => {
               {validating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}
               Validate
             </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Download className="mr-2 h-4 w-4" />
-                  Download Extension
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {([
-                  { browser: 'chrome' as BrowserTarget, label: 'Chrome Extension' },
-                  { browser: 'edge' as BrowserTarget, label: 'Edge Extension' },
-                  { browser: 'firefox' as BrowserTarget, label: 'Firefox Extension' },
-                ]).map(({ browser, label }) => (
-                  <DropdownMenuItem key={browser} onClick={() => generateChromeExtension(appId!, appName, appUrl, { supabaseUrl: import.meta.env.VITE_SUPABASE_URL, supabaseKey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY }, browser)}>
-                    <Download className="mr-2 h-4 w-4" />{label}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-
-          {/* Mobile menu */}
-          <div className="md:hidden">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon">
-                  <Menu className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => navigate(`/app/${appId}/analytics`)}>
-                  <BarChart3 className="mr-2 h-4 w-4" />Analytics
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={async () => {
-                  setValidating(true);
-                  try {
-                    const report = await validateChromeExtension(appId!, appName, appUrl);
-                    setValidationReport(report);
-                    setValidationDialogOpen(true);
-                  } catch (e) {
-                    toast({ title: "Validation failed", description: String(e), variant: "destructive" });
-                  } finally {
-                    setValidating(false);
-                  }
-                }}>
-                  <ShieldCheck className="mr-2 h-4 w-4" />Validate Extension
-                </DropdownMenuItem>
-                {([
-                  { browser: 'chrome' as BrowserTarget, label: 'Chrome Extension' },
-                  { browser: 'edge' as BrowserTarget, label: 'Edge Extension' },
-                  { browser: 'firefox' as BrowserTarget, label: 'Firefox Extension' },
-                ]).map(({ browser, label }) => (
-                  <DropdownMenuItem key={browser} onClick={() => generateChromeExtension(appId!, appName, appUrl, { supabaseUrl: import.meta.env.VITE_SUPABASE_URL, supabaseKey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY }, browser)}>
-                    <Download className="mr-2 h-4 w-4" />{label}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
           </div>
         </div>
       </header>
