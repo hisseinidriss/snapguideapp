@@ -1201,6 +1201,12 @@ function getPopupHTML(appName: string, processes: Process[]): string {
     }
     .header h1 { font-size: 15px; font-weight: 600; }
     .header p { font-size: 11px; opacity: 0.85; margin-top: 3px; font-weight: 400; }
+    .tabs { display: flex; border-bottom: 1px solid #dfe6e2; background: #fff; }
+    .tab { flex: 1; padding: 10px; text-align: center; font-size: 12px; font-weight: 500; cursor: pointer; border: none; background: none; color: #8a9b92; transition: all 0.15s; border-bottom: 2px solid transparent; }
+    .tab.active { color: #4d8b6f; border-bottom-color: #4d8b6f; }
+    .tab:hover { color: #2d3b34; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
     .process-list { padding: 10px; }
     .process-item {
       display: flex;
@@ -1238,6 +1244,38 @@ function getPopupHTML(appName: string, processes: Process[]): string {
       color: #8a9b92;
       font-size: 13px;
     }
+    .scribe-section { padding: 16px; }
+    .scribe-btn {
+      width: 100%;
+      padding: 14px;
+      border-radius: 10px;
+      border: 2px dashed #dfe6e2;
+      background: #fff;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      color: #4d8b6f;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .scribe-btn:hover { border-color: #4d8b6f; background: #f0f7f3; }
+    .scribe-btn.recording { border-color: #ef4444; color: #ef4444; background: #fef2f2; }
+    .scribe-info { font-size: 11px; color: #8a9b92; margin-top: 12px; line-height: 1.5; }
+    .recording-input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #dfe6e2;
+      border-radius: 8px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      margin-bottom: 10px;
+      outline: none;
+    }
+    .recording-input:focus { border-color: #4d8b6f; }
   </style>
 </head>
 <body>
@@ -1245,10 +1283,28 @@ function getPopupHTML(appName: string, processes: Process[]): string {
     <h1>${appName}</h1>
     <p>Business Process Guide</p>
   </div>
-  <div class="process-list" id="processList"></div>
+  <div class="tabs">
+    <button class="tab active" data-tab="processes">Processes</button>
+    <button class="tab" data-tab="scribe">Scribe</button>
+  </div>
+  <div id="processesTab" class="tab-content active">
+    <div class="process-list" id="processList"></div>
+  </div>
+  <div id="scribeTab" class="tab-content">
+    <div class="scribe-section">
+      <input class="recording-input" id="recordingName" placeholder="Recording name (optional)" />
+      <button class="scribe-btn" id="scribeBtn">
+        <span>⏺</span> Start Recording
+      </button>
+      <p class="scribe-info">
+        Scribe Mode captures your clicks, typing, and navigation to auto-generate step-by-step documentation.
+      </p>
+    </div>
+  </div>
   <script src="popup.js"></script>
 </body>
 </html>`;
+}
 }
 
 function getPopupJS(): string {
