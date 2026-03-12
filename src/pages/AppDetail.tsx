@@ -277,28 +277,52 @@ const AppDetail = () => {
       </header>
 
       <main className="container py-8 px-4">
-        <Tabs defaultValue="processes" className="w-full">
-          <TabsList className="mb-6 w-full sm:w-auto">
-            <TabsTrigger value="processes" className="text-xs sm:text-sm">Processes ({tours.length})</TabsTrigger>
-          </TabsList>
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 mb-6">
+          <input
+            type="file"
+            ref={fileInputRef}
+            accept=".pdf,.doc,.docx,.txt,.md"
+            className="hidden"
+            onChange={handleManualUpload}
+          />
+          <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={generatingFromManual}>
+            {generatingFromManual ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+            Import from Manual
+          </Button>
 
-          <TabsContent value="processes">
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 mb-6">
-              <input
-                type="file"
-                ref={fileInputRef}
-                accept=".pdf,.doc,.docx,.txt,.md"
-                className="hidden"
-                onChange={handleManualUpload}
-              />
-              <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={generatingFromManual}>
-                {generatingFromManual ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
-                Import from Manual
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm"><Plus className="mr-2 h-4 w-4" />Create Process</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader><DialogTitle>Create a new process</DialogTitle></DialogHeader>
+              <div className="space-y-4 pt-2">
+                <div className="space-y-2">
+                  <Label>Process Name</Label>
+                  <Input placeholder="e.g. Employee Onboarding" value={processName} onChange={(e) => setProcessName(e.target.value)} />
+                </div>
+                <Button onClick={handleCreateProcess} className="w-full" disabled={!processName.trim()}>Create Process</Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
+
+        {tours.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-24 text-center animate-fade-in">
+            <div className="h-16 w-16 rounded-2xl bg-accent/10 flex items-center justify-center mb-6">
+              <HelpCircle className="h-8 w-8 text-accent" />
+            </div>
+            <h2 className="text-2xl font-semibold mb-2">No processes yet</h2>
+            <p className="text-muted-foreground max-w-md mb-6">
+              Create your first business process to get started. You can also import from a manual or documentation.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
+                <Upload className="mr-2 h-4 w-4" />Import from Manual
               </Button>
-
               <Dialog open={open} onOpenChange={setOpen}>
                 <DialogTrigger asChild>
-                  <Button size="sm"><Plus className="mr-2 h-4 w-4" />Create Process</Button>
+                  <Button><Plus className="mr-2 h-4 w-4" />Create Process</Button>
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader><DialogTitle>Create a new process</DialogTitle></DialogHeader>
@@ -312,63 +336,31 @@ const AppDetail = () => {
                 </DialogContent>
               </Dialog>
             </div>
-
-            {tours.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-24 text-center animate-fade-in">
-                <div className="h-16 w-16 rounded-2xl bg-accent/10 flex items-center justify-center mb-6">
-                  <HelpCircle className="h-8 w-8 text-accent" />
-                </div>
-                <h2 className="text-2xl font-semibold mb-2">No processes yet</h2>
-                <p className="text-muted-foreground max-w-md mb-6">
-                  Create your first business process to get started. You can also import from a manual or documentation.
-                </p>
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
-                    <Upload className="mr-2 h-4 w-4" />Import from Manual
-                  </Button>
-                  <Dialog open={open} onOpenChange={setOpen}>
-                    <DialogTrigger asChild>
-                      <Button><Plus className="mr-2 h-4 w-4" />Create Process</Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader><DialogTitle>Create a new process</DialogTitle></DialogHeader>
-                      <div className="space-y-4 pt-2">
-                        <div className="space-y-2">
-                          <Label>Process Name</Label>
-                          <Input placeholder="e.g. Employee Onboarding" value={processName} onChange={(e) => setProcessName(e.target.value)} />
-                        </div>
-                        <Button onClick={handleCreateProcess} className="w-full" disabled={!processName.trim()}>Create Process</Button>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-                </div>
+          </div>
+        ) : (
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={tours.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+              <div className="space-y-3">
+                {tours.map((tour, i) => (
+                  <SortableTourCard
+                    key={tour.id}
+                    tour={tour}
+                    index={i}
+                    stepCount={stepCounts[tour.id] || 0}
+                    editingTourId={editingTourId}
+                    editingTourName={editingTourName}
+                    setEditingTourId={setEditingTourId}
+                    setEditingTourName={setEditingTourName}
+                    handleRenameProcess={handleRenameProcess}
+                    handleDeleteProcess={handleDeleteProcess}
+                    navigate={navigate}
+                    appId={appId!}
+                  />
+                ))}
               </div>
-            ) : (
-              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                <SortableContext items={tours.map((t) => t.id)} strategy={verticalListSortingStrategy}>
-                  <div className="space-y-3">
-                    {tours.map((tour, i) => (
-                      <SortableTourCard
-                        key={tour.id}
-                        tour={tour}
-                        index={i}
-                        stepCount={stepCounts[tour.id] || 0}
-                        editingTourId={editingTourId}
-                        editingTourName={editingTourName}
-                        setEditingTourId={setEditingTourId}
-                        setEditingTourName={setEditingTourName}
-                        handleRenameProcess={handleRenameProcess}
-                        handleDeleteProcess={handleDeleteProcess}
-                        navigate={navigate}
-                        appId={appId!}
-                      />
-                    ))}
-                  </div>
-                </SortableContext>
-              </DndContext>
-            )}
-          </TabsContent>
-        </Tabs>
+            </SortableContext>
+          </DndContext>
+        )}
       </main>
     </div>
   );
