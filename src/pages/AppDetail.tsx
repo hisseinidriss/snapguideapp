@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, Trash2, Code, Pencil, Crosshair, Sparkles, Loader2, Upload, Circle, Square, Zap, Download, HelpCircle, CheckCircle2, ClipboardList, BarChart3, Menu, ShieldCheck, AlertTriangle, XCircle, CheckCircle } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Code, Pencil, Crosshair, Sparkles, Loader2, Upload, Circle, Square, Zap, Download, HelpCircle, CheckCircle2, ClipboardList, BarChart3, Menu, ShieldCheck, AlertTriangle, XCircle, CheckCircle, FileText, Video as VideoIcon } from "lucide-react";
 import { generateChromeExtension } from "@/lib/chrome-extension-generator";
 import { validateChromeExtension, type ValidationReport } from "@/lib/chrome-extension-validator";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tour, Launcher, LauncherType, Checklist } from "@/types/tour";
+import type { ProcessRecording } from "@/types/recording";
 import { useToast } from "@/hooks/use-toast";
 
 const LAUNCHER_TYPES: { value: LauncherType; label: string; icon: typeof Circle; desc: string }[] = [
@@ -37,6 +38,7 @@ const AppDetail = () => {
   const [tours, setTours] = useState<Tour[]>([]);
   const [launchers, setLaunchers] = useState<Launcher[]>([]);
   const [checklists, setChecklists] = useState<Checklist[]>([]);
+  const [recordings, setRecordings] = useState<ProcessRecording[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const [processName, setProcessName] = useState("");
@@ -59,16 +61,18 @@ const AppDetail = () => {
   useEffect(() => {
     if (!appId) return;
     const load = async () => {
-      const [appRes, toursRes, launchersRes, checklistsRes] = await Promise.all([
+      const [appRes, toursRes, launchersRes, checklistsRes, recordingsRes] = await Promise.all([
         supabase.from("apps").select("*").eq("id", appId).single(),
         supabase.from("tours").select("*").eq("app_id", appId).order("created_at", { ascending: false }),
         supabase.from("launchers").select("*").eq("app_id", appId).order("created_at", { ascending: false }),
         supabase.from("checklists").select("*").eq("app_id", appId).order("created_at", { ascending: false }),
+        supabase.from("process_recordings").select("*").eq("app_id", appId).order("created_at", { ascending: false }),
       ]);
       if (appRes.data) { setAppName(appRes.data.name); setAppUrl(appRes.data.url || ""); }
       setTours(toursRes.data || []);
       setLaunchers(launchersRes.data || []);
       setChecklists(checklistsRes.data || []);
+      setRecordings((recordingsRes.data || []) as unknown as ProcessRecording[]);
 
       if (toursRes.data?.length) {
         const ids = toursRes.data.map((t) => t.id);
@@ -402,6 +406,7 @@ const AppDetail = () => {
         <Tabs defaultValue="processes" className="w-full">
           <TabsList className="mb-6 w-full sm:w-auto">
             <TabsTrigger value="processes" className="text-xs sm:text-sm">Processes ({tours.length})</TabsTrigger>
+            <TabsTrigger value="scribe" className="text-xs sm:text-sm">Scribe ({recordings.length})</TabsTrigger>
             <TabsTrigger value="checklists" className="text-xs sm:text-sm">Checklists ({checklists.length})</TabsTrigger>
             <TabsTrigger value="extensions" className="text-xs sm:text-sm">Extensions ({launchers.length})</TabsTrigger>
           </TabsList>
@@ -483,6 +488,84 @@ const AppDetail = () => {
                           <Pencil className="mr-1 h-3 w-3" />Edit
                         </Button>
                         <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDeleteProcess(tour.id)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          {/* === Scribe Tab === */}
+          <TabsContent value="scribe">
+            <div className="flex items-center justify-end mb-6">
+              <Button onClick={async () => {
+                if (!appId) return;
+                const { data, error } = await supabase
+                  .from("process_recordings")
+                  .insert({ app_id: appId, title: "New Recording" })
+                  .select()
+                  .single();
+                if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
+                if (data) {
+                  setRecordings(prev => [data as unknown as ProcessRecording, ...prev]);
+                  navigate(`/app/${appId}/recording/${data.id}`);
+                }
+              }}>
+                <Plus className="mr-2 h-4 w-4" />New Recording
+              </Button>
+            </div>
+
+            {recordings.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-24 text-center animate-fade-in">
+                <div className="h-16 w-16 rounded-2xl bg-accent/10 flex items-center justify-center mb-6">
+                  <FileText className="h-8 w-8 text-accent" />
+                </div>
+                <h2 className="text-2xl font-semibold mb-2">No recordings yet</h2>
+                <p className="text-muted-foreground max-w-md mb-6">
+                  Use Scribe Mode to record browser actions and auto-generate step-by-step documentation and SOPs.
+                </p>
+                <Button onClick={async () => {
+                  if (!appId) return;
+                  const { data, error } = await supabase
+                    .from("process_recordings")
+                    .insert({ app_id: appId, title: "New Recording" })
+                    .select()
+                    .single();
+                  if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
+                  if (data) navigate(`/app/${appId}/recording/${data.id}`);
+                }}>
+                  <Plus className="mr-2 h-4 w-4" />Start Recording
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {recordings.map((rec, i) => (
+                  <Card key={rec.id} className="p-4 animate-fade-in" style={{ animationDelay: `${i * 50}ms` }}>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-medium truncate">{rec.title}</h3>
+                          {rec.tour_id && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
+                              Linked
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          {rec.status} · Updated {new Date(rec.updated_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button size="sm" onClick={() => navigate(`/app/${appId}/recording/${rec.id}`)}>
+                          <Pencil className="mr-1 h-3 w-3" />Edit
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={async () => {
+                          await supabase.from("process_recordings").delete().eq("id", rec.id);
+                          setRecordings(prev => prev.filter(r => r.id !== rec.id));
+                        }}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>

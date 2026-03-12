@@ -17,6 +17,7 @@ import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
 import Account from "./pages/Account";
 import NotFound from "./pages/NotFound";
+import ScribeRecording from "./pages/ScribeRecording";
 
 const queryClient = new QueryClient();
 
@@ -37,6 +38,7 @@ const App = () => (
             <Route path="/app/:appId/launchers" element={<ProtectedRoute><LaunchersPage /></ProtectedRoute>} />
             <Route path="/app/:appId/checklist/:checklistId" element={<ProtectedRoute><ChecklistEditor /></ProtectedRoute>} />
             <Route path="/app/:appId/analytics" element={<ProtectedRoute><AnalyticsDashboard /></ProtectedRoute>} />
+            <Route path="/app/:appId/recording/:recordingId" element={<ProtectedRoute><ScribeRecording /></ProtectedRoute>} />
             <Route path="/guide" element={<ProtectedRoute><UserGuide /></ProtectedRoute>} />
             <Route path="/account" element={<ProtectedRoute><Account /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
