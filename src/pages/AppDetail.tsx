@@ -128,7 +128,7 @@ const AppDetail = () => {
     reordered.splice(newIndex, 0, moved);
     setTours(reordered);
     // Persist sort_order
-    const updates = reordered.map((t, i) => supabase.from("tours").update({ sort_order: i } as any).eq("id", t.id));
+    const updates = reordered.map((t, i) => supabase.from("tours").update({ sort_order: i }).eq("id", t.id));
     await Promise.all(updates);
   };
 
