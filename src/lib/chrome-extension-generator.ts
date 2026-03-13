@@ -1407,7 +1407,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      var appUrl = (data.appUrl || '').replace(/\\\\/+$/, '');
+      var appUrl = (data.appUrl || '').replace(/\\/+$/, '');
 
       function launchProcess(index) {
         var proc = processes[index];
