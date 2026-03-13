@@ -26,6 +26,35 @@ function getSelector(el){
     if(id.indexOf('--')!==-1){var stable=id.split('--').pop();if(stable&&stable.length>2&&!/^[0-9]+$/.test(stable))return stable;}
     return null;
   }
+  /* Neptune DXP: find tile container with nepTile{GUID} class */
+  function nepTileSelector(el){
+    var cur=el;var depth=0;
+    while(cur&&cur!==document.body&&depth<10){
+      if(cur.classList){
+        var cls=Array.from(cur.classList);
+        /* Look for nepTile{GUID} class - GUIDs are 32 hex chars */
+        for(var i=0;i<cls.length;i++){
+          var m=cls[i].match(/^nepTile([0-9a-fA-F]{20,})$/);
+          if(m){var s='.'+cls[i];if(tryUnique(s))return s;
+            /* Also try with nepFCardContainer for specificity */
+            s='.nepFCardContainer.'+cls[i];if(tryUnique(s))return s;
+          }
+        }
+      }
+      cur=cur.parentElement;depth++;
+    }
+    return null;
+  }
+  /* Neptune DXP: find section by data-nep-section-id */
+  function nepSectionSelector(el){
+    var cur=el;var depth=0;
+    while(cur&&cur!==document.body&&depth<15){
+      var secId=cur.getAttribute&&cur.getAttribute('data-nep-section-id');
+      if(secId){var s='[data-nep-section-id="'+secId+'"]';if(tryUnique(s))return{sel:s,el:cur};}
+      cur=cur.parentElement;depth++;
+    }
+    return null;
+  }
   function attrSel(el){
     var tag=el.tagName.toLowerCase();
     /* SAP stable view ID (part after --) */
@@ -50,31 +79,27 @@ function getSelector(el){
     var tp=el.getAttribute('type');
     if(rl&&tp){var s=tag+'[role="'+rl+'"][type="'+tp+'"]';if(tryUnique(s))return s;}
     /* SAP-specific data attributes */
-    var sapAttrs=['data-sap-ui','data-sap-ui-type','data-sap-ui-customstyle','data-sap-ui-icon','data-help-id','data-automation-id'];
+    var sapAttrs=['data-sap-ui','data-sap-ui-type','data-sap-ui-customstyle','data-sap-ui-icon','data-help-id','data-automation-id','data-nep-section-id'];
     for(var i=0;i<sapAttrs.length;i++){var v=el.getAttribute(sapAttrs[i]);if(v&&!isSapDynamic(v)&&v.length<100){var s='['+sapAttrs[i]+'="'+v+'"]';if(tryUnique(s))return s;}}
+    /* Neptune tile classes (nepTile{GUID}) */
+    if(el.classList){var cls=Array.from(el.classList);for(var i=0;i<cls.length;i++){var m=cls[i].match(/^nepTile([0-9a-fA-F]{20,})$/);if(m){var s='.nepFCardContainer.'+cls[i];if(tryUnique(s))return s;var s2='.'+cls[i];if(tryUnique(s2))return s2;}}}
     /* Other data attrs (non-dynamic) */
     var das=Array.from(el.attributes).filter(function(a){return a.name.startsWith('data-')&&a.value&&a.value.length<80&&!isSapDynamic(a.value);});
     for(var i=0;i<das.length;i++){var s=tag+'['+das[i].name+'="'+das[i].value+'"]';if(tryUnique(s))return s;}
     /* Non-dynamic full ID */
     if(el.id&&!isSapDynamic(el.id)){var s='#'+esc(el.id);if(tryUnique(s))return s;}
-    /* Text content for buttons/links */
-    if((tag==='button'||tag==='a'||rl==='button'||rl==='link'||rl==='tab'||rl==='menuitem')&&el.textContent){
-      var txt=el.textContent.trim();
-      if(txt.length>0&&txt.length<60){
-        var candidates=document.querySelectorAll(tag);
-        var matches=Array.from(candidates).filter(function(c){return c.textContent&&c.textContent.trim()===txt;});
-        if(matches.length===1){
-          if(rl){var s=tag+'[role="'+rl+'"]';var filtered=Array.from(document.querySelectorAll(s)).filter(function(c){return c.textContent&&c.textContent.trim()===txt;});if(filtered.length===1)return s+':has-text-pseudo';}
-        }
-      }
-    }
     return null;
   }
   /* Walk up to find a stable ancestor for context */
   function stableAncestor(el){
     var p=el.parentElement;
     var depth=0;
-    while(p&&p!==document.body&&depth<6){
+    while(p&&p!==document.body&&depth<10){
+      /* Neptune section */
+      var secId=p.getAttribute&&p.getAttribute('data-nep-section-id');
+      if(secId){var s='[data-nep-section-id="'+secId+'"]';if(tryUnique(s))return{sel:s,el:p};}
+      /* Neptune tile container */
+      if(p.classList){var cls=Array.from(p.classList);for(var i=0;i<cls.length;i++){var m=cls[i].match(/^nepTile([0-9a-fA-F]{20,})$/);if(m){var s='.nepFCardContainer.'+cls[i];if(tryUnique(s))return{sel:s,el:p};}}}
       var stId=sapStableId(p);
       if(stId){var s='[id$="--'+stId+'"]';if(tryUnique(s))return{sel:s,el:p};}
       if(p.id&&!isSapDynamic(p.id))return{sel:'#'+esc(p.id),el:p};
@@ -84,21 +109,37 @@ function getSelector(el){
     }
     return null;
   }
+  /* 1. Try Neptune tile selector first (most common for SAP/Neptune apps) */
+  var nepTile=nepTileSelector(orig);
+  if(nepTile)return nepTile;
+  /* 2. Try direct attribute-based selector */
   var direct=attrSel(orig);
   if(direct)return direct;
-  /* Try with stable ancestor context */
+  /* 3. Try with stable ancestor context */
   var anc=stableAncestor(orig);
   if(anc){
     var tag=orig.tagName.toLowerCase();
     var childAttr=attrSel(orig);
     if(childAttr)return anc.sel+' '+childAttr;
+    /* Try unique text content within ancestor */
+    var txt=orig.textContent&&orig.textContent.trim();
+    if(txt&&txt.length>1&&txt.length<80){
+      var sameTag=Array.from(anc.el.querySelectorAll(tag));
+      var textMatches=sameTag.filter(function(c){return c.textContent&&c.textContent.trim()===txt;});
+      if(textMatches.length===1){
+        /* Return ancestor + tag with note about text */
+        if(sameTag.length===1)return anc.sel+' '+tag;
+        var idx=sameTag.indexOf(orig);
+        if(idx!==-1)return anc.sel+' '+tag+':nth-of-type('+(idx+1)+')';
+      }
+    }
     /* Try tag + nth-of-type within ancestor */
     var siblings=Array.from(anc.el.querySelectorAll(tag));
     if(siblings.length===1)return anc.sel+' '+tag;
     var idx=siblings.indexOf(orig);
-    if(idx!==-1)return anc.sel+' '+tag+':nth-of-type('+(idx+1)+')';
+    if(idx!==-1&&siblings.length<20)return anc.sel+' '+tag+':nth-of-type('+(idx+1)+')';
   }
-  /* Fallback: path-based */
+  /* 4. Fallback: path-based */
   var path=[];
   var cur=orig;
   while(cur&&cur!==document.body&&cur!==document.documentElement){
@@ -106,11 +147,14 @@ function getSelector(el){
     var found=attrSel(cur);
     if(found){path.unshift(found);break;}
     if(cur.id&&!isSapDynamic(cur.id)){path.unshift('#'+esc(cur.id));break;}
-    var classes=Array.from(cur.classList).filter(function(c){return!c.startsWith('__wt_')&&!c.startsWith('sap')&&c.length<40;}).map(function(c){return'.'+esc(c);}).join('');
-    if(classes&&cur.parentElement&&cur.parentElement.querySelectorAll(tag+classes).length===1){path.unshift(tag+classes);break;}
+    /* Neptune-specific stable classes */
+    var nepCls=cur.classList?Array.from(cur.classList).filter(function(c){return /^nep[A-Z]/.test(c)&&c.length<40&&!/[0-9a-f]{20}/.test(c);}):[];
+    var genCls=Array.from(cur.classList||[]).filter(function(c){return!c.startsWith('__wt_')&&!c.startsWith('sap')&&c.length<40;}).map(function(c){return'.'+esc(c);}).join('');
+    var allCls=nepCls.length>0?'.'+nepCls.map(esc).join('.'):genCls;
+    if(allCls&&cur.parentElement&&cur.parentElement.querySelectorAll(tag+allCls).length===1){path.unshift(tag+allCls);break;}
     var parent=cur.parentElement;
     if(parent){var sibs=Array.from(parent.children).filter(function(c){return c.tagName===cur.tagName;});
-    if(sibs.length>1){var idx=sibs.indexOf(cur)+1;path.unshift(tag+':nth-of-type('+idx+')');}else{path.unshift(tag+(classes||''));}}
+    if(sibs.length>1){var idx=sibs.indexOf(cur)+1;path.unshift(tag+':nth-of-type('+idx+')');}else{path.unshift(tag+(allCls||''));}}
     else{path.unshift(tag);}
     cur=parent;
   }
