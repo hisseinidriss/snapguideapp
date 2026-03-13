@@ -1407,7 +1407,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      var appUrl = (data.appUrl || '').replace(/\\\\/+$/, '');
+      var appUrl = (data.appUrl || '').replace(/\\/+$/, '');
 
       function launchProcess(index) {
         var proc = processes[index];
@@ -1416,7 +1416,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
           var tab = tabs[0];
-          var tabUrl = (tab.url || '').replace(/\\\\/+$/, '');
+          var tabUrl = (tab.url || '').replace(/\\/+$/, '');
           
           var onApp = appUrl && tabUrl.startsWith(appUrl);
           var needsNav = false;
@@ -1425,7 +1425,7 @@ document.addEventListener('DOMContentLoaded', () => {
             needsNav = true;
           } else if (onApp && firstStepUrl) {
             try {
-              var targetFull = new URL(firstStepUrl, appUrl || window.location.origin).href.replace(/\\\\/+$/, '');
+              var targetFull = new URL(firstStepUrl, appUrl || window.location.origin).href.replace(/\\/+$/, '');
               if (tabUrl !== targetFull && !tabUrl.startsWith(targetFull)) {
                 needsNav = true;
                 navUrl = targetFull;
