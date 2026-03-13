@@ -17,12 +17,37 @@ document.body.appendChild(bar);
 var selSpan=bar.querySelector('.wt-sel');
 var lastEl=null;
 function getSelector(el){
-  if(el.id)return'#'+CSS.escape(el.id);
+  var orig=el;
+  function tryUnique(sel){try{return document.querySelectorAll(sel).length===1;}catch(e){return false;}}
+  function esc(v){return CSS.escape(v);}
+  function attrSel(el){
+    var tag=el.tagName.toLowerCase();
+    var al=el.getAttribute('aria-label');
+    if(al){var s=tag+'[aria-label="'+al+'"]';if(tryUnique(s))return s;}
+    var ph=el.getAttribute('placeholder');
+    if(ph){var s=tag+'[placeholder="'+ph+'"]';if(tryUnique(s))return s;}
+    var nm=el.getAttribute('name');
+    if(nm){var s=tag+'[name="'+nm+'"]';if(tryUnique(s))return s;}
+    var tt=el.getAttribute('title');
+    if(tt){var s=tag+'[title="'+tt+'"]';if(tryUnique(s))return s;}
+    var rl=el.getAttribute('role');
+    var tp=el.getAttribute('type');
+    if(rl&&tp){var s=tag+'[role="'+rl+'"][type="'+tp+'"]';if(tryUnique(s))return s;}
+    var das=Array.from(el.attributes).filter(function(a){return a.name.startsWith('data-')&&a.value&&a.value.length<80;});
+    for(var i=0;i<das.length;i++){var s=tag+'['+das[i].name+'="'+das[i].value+'"]';if(tryUnique(s))return s;}
+    if(el.id){var s='#'+esc(el.id);if(tryUnique(s))return s;}
+    return null;
+  }
+  var direct=attrSel(orig);
+  if(direct)return direct;
+  if(orig.id)return'#'+esc(orig.id);
   var path=[];
   while(el&&el!==document.body&&el!==document.documentElement){
     var tag=el.tagName.toLowerCase();
-    if(el.id){path.unshift('#'+CSS.escape(el.id));break;}
-    var classes=Array.from(el.classList).filter(function(c){return!c.startsWith('__wt_');}).map(function(c){return'.'+CSS.escape(c);}).join('');
+    var found=attrSel(el);
+    if(found){path.unshift(found);break;}
+    if(el.id){path.unshift('#'+esc(el.id));break;}
+    var classes=Array.from(el.classList).filter(function(c){return!c.startsWith('__wt_')&&c.length<40;}).map(function(c){return'.'+esc(c);}).join('');
     if(classes&&el.parentElement&&el.parentElement.querySelectorAll(tag+classes).length===1){path.unshift(tag+classes);break;}
     var parent=el.parentElement;
     if(parent){var siblings=Array.from(parent.children).filter(function(c){return c.tagName===el.tagName;});
