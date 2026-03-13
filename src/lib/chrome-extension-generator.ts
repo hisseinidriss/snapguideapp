@@ -1416,7 +1416,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
           var tab = tabs[0];
-          var tabUrl = (tab.url || '').replace(/\\\\/+$/, '');
+          var tabUrl = (tab.url || '').replace(/\\/+$/, '');
           
           var onApp = appUrl && tabUrl.startsWith(appUrl);
           var needsNav = false;
