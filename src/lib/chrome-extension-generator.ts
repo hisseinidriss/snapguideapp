@@ -547,7 +547,10 @@ function getContentJS(): string {
 
   window.addEventListener('beforeunload', flushEvents);
 
+  var _initialized = false;
   function init() {
+    if (_initialized) return;
+    _initialized = true;
     // Load data from JSON file bundled with extension
     fetch(chrome.runtime.getURL('data.json'))
       .then(r => r.json())
