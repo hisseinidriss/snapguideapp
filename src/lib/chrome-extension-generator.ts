@@ -429,10 +429,8 @@ function getContentJS(): string {
 // Business Process Guide - Content Script
 (function() {
   'use strict';
-
-  // Prevent double-injection
-  if (window.__bpg_content_loaded) return;
-  window.__bpg_content_loaded = true;
+  if (window.__bpg_guard) return;
+  window.__bpg_guard = true;
 
   let currentProcess = null;
   let currentStepIndex = 0;
@@ -553,25 +551,25 @@ function getContentJS(): string {
 
   window.addEventListener('beforeunload', flushEvents);
 
+  // Listen for messages from popup - registered immediately, outside init()
+  chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+    if (msg.type === 'START_PROCESS') {
+      if (!_dataReady) {
+        _pendingStartIndex = msg.processIndex;
+        return;
+      }
+      startProcess(msg.processIndex);
+    }
+    if (msg.type === 'GET_DATA') {
+      sendResponse(_bpgData);
+      return true;
+    }
+  });
+
   var _initialized = false;
   function init() {
     if (_initialized) return;
     _initialized = true;
-
-    // Listen for messages from popup immediately
-    chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-      if (msg.type === 'START_PROCESS') {
-        if (!_dataReady) {
-          _pendingStartIndex = msg.processIndex;
-          return;
-        }
-        startProcess(msg.processIndex);
-      }
-      if (msg.type === 'GET_DATA') {
-        sendResponse(_bpgData);
-        return true;
-      }
-    });
 
     // Load data from JSON file bundled with extension
     fetch(chrome.runtime.getURL('data.json'))
@@ -1441,21 +1439,19 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function injectAndSend(tabId, message) {
-    chrome.scripting.executeScript({
-      target: { tabId: tabId },
-      files: ['content.js']
-    }, () => {
-      // Small delay to ensure content script listeners are ready
-      setTimeout(() => {
-        chrome.tabs.sendMessage(tabId, message, function(response) {
-          // If no response, the listener might not be ready yet - retry once
-          if (chrome.runtime.lastError) {
-            setTimeout(() => {
-              chrome.tabs.sendMessage(tabId, message);
-            }, 500);
-          }
+    // Try sending directly first (content script may already be loaded via manifest)
+    chrome.tabs.sendMessage(tabId, message, function(response) {
+      if (chrome.runtime.lastError) {
+        // Content script not ready - inject it then send
+        chrome.scripting.executeScript({
+          target: { tabId: tabId },
+          files: ['content.js']
+        }, () => {
+          setTimeout(() => {
+            chrome.tabs.sendMessage(tabId, message);
+          }, 300);
         });
-      }, 100);
+      }
     });
   }
 
