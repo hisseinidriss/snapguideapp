@@ -1438,7 +1438,17 @@ document.addEventListener('DOMContentLoaded', () => {
       target: { tabId: tabId },
       files: ['content.js']
     }, () => {
-      chrome.tabs.sendMessage(tabId, message);
+      // Small delay to ensure content script listeners are ready
+      setTimeout(() => {
+        chrome.tabs.sendMessage(tabId, message, function(response) {
+          // If no response, the listener might not be ready yet - retry once
+          if (chrome.runtime.lastError) {
+            setTimeout(() => {
+              chrome.tabs.sendMessage(tabId, message);
+            }, 500);
+          }
+        });
+      }, 100);
     });
   }
 
