@@ -65,7 +65,10 @@ CRITICAL INSTRUCTIONS:
       },
     ];
 
-    if (resolvedMime === "application/pdf") {
+    if (textContent) {
+      // Pre-extracted text from client-side parsing (e.g., DOCX via mammoth)
+      userContent[0].text += `\n\nDocument content:\n${textContent.slice(0, 50000)}`;
+    } else if (resolvedMime === "application/pdf") {
       userContent.push({
         type: "image_url",
         image_url: {
@@ -73,8 +76,8 @@ CRITICAL INSTRUCTIONS:
         },
       });
     } else {
-      const textContent = atob(fileBase64);
-      userContent[0].text += `\n\nDocument content:\n${textContent.slice(0, 50000)}`;
+      const decodedText = atob(fileBase64);
+      userContent[0].text += `\n\nDocument content:\n${decodedText.slice(0, 50000)}`;
     }
 
     const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
