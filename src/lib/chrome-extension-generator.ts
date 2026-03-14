@@ -1442,14 +1442,14 @@ document.addEventListener('DOMContentLoaded', () => {
             if (tabId === tab.id && info.status === 'complete') {
               chrome.tabs.onUpdated.removeListener(onUpdated);
               setTimeout(() => {
-                chrome.tabs.sendMessage(tab.id, { type: 'START_PROCESS', processIndex: index });
+                injectAndSend(tab.id, { type: 'START_PROCESS', processIndex: index });
               }, 1500);
             }
           }
           chrome.tabs.onUpdated.addListener(onUpdated);
         });
       } else {
-        chrome.tabs.sendMessage(tab.id, { type: 'START_PROCESS', processIndex: index });
+        injectAndSend(tab.id, { type: 'START_PROCESS', processIndex: index });
       }
       window.close();
     });
