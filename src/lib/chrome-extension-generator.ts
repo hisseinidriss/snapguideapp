@@ -691,22 +691,26 @@ function getContentJS(): string {
     if (!currentProcess || currentStepIndex >= currentProcess.steps.length) {
       // Process completed - mark as completed in storage and notify popup
       if (currentProcess) {
+        var completedProcessId = currentProcess.id;
         trackEvent('tour_completed', null);
         flushEvents();
         // Clear any stale resume/pending data
         sessionStorage.removeItem('bpg_resume');
         chrome.storage.local.remove('bpg_pending_process');
+        cleanup();
+        currentProcess = null;
+        currentStepIndex = 0;
         chrome.storage.local.get(['bpg_completed'], function(result) {
           var completed = result.bpg_completed || {};
-          completed[currentProcess.id] = true;
+          completed[completedProcessId] = true;
           chrome.storage.local.set({ bpg_completed: completed });
-          // Notify popup about completion
-          try { chrome.runtime.sendMessage({ type: 'PROCESS_COMPLETED', processId: currentProcess.id }); } catch(e) {}
+          try { chrome.runtime.sendMessage({ type: 'PROCESS_COMPLETED', processId: completedProcessId }); } catch(e) {}
         });
+      } else {
+        cleanup();
+        currentProcess = null;
+        currentStepIndex = 0;
       }
-      cleanup();
-      currentProcess = null;
-      currentStepIndex = 0;
       return;
     }
     trackEvent('step_viewed', currentStepIndex);
@@ -1434,7 +1438,17 @@ document.addEventListener('DOMContentLoaded', () => {
       target: { tabId: tabId },
       files: ['content.js']
     }, () => {
-      chrome.tabs.sendMessage(tabId, message);
+      // Small delay to ensure content script listeners are ready
+      setTimeout(() => {
+        chrome.tabs.sendMessage(tabId, message, function(response) {
+          // If no response, the listener might not be ready yet - retry once
+          if (chrome.runtime.lastError) {
+            setTimeout(() => {
+              chrome.tabs.sendMessage(tabId, message);
+            }, 500);
+          }
+        });
+      }, 100);
     });
   }
 
