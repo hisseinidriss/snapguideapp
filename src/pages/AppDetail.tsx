@@ -265,6 +265,7 @@ const AppDetail = () => {
         const stepInserts = (proc.steps || []).map((s: any, i: number) => ({
           tour_id: tourData.id, title: s.title, content: s.content,
           selector: s.selector || "", placement: s.placement || "center", sort_order: i,
+          target_url: s.target_url || null, click_selector: s.click_selector || null,
         }));
         if (stepInserts.length > 0) {
           await supabase.from("tour_steps").insert(stepInserts);
