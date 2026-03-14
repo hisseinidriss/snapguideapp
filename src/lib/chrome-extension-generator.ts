@@ -520,6 +520,8 @@ function getContentJS(): string {
   let _bpgData = { processes: [], launchers: [], appName: '', appId: '', trackUrl: '', anonKey: '' };
   var _sessionId = 'bpg_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
   var _eventQueue = [];
+  var _dataReady = false;
+  var _pendingStartIndex = null;
 
   function trackEvent(eventType, stepIndex) {
     if (!_bpgData.trackUrl || !_bpgData.anonKey || !_bpgData.appId || !currentProcess) return;
@@ -555,33 +557,38 @@ function getContentJS(): string {
   function init() {
     if (_initialized) return;
     _initialized = true;
-    // Load data from JSON file bundled with extension
-    fetch(chrome.runtime.getURL('data.json'))
-      .then(r => r.json())
-      .then(data => {
-        _bpgData = data;
-        setupLaunchers();
-        resumeIfNeeded();
-      })
-      .catch(err => console.error('BPG: Failed to load data', err));
 
-    // Listen for messages from popup
-    chrome.runtime.onMessage.addListener((msg) => {
+    // Listen for messages from popup immediately
+    chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       if (msg.type === 'START_PROCESS') {
+        if (!_dataReady) {
+          _pendingStartIndex = msg.processIndex;
+          return;
+        }
         startProcess(msg.processIndex);
       }
-      if (msg.type === 'GET_DATA') {
-        return true; // keep channel open for sendResponse
-      }
-    });
-
-    // Also respond to data requests from popup
-    chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       if (msg.type === 'GET_DATA') {
         sendResponse(_bpgData);
         return true;
       }
     });
+
+    // Load data from JSON file bundled with extension
+    fetch(chrome.runtime.getURL('data.json'))
+      .then(r => r.json())
+      .then(data => {
+        _bpgData = data;
+        _dataReady = true;
+        setupLaunchers();
+        resumeIfNeeded();
+
+        if (_pendingStartIndex != null) {
+          var idx = _pendingStartIndex;
+          _pendingStartIndex = null;
+          startProcess(idx);
+        }
+      })
+      .catch(err => console.error('BPG: Failed to load data', err));
   }
 
   function getProcesses() {
