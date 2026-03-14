@@ -1210,12 +1210,23 @@ function getPopupHTML(appName: string, processes: Process[]): string {
     }
     .header h1 { font-size: 15px; font-weight: 600; }
     .header p { font-size: 11px; opacity: 0.85; margin-top: 3px; font-weight: 400; }
-    .tabs { display: flex; border-bottom: 1px solid #dfe6e2; background: #fff; }
-    .tab { flex: 1; padding: 10px; text-align: center; font-size: 12px; font-weight: 500; cursor: pointer; border: none; background: none; color: #8a9b92; transition: all 0.15s; border-bottom: 2px solid transparent; }
-    .tab.active { color: #4d8b6f; border-bottom-color: #4d8b6f; }
-    .tab:hover { color: #2d3b34; }
-    .tab-content { display: none; }
-    .tab-content.active { display: block; }
+    .search-box {
+      padding: 10px 10px 0;
+      background: #fff;
+      border-bottom: 1px solid #dfe6e2;
+    }
+    .search-input {
+      width: 100%;
+      padding: 8px 12px 8px 32px;
+      border: 1px solid #dfe6e2;
+      border-radius: 8px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px;
+      outline: none;
+      background: #f4f7f5 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238a9b92' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E") 10px center no-repeat;
+      margin-bottom: 10px;
+    }
+    .search-input:focus { border-color: #4d8b6f; background-color: #fff; }
     .process-list { padding: 10px; }
     .process-item {
       display: flex;
@@ -1230,8 +1241,12 @@ function getPopupHTML(appName: string, processes: Process[]): string {
       transition: all 0.15s;
     }
     .process-item:hover { border-color: #4d8b6f; background: #f0f7f3; }
+    .process-item.completed { border-left: 3px solid #4d8b6f; }
+    .process-name-row { display: flex; align-items: center; gap: 6px; }
     .process-name { font-size: 13px; font-weight: 500; color: #2d3b34; }
     .process-steps { font-size: 11px; color: #8a9b92; margin-top: 2px; }
+    .check-icon { color: #4d8b6f; font-size: 14px; flex-shrink: 0; }
+    .process-actions { display: flex; align-items: center; gap: 6px; }
     .play-btn {
       width: 32px; height: 32px;
       border-radius: 50%;
@@ -1247,44 +1262,28 @@ function getPopupHTML(appName: string, processes: Process[]): string {
       transition: background 0.15s;
     }
     .play-btn:hover { background: #3d7a5e; }
+    .restart-btn {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: #eef2f0;
+      color: #5a6b62;
+      border: none;
+      cursor: pointer;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.15s;
+    }
+    .restart-btn:hover { background: #dfe6e2; color: #2d3b34; }
     .empty {
       text-align: center;
       padding: 32px 16px;
       color: #8a9b92;
       font-size: 13px;
     }
-    .scribe-section { padding: 16px; }
-    .scribe-btn {
-      width: 100%;
-      padding: 14px;
-      border-radius: 10px;
-      border: 2px dashed #dfe6e2;
-      background: #fff;
-      cursor: pointer;
-      font-family: 'DM Sans', sans-serif;
-      font-size: 13px;
-      font-weight: 500;
-      color: #4d8b6f;
-      transition: all 0.15s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-    }
-    .scribe-btn:hover { border-color: #4d8b6f; background: #f0f7f3; }
-    .scribe-btn.recording { border-color: #ef4444; color: #ef4444; background: #fef2f2; }
-    .scribe-info { font-size: 11px; color: #8a9b92; margin-top: 12px; line-height: 1.5; }
-    .recording-input {
-      width: 100%;
-      padding: 10px 12px;
-      border: 1px solid #dfe6e2;
-      border-radius: 8px;
-      font-family: 'DM Sans', sans-serif;
-      font-size: 13px;
-      margin-bottom: 10px;
-      outline: none;
-    }
-    .recording-input:focus { border-color: #4d8b6f; }
+    .no-results { text-align: center; padding: 20px 16px; color: #8a9b92; font-size: 12px; }
   </style>
 </head>
 <body>
@@ -1292,24 +1291,10 @@ function getPopupHTML(appName: string, processes: Process[]): string {
     <h1>${appName}</h1>
     <p>Business Process Guide</p>
   </div>
-  <div class="tabs">
-    <button class="tab active" data-tab="processes">Processes</button>
-    <button class="tab" data-tab="scribe">Scribe</button>
+  <div class="search-box">
+    <input class="search-input" id="searchInput" placeholder="Search processes..." type="text" />
   </div>
-  <div id="processesTab" class="tab-content active">
-    <div class="process-list" id="processList"></div>
-  </div>
-  <div id="scribeTab" class="tab-content">
-    <div class="scribe-section">
-      <input class="recording-input" id="recordingName" placeholder="Recording name (optional)" />
-      <button class="scribe-btn" id="scribeBtn">
-        <span>⏺</span> Start Recording
-      </button>
-      <p class="scribe-info">
-        Scribe Mode captures your clicks, typing, and navigation to auto-generate step-by-step documentation.
-      </p>
-    </div>
-  </div>
+  <div class="process-list" id="processList"></div>
   <script src="popup.js"></script>
 </body>
 </html>`;
