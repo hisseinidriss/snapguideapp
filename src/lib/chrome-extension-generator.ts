@@ -661,8 +661,18 @@ function getContentJS(): string {
   async function showStep() {
     cleanup();
     if (!currentProcess || currentStepIndex >= currentProcess.steps.length) {
-      trackEvent('tour_completed', null);
-      flushEvents();
+      // Process completed - mark as completed in storage and notify popup
+      if (currentProcess) {
+        trackEvent('tour_completed', null);
+        flushEvents();
+        chrome.storage.local.get(['bpg_completed'], function(result) {
+          var completed = result.bpg_completed || {};
+          completed[currentProcess.id] = true;
+          chrome.storage.local.set({ bpg_completed: completed });
+          // Notify popup about completion
+          chrome.runtime.sendMessage({ type: 'PROCESS_COMPLETED', processId: currentProcess.id });
+        });
+      }
       cleanup();
       currentProcess = null;
       currentStepIndex = 0;
@@ -795,6 +805,10 @@ function getContentJS(): string {
       currentStepIndex++;
       showStep();
     });
+    tooltipEl.querySelector('[data-action="restart"]')?.addEventListener('click', () => {
+      currentStepIndex = 0;
+      showStep();
+    });
 
     // Video-specific events
     if (step_isVideo) {
@@ -889,6 +903,7 @@ function getContentJS(): string {
       + '<span class="bpg-tooltip-progress">Step ' + (index + 1) + ' of ' + total + '</span>'
       + '<div class="bpg-tooltip-actions">'
       + (!isFirst ? '<button class="bpg-btn bpg-btn-secondary" data-action="prev">Back</button>' : '')
+      + (isLast ? '<button class="bpg-btn bpg-btn-secondary" data-action="restart" title="Restart from step 1">↻ Restart</button>' : '')
       + '<button class="bpg-btn bpg-btn-primary" data-action="next">' + (isLast ? 'Finish' : 'Next') + '</button>'
       + '</div></div>';
   }
@@ -1210,12 +1225,23 @@ function getPopupHTML(appName: string, processes: Process[]): string {
     }
     .header h1 { font-size: 15px; font-weight: 600; }
     .header p { font-size: 11px; opacity: 0.85; margin-top: 3px; font-weight: 400; }
-    .tabs { display: flex; border-bottom: 1px solid #dfe6e2; background: #fff; }
-    .tab { flex: 1; padding: 10px; text-align: center; font-size: 12px; font-weight: 500; cursor: pointer; border: none; background: none; color: #8a9b92; transition: all 0.15s; border-bottom: 2px solid transparent; }
-    .tab.active { color: #4d8b6f; border-bottom-color: #4d8b6f; }
-    .tab:hover { color: #2d3b34; }
-    .tab-content { display: none; }
-    .tab-content.active { display: block; }
+    .search-box {
+      padding: 10px 10px 0;
+      background: #fff;
+      border-bottom: 1px solid #dfe6e2;
+    }
+    .search-input {
+      width: 100%;
+      padding: 8px 12px 8px 32px;
+      border: 1px solid #dfe6e2;
+      border-radius: 8px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px;
+      outline: none;
+      background: #f4f7f5 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238a9b92' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E") 10px center no-repeat;
+      margin-bottom: 10px;
+    }
+    .search-input:focus { border-color: #4d8b6f; background-color: #fff; }
     .process-list { padding: 10px; }
     .process-item {
       display: flex;
@@ -1230,8 +1256,12 @@ function getPopupHTML(appName: string, processes: Process[]): string {
       transition: all 0.15s;
     }
     .process-item:hover { border-color: #4d8b6f; background: #f0f7f3; }
+    .process-item.completed { border-left: 3px solid #4d8b6f; }
+    .process-name-row { display: flex; align-items: center; gap: 6px; }
     .process-name { font-size: 13px; font-weight: 500; color: #2d3b34; }
     .process-steps { font-size: 11px; color: #8a9b92; margin-top: 2px; }
+    .check-icon { color: #4d8b6f; font-size: 14px; flex-shrink: 0; }
+    .process-actions { display: flex; align-items: center; gap: 6px; }
     .play-btn {
       width: 32px; height: 32px;
       border-radius: 50%;
@@ -1247,44 +1277,28 @@ function getPopupHTML(appName: string, processes: Process[]): string {
       transition: background 0.15s;
     }
     .play-btn:hover { background: #3d7a5e; }
+    .restart-btn {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: #eef2f0;
+      color: #5a6b62;
+      border: none;
+      cursor: pointer;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.15s;
+    }
+    .restart-btn:hover { background: #dfe6e2; color: #2d3b34; }
     .empty {
       text-align: center;
       padding: 32px 16px;
       color: #8a9b92;
       font-size: 13px;
     }
-    .scribe-section { padding: 16px; }
-    .scribe-btn {
-      width: 100%;
-      padding: 14px;
-      border-radius: 10px;
-      border: 2px dashed #dfe6e2;
-      background: #fff;
-      cursor: pointer;
-      font-family: 'DM Sans', sans-serif;
-      font-size: 13px;
-      font-weight: 500;
-      color: #4d8b6f;
-      transition: all 0.15s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-    }
-    .scribe-btn:hover { border-color: #4d8b6f; background: #f0f7f3; }
-    .scribe-btn.recording { border-color: #ef4444; color: #ef4444; background: #fef2f2; }
-    .scribe-info { font-size: 11px; color: #8a9b92; margin-top: 12px; line-height: 1.5; }
-    .recording-input {
-      width: 100%;
-      padding: 10px 12px;
-      border: 1px solid #dfe6e2;
-      border-radius: 8px;
-      font-family: 'DM Sans', sans-serif;
-      font-size: 13px;
-      margin-bottom: 10px;
-      outline: none;
-    }
-    .recording-input:focus { border-color: #4d8b6f; }
+    .no-results { text-align: center; padding: 20px 16px; color: #8a9b92; font-size: 12px; }
   </style>
 </head>
 <body>
@@ -1292,24 +1306,10 @@ function getPopupHTML(appName: string, processes: Process[]): string {
     <h1>${appName}</h1>
     <p>Business Process Guide</p>
   </div>
-  <div class="tabs">
-    <button class="tab active" data-tab="processes">Processes</button>
-    <button class="tab" data-tab="scribe">Scribe</button>
+  <div class="search-box">
+    <input class="search-input" id="searchInput" placeholder="Search processes..." type="text" />
   </div>
-  <div id="processesTab" class="tab-content active">
-    <div class="process-list" id="processList"></div>
-  </div>
-  <div id="scribeTab" class="tab-content">
-    <div class="scribe-section">
-      <input class="recording-input" id="recordingName" placeholder="Recording name (optional)" />
-      <button class="scribe-btn" id="scribeBtn">
-        <span>⏺</span> Start Recording
-      </button>
-      <p class="scribe-info">
-        Scribe Mode captures your clicks, typing, and navigation to auto-generate step-by-step documentation.
-      </p>
-    </div>
-  </div>
+  <div class="process-list" id="processList"></div>
   <script src="popup.js"></script>
 </body>
 </html>`;
@@ -1319,163 +1319,142 @@ function getPopupJS(): string {
   return `
 document.addEventListener('DOMContentLoaded', () => {
   const list = document.getElementById('processList');
-  var _scribeRecording = false;
+  const searchInput = document.getElementById('searchInput');
+  var completedProcesses = {};
 
-  // Tab switching
-  document.querySelectorAll('.tab').forEach(function(tab) {
-    tab.addEventListener('click', function() {
-      document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
-      document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
-      tab.classList.add('active');
-      document.getElementById(tab.dataset.tab + 'Tab').classList.add('active');
-    });
+  // Load completed processes from storage
+  chrome.storage.local.get(['bpg_completed'], function(result) {
+    completedProcesses = result.bpg_completed || {};
+    renderProcesses();
   });
 
-  // Scribe recording
-  var scribeBtn = document.getElementById('scribeBtn');
-  var recordingInput = document.getElementById('recordingName');
-  
-  scribeBtn.addEventListener('click', function() {
-    if (_scribeRecording) {
-      // Stop recording
-      chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
-        chrome.tabs.sendMessage(tabs[0].id, { type: 'STOP_SCRIBE' });
-      });
-      scribeBtn.innerHTML = '<span>⏺</span> Start Recording';
-      scribeBtn.classList.remove('recording');
-      _scribeRecording = false;
+  // Listen for completion events from content script
+  chrome.runtime.onMessage.addListener(function(msg) {
+    if (msg.type === 'PROCESS_COMPLETED' && msg.processId) {
+      completedProcesses[msg.processId] = true;
+      chrome.storage.local.set({ bpg_completed: completedProcesses });
+      renderProcesses();
+    }
+  });
+
+  // Search filtering
+  searchInput.addEventListener('input', function() {
+    renderProcesses();
+  });
+
+  var _processes = [];
+  var _appUrl = '';
+
+  function renderProcesses() {
+    list.innerHTML = '';
+    var query = (searchInput.value || '').trim().toLowerCase();
+    var filtered = _processes.filter(function(proc) {
+      if (!query) return true;
+      return proc.name.toLowerCase().indexOf(query) >= 0;
+    });
+
+    if (filtered.length === 0 && _processes.length > 0) {
+      list.innerHTML = '<div class="no-results">No processes match your search.</div>';
+      return;
+    }
+    if (_processes.length === 0) {
+      list.innerHTML = '<div class="empty">No business processes configured for this page.</div>';
       return;
     }
 
-    // Start recording - first create a recording in the backend
-    fetch(chrome.runtime.getURL('data.json'))
-      .then(function(r) { return r.json(); })
-      .then(function(data) {
-        if (!data.trackUrl || !data.anonKey || !data.appId) {
-          alert('Recording requires tracking to be configured. Please re-download the extension.');
-          return;
-        }
-
-        // Create recording via Supabase REST API
-        var supabaseUrl = data.trackUrl.replace('/functions/v1/track-events', '');
-        var recName = recordingInput.value.trim() || 'Recording ' + new Date().toLocaleString();
-        
-        fetch(supabaseUrl + '/rest/v1/process_recordings', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': data.anonKey,
-            'Authorization': 'Bearer ' + data.anonKey,
-            'Prefer': 'return=representation'
-          },
-          body: JSON.stringify({
-            app_id: data.appId,
-            title: recName,
-            status: 'recording'
-          })
-        })
-        .then(function(r) { return r.json(); })
-        .then(function(recs) {
-          var rec = Array.isArray(recs) ? recs[0] : recs;
-          if (!rec || !rec.id) {
-            alert('Failed to create recording');
-            return;
-          }
-
-          _scribeRecording = true;
-          scribeBtn.innerHTML = '<span>⏹</span> Stop Recording';
-          scribeBtn.classList.add('recording');
-
-          chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
-            chrome.tabs.sendMessage(tabs[0].id, { type: 'START_SCRIBE', recordingId: rec.id });
-          });
-
-          window.close();
-        })
-        .catch(function(err) { alert('Error: ' + err.message); });
+    filtered.forEach(function(proc) {
+      var origIndex = _processes.indexOf(proc);
+      var isCompleted = !!completedProcesses[proc.id];
+      var item = document.createElement('div');
+      item.className = 'process-item' + (isCompleted ? ' completed' : '');
+      item.innerHTML = '<div>'
+        + '<div class="process-name-row">'
+        + (isCompleted ? '<span class="check-icon" title="Completed">✓</span>' : '')
+        + '<span class="process-name">' + proc.name + '</span>'
+        + '</div>'
+        + '<div class="process-steps">' + proc.steps.length + ' step' + (proc.steps.length !== 1 ? 's' : '') + '</div>'
+        + '</div>'
+        + '<div class="process-actions">'
+        + (isCompleted ? '<button class="restart-btn" title="Restart">↻</button>' : '')
+        + '<button class="play-btn" title="' + (isCompleted ? 'Replay' : 'Start') + ' process">▶</button>'
+        + '</div>';
+      item.querySelector('.play-btn').addEventListener('click', function(e) {
+        e.stopPropagation();
+        launchProcess(origIndex);
       });
-  });
+      if (isCompleted) {
+        var restartBtn = item.querySelector('.restart-btn');
+        if (restartBtn) {
+          restartBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            launchProcess(origIndex);
+          });
+        }
+      }
+      item.addEventListener('click', function() {
+        launchProcess(origIndex);
+      });
+      list.appendChild(item);
+    });
+  }
+
+  function launchProcess(index) {
+    var proc = _processes[index];
+    var firstStepUrl = (proc && proc.steps && proc.steps[0] && proc.steps[0].target_url) || '';
+    var navUrl = firstStepUrl || _appUrl;
+
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      var tab = tabs[0];
+      var tabUrl = (tab.url || '').replace(/\\\\/+$/, '');
+      
+      var onApp = _appUrl && tabUrl.startsWith(_appUrl);
+      var needsNav = false;
+      
+      if (!onApp && navUrl) {
+        needsNav = true;
+      } else if (onApp && firstStepUrl) {
+        try {
+          var targetFull = new URL(firstStepUrl, _appUrl || window.location.origin).href.replace(/\\\\/+$/, '');
+          if (tabUrl !== targetFull && !tabUrl.startsWith(targetFull)) {
+            needsNav = true;
+            navUrl = targetFull;
+          }
+        } catch(e) {}
+      }
+
+      if (needsNav && navUrl) {
+        var finalUrl = navUrl;
+        try {
+          if (navUrl && !navUrl.startsWith('http')) {
+            finalUrl = new URL(navUrl, _appUrl || window.location.origin).href;
+          }
+        } catch(e) { finalUrl = navUrl; }
+        
+        chrome.tabs.update(tab.id, { url: finalUrl }, () => {
+          function onUpdated(tabId, info) {
+            if (tabId === tab.id && info.status === 'complete') {
+              chrome.tabs.onUpdated.removeListener(onUpdated);
+              setTimeout(() => {
+                chrome.tabs.sendMessage(tab.id, { type: 'START_PROCESS', processIndex: index });
+              }, 1500);
+            }
+          }
+          chrome.tabs.onUpdated.addListener(onUpdated);
+        });
+      } else {
+        chrome.tabs.sendMessage(tab.id, { type: 'START_PROCESS', processIndex: index });
+      }
+      window.close();
+    });
+  }
 
   // Load data directly from the bundled JSON file
   fetch(chrome.runtime.getURL('data.json'))
     .then(r => r.json())
     .then(data => {
-      const processes = data.processes || [];
-
-      if (processes.length === 0) {
-        list.innerHTML = '<div class="empty">No business processes configured for this page.</div>';
-        return;
-      }
-
-      var appUrl = (data.appUrl || '').replace(/\\/+$/, '');
-
-      function launchProcess(index) {
-        var proc = processes[index];
-        var firstStepUrl = (proc && proc.steps && proc.steps[0] && proc.steps[0].target_url) || '';
-        var navUrl = firstStepUrl || appUrl;
-
-        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-          var tab = tabs[0];
-          var tabUrl = (tab.url || '').replace(/\\/+$/, '');
-          
-          var onApp = appUrl && tabUrl.startsWith(appUrl);
-          var needsNav = false;
-          
-          if (!onApp && navUrl) {
-            needsNav = true;
-          } else if (onApp && firstStepUrl) {
-            try {
-              var targetFull = new URL(firstStepUrl, appUrl || window.location.origin).href.replace(/\\/+$/, '');
-              if (tabUrl !== targetFull && !tabUrl.startsWith(targetFull)) {
-                needsNav = true;
-                navUrl = targetFull;
-              }
-            } catch(e) {}
-          }
-
-          if (needsNav && navUrl) {
-            var finalUrl = navUrl;
-            try {
-              if (navUrl && !navUrl.startsWith('http')) {
-                finalUrl = new URL(navUrl, appUrl || window.location.origin).href;
-              }
-            } catch(e) { finalUrl = navUrl; }
-            
-            chrome.tabs.update(tab.id, { url: finalUrl }, () => {
-              function onUpdated(tabId, info) {
-                if (tabId === tab.id && info.status === 'complete') {
-                  chrome.tabs.onUpdated.removeListener(onUpdated);
-                  setTimeout(() => {
-                    chrome.tabs.sendMessage(tab.id, { type: 'START_PROCESS', processIndex: index });
-                  }, 1500);
-                }
-              }
-              chrome.tabs.onUpdated.addListener(onUpdated);
-            });
-          } else {
-            chrome.tabs.sendMessage(tab.id, { type: 'START_PROCESS', processIndex: index });
-          }
-          window.close();
-        });
-      }
-
-      processes.forEach(function(proc, index) {
-        var item = document.createElement('div');
-        item.className = 'process-item';
-        item.innerHTML = '<div>'
-          + '<div class="process-name">' + proc.name + '</div>'
-          + '<div class="process-steps">' + proc.steps.length + ' step' + (proc.steps.length !== 1 ? 's' : '') + '</div>'
-          + '</div>'
-          + '<button class="play-btn" title="Start process">▶</button>';
-        item.querySelector('.play-btn').addEventListener('click', (e) => {
-          e.stopPropagation();
-          launchProcess(index);
-        });
-        item.addEventListener('click', () => {
-          launchProcess(index);
-        });
-        list.appendChild(item);
-      });
+      _processes = data.processes || [];
+      _appUrl = (data.appUrl || '').replace(/\\\\/+$/, '');
+      renderProcesses();
     })
     .catch(() => {
       list.innerHTML = '<div class="empty">Failed to load business processes.</div>';
