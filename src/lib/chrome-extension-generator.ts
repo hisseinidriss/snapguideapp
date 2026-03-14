@@ -181,29 +181,36 @@ export async function generateChromeExtension(
   saveAs(blob, `${appName.replace(/\s+/g, "-").toLowerCase()}-${browserLabel}-extension.zip`);
 }
 
+import isdbLogo from "@/assets/isdb-logo.png";
+
 function generateIcon(size: number): Promise<Uint8Array> {
-  return new Promise((resolve) => {
-    const canvas = document.createElement("canvas");
-    canvas.width = size;
-    canvas.height = size;
-    const ctx = canvas.getContext("2d")!;
-
-    // IsDB sage green background
-    ctx.fillStyle = "#4d8b6f";
-    ctx.beginPath();
-    ctx.roundRect(0, 0, size, size, size * 0.2);
-    ctx.fill();
-
-    // Letter W for WalkThru
-    ctx.fillStyle = "#ffffff";
-    ctx.font = `bold ${size * 0.55}px sans-serif`;
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText("W", size / 2, size / 2 + size * 0.03);
-
-    canvas.toBlob((blob) => {
-      blob!.arrayBuffer().then((buf) => resolve(new Uint8Array(buf)));
-    }, "image/png");
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext("2d")!;
+      
+      // Clear canvas with transparent background
+      ctx.clearRect(0, 0, size, size);
+      
+      // Draw logo maintaining aspect ratio, centered
+      const scale = Math.min(size / img.width, size / img.height);
+      const x = (size - img.width * scale) / 2;
+      const y = (size - img.height * scale) / 2;
+      ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+      
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          reject(new Error("Failed to create icon blob"));
+          return;
+        }
+        blob.arrayBuffer().then((buf) => resolve(new Uint8Array(buf)));
+      }, "image/png");
+    };
+    img.onerror = () => reject(new Error("Failed to load IsDB logo"));
+    img.src = isdbLogo;
   });
 }
 
