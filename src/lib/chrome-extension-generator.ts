@@ -429,6 +429,8 @@ function getContentJS(): string {
 // Business Process Guide - Content Script
 (function() {
   'use strict';
+  if (window.__bpg_guard) return;
+  window.__bpg_guard = true;
 
   let currentProcess = null;
   let currentStepIndex = 0;
