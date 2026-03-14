@@ -1304,163 +1304,142 @@ function getPopupJS(): string {
   return `
 document.addEventListener('DOMContentLoaded', () => {
   const list = document.getElementById('processList');
-  var _scribeRecording = false;
+  const searchInput = document.getElementById('searchInput');
+  var completedProcesses = {};
 
-  // Tab switching
-  document.querySelectorAll('.tab').forEach(function(tab) {
-    tab.addEventListener('click', function() {
-      document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
-      document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
-      tab.classList.add('active');
-      document.getElementById(tab.dataset.tab + 'Tab').classList.add('active');
-    });
+  // Load completed processes from storage
+  chrome.storage.local.get(['bpg_completed'], function(result) {
+    completedProcesses = result.bpg_completed || {};
+    renderProcesses();
   });
 
-  // Scribe recording
-  var scribeBtn = document.getElementById('scribeBtn');
-  var recordingInput = document.getElementById('recordingName');
-  
-  scribeBtn.addEventListener('click', function() {
-    if (_scribeRecording) {
-      // Stop recording
-      chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
-        chrome.tabs.sendMessage(tabs[0].id, { type: 'STOP_SCRIBE' });
-      });
-      scribeBtn.innerHTML = '<span>⏺</span> Start Recording';
-      scribeBtn.classList.remove('recording');
-      _scribeRecording = false;
+  // Listen for completion events from content script
+  chrome.runtime.onMessage.addListener(function(msg) {
+    if (msg.type === 'PROCESS_COMPLETED' && msg.processId) {
+      completedProcesses[msg.processId] = true;
+      chrome.storage.local.set({ bpg_completed: completedProcesses });
+      renderProcesses();
+    }
+  });
+
+  // Search filtering
+  searchInput.addEventListener('input', function() {
+    renderProcesses();
+  });
+
+  var _processes = [];
+  var _appUrl = '';
+
+  function renderProcesses() {
+    list.innerHTML = '';
+    var query = (searchInput.value || '').trim().toLowerCase();
+    var filtered = _processes.filter(function(proc) {
+      if (!query) return true;
+      return proc.name.toLowerCase().indexOf(query) >= 0;
+    });
+
+    if (filtered.length === 0 && _processes.length > 0) {
+      list.innerHTML = '<div class="no-results">No processes match your search.</div>';
+      return;
+    }
+    if (_processes.length === 0) {
+      list.innerHTML = '<div class="empty">No business processes configured for this page.</div>';
       return;
     }
 
-    // Start recording - first create a recording in the backend
-    fetch(chrome.runtime.getURL('data.json'))
-      .then(function(r) { return r.json(); })
-      .then(function(data) {
-        if (!data.trackUrl || !data.anonKey || !data.appId) {
-          alert('Recording requires tracking to be configured. Please re-download the extension.');
-          return;
-        }
-
-        // Create recording via Supabase REST API
-        var supabaseUrl = data.trackUrl.replace('/functions/v1/track-events', '');
-        var recName = recordingInput.value.trim() || 'Recording ' + new Date().toLocaleString();
-        
-        fetch(supabaseUrl + '/rest/v1/process_recordings', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': data.anonKey,
-            'Authorization': 'Bearer ' + data.anonKey,
-            'Prefer': 'return=representation'
-          },
-          body: JSON.stringify({
-            app_id: data.appId,
-            title: recName,
-            status: 'recording'
-          })
-        })
-        .then(function(r) { return r.json(); })
-        .then(function(recs) {
-          var rec = Array.isArray(recs) ? recs[0] : recs;
-          if (!rec || !rec.id) {
-            alert('Failed to create recording');
-            return;
-          }
-
-          _scribeRecording = true;
-          scribeBtn.innerHTML = '<span>⏹</span> Stop Recording';
-          scribeBtn.classList.add('recording');
-
-          chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
-            chrome.tabs.sendMessage(tabs[0].id, { type: 'START_SCRIBE', recordingId: rec.id });
-          });
-
-          window.close();
-        })
-        .catch(function(err) { alert('Error: ' + err.message); });
+    filtered.forEach(function(proc) {
+      var origIndex = _processes.indexOf(proc);
+      var isCompleted = !!completedProcesses[proc.id];
+      var item = document.createElement('div');
+      item.className = 'process-item' + (isCompleted ? ' completed' : '');
+      item.innerHTML = '<div>'
+        + '<div class="process-name-row">'
+        + (isCompleted ? '<span class="check-icon" title="Completed">✓</span>' : '')
+        + '<span class="process-name">' + proc.name + '</span>'
+        + '</div>'
+        + '<div class="process-steps">' + proc.steps.length + ' step' + (proc.steps.length !== 1 ? 's' : '') + '</div>'
+        + '</div>'
+        + '<div class="process-actions">'
+        + (isCompleted ? '<button class="restart-btn" title="Restart">↻</button>' : '')
+        + '<button class="play-btn" title="' + (isCompleted ? 'Replay' : 'Start') + ' process">▶</button>'
+        + '</div>';
+      item.querySelector('.play-btn').addEventListener('click', function(e) {
+        e.stopPropagation();
+        launchProcess(origIndex);
       });
-  });
+      if (isCompleted) {
+        var restartBtn = item.querySelector('.restart-btn');
+        if (restartBtn) {
+          restartBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            launchProcess(origIndex);
+          });
+        }
+      }
+      item.addEventListener('click', function() {
+        launchProcess(origIndex);
+      });
+      list.appendChild(item);
+    });
+  }
+
+  function launchProcess(index) {
+    var proc = _processes[index];
+    var firstStepUrl = (proc && proc.steps && proc.steps[0] && proc.steps[0].target_url) || '';
+    var navUrl = firstStepUrl || _appUrl;
+
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      var tab = tabs[0];
+      var tabUrl = (tab.url || '').replace(/\\\\/+$/, '');
+      
+      var onApp = _appUrl && tabUrl.startsWith(_appUrl);
+      var needsNav = false;
+      
+      if (!onApp && navUrl) {
+        needsNav = true;
+      } else if (onApp && firstStepUrl) {
+        try {
+          var targetFull = new URL(firstStepUrl, _appUrl || window.location.origin).href.replace(/\\\\/+$/, '');
+          if (tabUrl !== targetFull && !tabUrl.startsWith(targetFull)) {
+            needsNav = true;
+            navUrl = targetFull;
+          }
+        } catch(e) {}
+      }
+
+      if (needsNav && navUrl) {
+        var finalUrl = navUrl;
+        try {
+          if (navUrl && !navUrl.startsWith('http')) {
+            finalUrl = new URL(navUrl, _appUrl || window.location.origin).href;
+          }
+        } catch(e) { finalUrl = navUrl; }
+        
+        chrome.tabs.update(tab.id, { url: finalUrl }, () => {
+          function onUpdated(tabId, info) {
+            if (tabId === tab.id && info.status === 'complete') {
+              chrome.tabs.onUpdated.removeListener(onUpdated);
+              setTimeout(() => {
+                chrome.tabs.sendMessage(tab.id, { type: 'START_PROCESS', processIndex: index });
+              }, 1500);
+            }
+          }
+          chrome.tabs.onUpdated.addListener(onUpdated);
+        });
+      } else {
+        chrome.tabs.sendMessage(tab.id, { type: 'START_PROCESS', processIndex: index });
+      }
+      window.close();
+    });
+  }
 
   // Load data directly from the bundled JSON file
   fetch(chrome.runtime.getURL('data.json'))
     .then(r => r.json())
     .then(data => {
-      const processes = data.processes || [];
-
-      if (processes.length === 0) {
-        list.innerHTML = '<div class="empty">No business processes configured for this page.</div>';
-        return;
-      }
-
-      var appUrl = (data.appUrl || '').replace(/\\/+$/, '');
-
-      function launchProcess(index) {
-        var proc = processes[index];
-        var firstStepUrl = (proc && proc.steps && proc.steps[0] && proc.steps[0].target_url) || '';
-        var navUrl = firstStepUrl || appUrl;
-
-        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-          var tab = tabs[0];
-          var tabUrl = (tab.url || '').replace(/\\/+$/, '');
-          
-          var onApp = appUrl && tabUrl.startsWith(appUrl);
-          var needsNav = false;
-          
-          if (!onApp && navUrl) {
-            needsNav = true;
-          } else if (onApp && firstStepUrl) {
-            try {
-              var targetFull = new URL(firstStepUrl, appUrl || window.location.origin).href.replace(/\\/+$/, '');
-              if (tabUrl !== targetFull && !tabUrl.startsWith(targetFull)) {
-                needsNav = true;
-                navUrl = targetFull;
-              }
-            } catch(e) {}
-          }
-
-          if (needsNav && navUrl) {
-            var finalUrl = navUrl;
-            try {
-              if (navUrl && !navUrl.startsWith('http')) {
-                finalUrl = new URL(navUrl, appUrl || window.location.origin).href;
-              }
-            } catch(e) { finalUrl = navUrl; }
-            
-            chrome.tabs.update(tab.id, { url: finalUrl }, () => {
-              function onUpdated(tabId, info) {
-                if (tabId === tab.id && info.status === 'complete') {
-                  chrome.tabs.onUpdated.removeListener(onUpdated);
-                  setTimeout(() => {
-                    chrome.tabs.sendMessage(tab.id, { type: 'START_PROCESS', processIndex: index });
-                  }, 1500);
-                }
-              }
-              chrome.tabs.onUpdated.addListener(onUpdated);
-            });
-          } else {
-            chrome.tabs.sendMessage(tab.id, { type: 'START_PROCESS', processIndex: index });
-          }
-          window.close();
-        });
-      }
-
-      processes.forEach(function(proc, index) {
-        var item = document.createElement('div');
-        item.className = 'process-item';
-        item.innerHTML = '<div>'
-          + '<div class="process-name">' + proc.name + '</div>'
-          + '<div class="process-steps">' + proc.steps.length + ' step' + (proc.steps.length !== 1 ? 's' : '') + '</div>'
-          + '</div>'
-          + '<button class="play-btn" title="Start process">▶</button>';
-        item.querySelector('.play-btn').addEventListener('click', (e) => {
-          e.stopPropagation();
-          launchProcess(index);
-        });
-        item.addEventListener('click', () => {
-          launchProcess(index);
-        });
-        list.appendChild(item);
-      });
+      _processes = data.processes || [];
+      _appUrl = (data.appUrl || '').replace(/\\\\/+$/, '');
+      renderProcesses();
     })
     .catch(() => {
       list.innerHTML = '<div class="empty">Failed to load business processes.</div>';
