@@ -1405,6 +1405,15 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  function injectAndSend(tabId, message) {
+    chrome.scripting.executeScript({
+      target: { tabId: tabId },
+      files: ['content.js']
+    }, () => {
+      chrome.tabs.sendMessage(tabId, message);
+    });
+  }
+
   function launchProcess(index) {
     var proc = _processes[index];
     var firstStepUrl = (proc && proc.steps && proc.steps[0] && proc.steps[0].target_url) || '';
