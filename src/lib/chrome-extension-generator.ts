@@ -1460,16 +1460,9 @@ document.addEventListener('DOMContentLoaded', () => {
           }
         } catch(e) { finalUrl = navUrl; }
         
-        chrome.tabs.update(tab.id, { url: finalUrl }, () => {
-          function onUpdated(tabId, info) {
-            if (tabId === tab.id && info.status === 'complete') {
-              chrome.tabs.onUpdated.removeListener(onUpdated);
-              setTimeout(() => {
-                injectAndSend(tab.id, { type: 'START_PROCESS', processIndex: index });
-              }, 1500);
-            }
-          }
-          chrome.tabs.onUpdated.addListener(onUpdated);
+        // Store pending process so content script auto-starts after page loads
+        chrome.storage.local.set({ bpg_pending_process: index }, () => {
+          chrome.tabs.update(tab.id, { url: finalUrl });
         });
       } else {
         injectAndSend(tab.id, { type: 'START_PROCESS', processIndex: index });
