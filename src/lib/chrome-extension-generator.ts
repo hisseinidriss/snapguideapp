@@ -1412,7 +1412,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       var tab = tabs[0];
-      var tabUrl = (tab.url || '').replace(/\\\\/+$/, '');
+      var tabUrl = (tab.url || '').replace(/\\/+$/, '');
       
       var onApp = _appUrl && tabUrl.startsWith(_appUrl);
       var needsNav = false;
@@ -1421,7 +1421,7 @@ document.addEventListener('DOMContentLoaded', () => {
         needsNav = true;
       } else if (onApp && firstStepUrl) {
         try {
-          var targetFull = new URL(firstStepUrl, _appUrl || window.location.origin).href.replace(/\\\\/+$/, '');
+          var targetFull = new URL(firstStepUrl, _appUrl || window.location.origin).href.replace(/\\/+$/, '');
           if (tabUrl !== targetFull && !tabUrl.startsWith(targetFull)) {
             needsNav = true;
             navUrl = targetFull;
@@ -1460,7 +1460,7 @@ document.addEventListener('DOMContentLoaded', () => {
     .then(r => r.json())
     .then(data => {
       _processes = data.processes || [];
-      _appUrl = (data.appUrl || '').replace(/\\\\/+$/, '');
+      _appUrl = (data.appUrl || '').replace(/\\/+$/, '');
       renderProcesses();
     })
     .catch(() => {
