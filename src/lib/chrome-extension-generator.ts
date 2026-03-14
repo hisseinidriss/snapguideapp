@@ -805,6 +805,10 @@ function getContentJS(): string {
       currentStepIndex++;
       showStep();
     });
+    tooltipEl.querySelector('[data-action="restart"]')?.addEventListener('click', () => {
+      currentStepIndex = 0;
+      showStep();
+    });
 
     // Video-specific events
     if (step_isVideo) {
