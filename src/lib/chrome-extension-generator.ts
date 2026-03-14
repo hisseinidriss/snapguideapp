@@ -120,7 +120,7 @@ export async function generateChromeExtension(
     manifest.web_accessible_resources = ["data.json"];
   } else {
     // Chrome & Edge use Manifest V3
-    manifest.permissions = ["activeTab", "storage", "tabs"];
+    manifest.permissions = ["activeTab", "storage", "tabs", "scripting"];
     manifest.content_security_policy = {
       extension_pages: "script-src 'self'; object-src 'self'; frame-src https://www.youtube.com https://youtube.com https://onedrive.live.com https://*.sharepoint.com https://*.1drv.ms",
     };
