@@ -1439,21 +1439,19 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function injectAndSend(tabId, message) {
-    chrome.scripting.executeScript({
-      target: { tabId: tabId },
-      files: ['content.js']
-    }, () => {
-      // Small delay to ensure content script listeners are ready
-      setTimeout(() => {
-        chrome.tabs.sendMessage(tabId, message, function(response) {
-          // If no response, the listener might not be ready yet - retry once
-          if (chrome.runtime.lastError) {
-            setTimeout(() => {
-              chrome.tabs.sendMessage(tabId, message);
-            }, 500);
-          }
+    // Try sending directly first (content script may already be loaded via manifest)
+    chrome.tabs.sendMessage(tabId, message, function(response) {
+      if (chrome.runtime.lastError) {
+        // Content script not ready - inject it then send
+        chrome.scripting.executeScript({
+          target: { tabId: tabId },
+          files: ['content.js']
+        }, () => {
+          setTimeout(() => {
+            chrome.tabs.sendMessage(tabId, message);
+          }, 300);
         });
-      }, 100);
+      }
     });
   }
 
