@@ -241,14 +241,29 @@ const AppDetail = () => {
     }
     setGeneratingFromManual(true);
     try {
-      const reader = new FileReader();
-      const base64 = await new Promise<string>((resolve, reject) => {
-        reader.onload = () => resolve((reader.result as string).split(",")[1]);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
+      let textContent: string | null = null;
+      let base64: string | null = null;
+
+      const isDocx = file.name.endsWith('.docx') || file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+      
+      if (isDocx) {
+        // Parse DOCX client-side to extract text
+        const mammoth = await import('mammoth');
+        const arrayBuffer = await file.arrayBuffer();
+        const result = await mammoth.convertToHtml({ arrayBuffer });
+        textContent = result.value;
+      } else {
+        // For PDF and other files, send as base64
+        const reader = new FileReader();
+        base64 = await new Promise<string>((resolve, reject) => {
+          reader.onload = () => resolve((reader.result as string).split(",")[1]);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+      }
+
       const { data, error } = await supabase.functions.invoke("generate-tour-from-manual", {
-        body: { fileBase64: base64, fileName: file.name, mimeType: file.type },
+        body: { fileBase64: base64, fileName: file.name, mimeType: file.type, textContent },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);

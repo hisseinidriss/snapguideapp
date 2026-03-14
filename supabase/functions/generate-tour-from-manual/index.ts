@@ -12,9 +12,9 @@ serve(async (req) => {
   }
 
   try {
-    const { fileBase64, fileName, mimeType } = await req.json();
+    const { fileBase64, fileName, mimeType, textContent } = await req.json();
 
-    if (!fileBase64) {
+    if (!fileBase64 && !textContent) {
       return new Response(JSON.stringify({ error: "File content is required" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
