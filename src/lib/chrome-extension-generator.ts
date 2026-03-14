@@ -1412,7 +1412,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       var tab = tabs[0];
-      var tabUrl = (tab.url || '').replace(/\\\\/+$/, '');
+      var tabUrl = (tab.url || '').replace(/\\/+$/, '');
       
       var onApp = _appUrl && tabUrl.startsWith(_appUrl);
       var needsNav = false;
