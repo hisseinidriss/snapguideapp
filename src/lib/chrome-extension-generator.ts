@@ -549,25 +549,25 @@ function getContentJS(): string {
 
   window.addEventListener('beforeunload', flushEvents);
 
+  // Listen for messages from popup - registered immediately, outside init()
+  chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+    if (msg.type === 'START_PROCESS') {
+      if (!_dataReady) {
+        _pendingStartIndex = msg.processIndex;
+        return;
+      }
+      startProcess(msg.processIndex);
+    }
+    if (msg.type === 'GET_DATA') {
+      sendResponse(_bpgData);
+      return true;
+    }
+  });
+
   var _initialized = false;
   function init() {
     if (_initialized) return;
     _initialized = true;
-
-    // Listen for messages from popup immediately
-    chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-      if (msg.type === 'START_PROCESS') {
-        if (!_dataReady) {
-          _pendingStartIndex = msg.processIndex;
-          return;
-        }
-        startProcess(msg.processIndex);
-      }
-      if (msg.type === 'GET_DATA') {
-        sendResponse(_bpgData);
-        return true;
-      }
-    });
 
     // Load data from JSON file bundled with extension
     fetch(chrome.runtime.getURL('data.json'))
