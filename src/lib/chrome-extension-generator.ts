@@ -661,8 +661,18 @@ function getContentJS(): string {
   async function showStep() {
     cleanup();
     if (!currentProcess || currentStepIndex >= currentProcess.steps.length) {
-      trackEvent('tour_completed', null);
-      flushEvents();
+      // Process completed - mark as completed in storage and notify popup
+      if (currentProcess) {
+        trackEvent('tour_completed', null);
+        flushEvents();
+        chrome.storage.local.get(['bpg_completed'], function(result) {
+          var completed = result.bpg_completed || {};
+          completed[currentProcess.id] = true;
+          chrome.storage.local.set({ bpg_completed: completed });
+          // Notify popup about completion
+          chrome.runtime.sendMessage({ type: 'PROCESS_COMPLETED', processId: currentProcess.id });
+        });
+      }
       cleanup();
       currentProcess = null;
       currentStepIndex = 0;
