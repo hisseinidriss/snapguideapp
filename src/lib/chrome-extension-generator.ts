@@ -1460,7 +1460,7 @@ document.addEventListener('DOMContentLoaded', () => {
     .then(r => r.json())
     .then(data => {
       _processes = data.processes || [];
-      _appUrl = (data.appUrl || '').replace(/\\\\/+$/, '');
+      _appUrl = (data.appUrl || '').replace(/\\/+$/, '');
       renderProcesses();
     })
     .catch(() => {
