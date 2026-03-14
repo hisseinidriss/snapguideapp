@@ -120,7 +120,7 @@ export async function generateChromeExtension(
     manifest.web_accessible_resources = ["data.json"];
   } else {
     // Chrome & Edge use Manifest V3
-    manifest.permissions = ["activeTab", "storage", "tabs"];
+    manifest.permissions = ["activeTab", "storage", "tabs", "scripting"];
     manifest.content_security_policy = {
       extension_pages: "script-src 'self'; object-src 'self'; frame-src https://www.youtube.com https://youtube.com https://onedrive.live.com https://*.sharepoint.com https://*.1drv.ms",
     };
@@ -1405,6 +1405,15 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  function injectAndSend(tabId, message) {
+    chrome.scripting.executeScript({
+      target: { tabId: tabId },
+      files: ['content.js']
+    }, () => {
+      chrome.tabs.sendMessage(tabId, message);
+    });
+  }
+
   function launchProcess(index) {
     var proc = _processes[index];
     var firstStepUrl = (proc && proc.steps && proc.steps[0] && proc.steps[0].target_url) || '';
@@ -1442,14 +1451,14 @@ document.addEventListener('DOMContentLoaded', () => {
             if (tabId === tab.id && info.status === 'complete') {
               chrome.tabs.onUpdated.removeListener(onUpdated);
               setTimeout(() => {
-                chrome.tabs.sendMessage(tab.id, { type: 'START_PROCESS', processIndex: index });
+                injectAndSend(tab.id, { type: 'START_PROCESS', processIndex: index });
               }, 1500);
             }
           }
           chrome.tabs.onUpdated.addListener(onUpdated);
         });
       } else {
-        chrome.tabs.sendMessage(tab.id, { type: 'START_PROCESS', processIndex: index });
+        injectAndSend(tab.id, { type: 'START_PROCESS', processIndex: index });
       }
       window.close();
     });
