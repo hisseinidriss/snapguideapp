@@ -693,12 +693,15 @@ function getContentJS(): string {
       if (currentProcess) {
         trackEvent('tour_completed', null);
         flushEvents();
+        // Clear any stale resume/pending data
+        sessionStorage.removeItem('bpg_resume');
+        chrome.storage.local.remove('bpg_pending_process');
         chrome.storage.local.get(['bpg_completed'], function(result) {
           var completed = result.bpg_completed || {};
           completed[currentProcess.id] = true;
           chrome.storage.local.set({ bpg_completed: completed });
           // Notify popup about completion
-          chrome.runtime.sendMessage({ type: 'PROCESS_COMPLETED', processId: currentProcess.id });
+          try { chrome.runtime.sendMessage({ type: 'PROCESS_COMPLETED', processId: currentProcess.id }); } catch(e) {}
         });
       }
       cleanup();
