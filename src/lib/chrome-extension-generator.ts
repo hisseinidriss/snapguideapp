@@ -430,6 +430,10 @@ function getContentJS(): string {
 (function() {
   'use strict';
 
+  // Prevent double-injection
+  if (window.__bpg_content_loaded) return;
+  window.__bpg_content_loaded = true;
+
   let currentProcess = null;
   let currentStepIndex = 0;
   let overlayEls = [];
@@ -547,7 +551,10 @@ function getContentJS(): string {
 
   window.addEventListener('beforeunload', flushEvents);
 
+  var _initialized = false;
   function init() {
+    if (_initialized) return;
+    _initialized = true;
     // Load data from JSON file bundled with extension
     fetch(chrome.runtime.getURL('data.json'))
       .then(r => r.json())
@@ -686,12 +693,15 @@ function getContentJS(): string {
       if (currentProcess) {
         trackEvent('tour_completed', null);
         flushEvents();
+        // Clear any stale resume/pending data
+        sessionStorage.removeItem('bpg_resume');
+        chrome.storage.local.remove('bpg_pending_process');
         chrome.storage.local.get(['bpg_completed'], function(result) {
           var completed = result.bpg_completed || {};
           completed[currentProcess.id] = true;
           chrome.storage.local.set({ bpg_completed: completed });
           // Notify popup about completion
-          chrome.runtime.sendMessage({ type: 'PROCESS_COMPLETED', processId: currentProcess.id });
+          try { chrome.runtime.sendMessage({ type: 'PROCESS_COMPLETED', processId: currentProcess.id }); } catch(e) {}
         });
       }
       cleanup();
