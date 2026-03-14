@@ -889,6 +889,7 @@ function getContentJS(): string {
       + '<span class="bpg-tooltip-progress">Step ' + (index + 1) + ' of ' + total + '</span>'
       + '<div class="bpg-tooltip-actions">'
       + (!isFirst ? '<button class="bpg-btn bpg-btn-secondary" data-action="prev">Back</button>' : '')
+      + (isLast ? '<button class="bpg-btn bpg-btn-secondary" data-action="restart" title="Restart from step 1">↻ Restart</button>' : '')
       + '<button class="bpg-btn bpg-btn-primary" data-action="next">' + (isLast ? 'Finish' : 'Next') + '</button>'
       + '</div></div>';
   }
