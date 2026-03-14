@@ -430,6 +430,10 @@ function getContentJS(): string {
 (function() {
   'use strict';
 
+  // Prevent double-injection
+  if (window.__bpg_content_loaded) return;
+  window.__bpg_content_loaded = true;
+
   let currentProcess = null;
   let currentStepIndex = 0;
   let overlayEls = [];
