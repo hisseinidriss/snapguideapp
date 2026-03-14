@@ -640,19 +640,33 @@ function getContentJS(): string {
   }
 
   function resumeIfNeeded() {
+    // Check sessionStorage for multi-page navigation resume
     const saved = sessionStorage.getItem('bpg_resume');
-    if (!saved) return;
-    sessionStorage.removeItem('bpg_resume');
-    try {
-      const { processIndex, stepIndex } = JSON.parse(saved);
-      const processes = getProcesses();
-      if (processes[processIndex]) {
-        currentProcess = processes[processIndex];
-        currentStepIndex = stepIndex;
-        // Small delay to let the page render
-        setTimeout(() => showStep(), 800);
+    if (saved) {
+      sessionStorage.removeItem('bpg_resume');
+      try {
+        const { processIndex, stepIndex } = JSON.parse(saved);
+        const processes = getProcesses();
+        if (processes[processIndex]) {
+          currentProcess = processes[processIndex];
+          currentStepIndex = stepIndex;
+          setTimeout(() => showStep(), 800);
+          return;
+        }
+      } catch(e) {}
+    }
+
+    // Check chrome.storage for pending process launch (from popup navigation)
+    chrome.storage.local.get(['bpg_pending_process'], function(result) {
+      if (result.bpg_pending_process != null) {
+        var pendingIndex = result.bpg_pending_process;
+        chrome.storage.local.remove('bpg_pending_process');
+        var processes = getProcesses();
+        if (processes[pendingIndex]) {
+          setTimeout(function() { startProcess(pendingIndex); }, 800);
+        }
       }
-    } catch(e) {}
+    });
   }
 
   function startProcess(index) {
