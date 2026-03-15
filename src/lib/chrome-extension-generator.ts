@@ -994,18 +994,19 @@ export function getContentJS(): string {
     // Multi-page: navigate if step has a target_url on a DIFFERENT page
     if (step.target_url) {
       try {
-        var currentUrl = new URL(window.location.href);
-        var targetUrl = new URL(step.target_url, window.location.origin);
-        // Compare origin + pathname only (ignore query params, hash, trailing slashes)
-        var stripSlash = function(s) { return s.replace(/\\/+$/, ''); };
-        var currentBase = currentUrl.origin + stripSlash(currentUrl.pathname);
-        var targetBase = targetUrl.origin + stripSlash(targetUrl.pathname);
-        if (currentBase !== targetBase) {
+        var curU = new URL(window.location.href);
+        var tarU = new URL(step.target_url, window.location.origin);
+        // Compare origin + pathname only (strip trailing slashes without regex)
+        var curPath = curU.pathname;
+        var tarPath = tarU.pathname;
+        while (curPath.length > 1 && curPath.charAt(curPath.length - 1) === '/') curPath = curPath.slice(0, -1);
+        while (tarPath.length > 1 && tarPath.charAt(tarPath.length - 1) === '/') tarPath = tarPath.slice(0, -1);
+        if (curU.origin + curPath !== tarU.origin + tarPath) {
           sessionStorage.setItem('bpg_resume', JSON.stringify({
             processIndex: _bpgData.processes.indexOf(currentProcess),
             stepIndex: currentStepIndex
           }));
-          window.location.href = targetUrl.href;
+          window.location.href = tarU.href;
           return;
         }
       } catch(e) {}
