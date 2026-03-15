@@ -19,6 +19,7 @@ import Account from "./pages/Account";
 import NotFound from "./pages/NotFound";
 import ScribeRecording from "./pages/ScribeRecording";
 import ExtensionSimulator from "./pages/ExtensionSimulator";
+import WalkThruReport from "./pages/WalkThruReport";
 
 const queryClient = new QueryClient();
 
