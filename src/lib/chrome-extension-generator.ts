@@ -994,15 +994,13 @@ export function getContentJS(): string {
     // Multi-page: navigate if step has a target_url on a DIFFERENT page
     if (step.target_url) {
       try {
-        const currentUrl = new URL(window.location.href);
-        const targetUrl = new URL(step.target_url, window.location.origin);
+        var currentUrl = new URL(window.location.href);
+        var targetUrl = new URL(step.target_url, window.location.origin);
         // Compare origin + pathname only (ignore query params, hash, trailing slashes)
-        // This prevents infinite navigation loops when sites add locale params or redirects
-        const currentBase = currentUrl.origin + currentUrl.pathname.replace(/\/+$/, '');
-        const targetBase = targetUrl.origin + targetUrl.pathname.replace(/\/+$/, '');
-        const needsNav = currentBase !== targetBase;
-        if (needsNav) {
-          // Save state so we can resume after navigation
+        var stripSlash = function(s) { return s.replace(/\\/+$/, ''); };
+        var currentBase = currentUrl.origin + stripSlash(currentUrl.pathname);
+        var targetBase = targetUrl.origin + stripSlash(targetUrl.pathname);
+        if (currentBase !== targetBase) {
           sessionStorage.setItem('bpg_resume', JSON.stringify({
             processIndex: _bpgData.processes.indexOf(currentProcess),
             stepIndex: currentStepIndex
@@ -1010,9 +1008,7 @@ export function getContentJS(): string {
           window.location.href = targetUrl.href;
           return;
         }
-      } catch(e) {
-        // If URL parsing fails, skip navigation check
-      }
+      } catch(e) {}
     }
 
     // Click action: click a button to open a modal/popup before looking for target
