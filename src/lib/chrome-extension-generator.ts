@@ -502,6 +502,41 @@ function getContentJS(): string {
     };
   }
 
+  function extractAttributeSelectors(selector) {
+    if (!selector) return [];
+    var attrs = [];
+    var start = -1;
+    var quote = '';
+
+    for (var i = 0; i < selector.length; i++) {
+      var ch = selector.charAt(i);
+
+      if (quote) {
+        if (ch === quote && selector.charAt(i - 1) !== '\\') {
+          quote = '';
+        }
+        continue;
+      }
+
+      if (ch === '"' || ch === "'") {
+        quote = ch;
+        continue;
+      }
+
+      if (ch === '[') {
+        start = i;
+        continue;
+      }
+
+      if (ch === ']' && start >= 0) {
+        attrs.push(selector.slice(start, i + 1));
+        start = -1;
+      }
+    }
+
+    return attrs;
+  }
+
   function generateFallbackSelectors(selector) {
     if (!selector) return [];
     var fallbacks = [];
@@ -549,7 +584,7 @@ function getContentJS(): string {
       }
 
       // Extract attribute selectors like [href*="apply"]
-      var attrMatches = selector.match(/\\[([^\\]]+)\\]/g) || [];
+      var attrMatches = extractAttributeSelectors(selector);
       attrMatches.forEach(function(attr) {
         if (tag) fallbacks.push(tag + attr);
         fallbacks.push(attr);
