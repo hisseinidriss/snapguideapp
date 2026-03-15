@@ -473,16 +473,63 @@ function getContentJS(): string {
     return null;
   }
 
+  function stripPositionalPseudoSelectors(selector) {
+    if (!selector) return selector;
+    return selector
+      .replace(/:nth-(?:of-type|child)[(]\s*\d+\s*[)]/gi, '')
+      .replace(/:(?:first|last)-(?:child|of-type)/gi, '')
+      .replace(/\s+/g, ' ')
+      .replace(/\s*([>+~])\s*/g, ' $1 ')
+      .trim();
+  }
+
+  function extractNthIndex(selectorPart) {
+    if (!selectorPart) return null;
+    var match = selectorPart.match(/:nth-(?:of-type|child)[(]\s*(\d+)\s*[)]/i);
+    if (!match) return null;
+    var idx = parseInt(match[1], 10);
+    return isNaN(idx) ? null : idx;
+  }
+
+  function splitSelectorForAnchoring(selector) {
+    if (!selector) return null;
+    var normalized = selector.trim().replace(/\s+/g, ' ');
+    var parts = normalized.split(' ');
+    if (parts.length < 2) return null;
+    return {
+      container: parts.slice(0, -1).join(' '),
+      leaf: parts[parts.length - 1]
+    };
+  }
+
   function generateFallbackSelectors(selector) {
     if (!selector) return [];
     var fallbacks = [];
     try {
-      // Extract tag from selector
-      var tagMatch = selector.match(/^([a-z][a-z0-9]*)/i);
+      var relaxedSelector = stripPositionalPseudoSelectors(selector);
+      if (relaxedSelector && relaxedSelector !== selector) {
+        fallbacks.push(relaxedSelector);
+      }
+
+      var split = splitSelectorForAnchoring(relaxedSelector || selector);
+      if (split) {
+        var relaxedLeaf = stripPositionalPseudoSelectors(split.leaf);
+        if (relaxedLeaf && relaxedLeaf !== split.leaf) {
+          fallbacks.push(split.container + ' ' + relaxedLeaf);
+          fallbacks.push(relaxedLeaf);
+        }
+      }
+
+      // Extract tag from selector (or anchored leaf)
+      var tagMatch = (relaxedSelector || selector).match(/^([a-z][a-z0-9]*)/i);
       var tag = tagMatch ? tagMatch[1].toLowerCase() : '';
-      
+      if (!tag && split && split.leaf) {
+        var leafTagMatch = split.leaf.match(/^([a-z][a-z0-9]*)/i);
+        if (leafTagMatch) tag = leafTagMatch[1].toLowerCase();
+      }
+
       // Extract classes, filtering out dynamic/hashed ones
-      var classMatches = selector.match(/\\.([a-zA-Z_-][a-zA-Z0-9_-]*)/g) || [];
+      var classMatches = selector.match(/\.([a-zA-Z_-][a-zA-Z0-9_-]*)/g) || [];
       var stableClasses = classMatches.map(function(c) { return c; }).filter(function(c) {
         var name = c.slice(1);
         // Filter out hashed classes (contain long hex sequences)
@@ -502,7 +549,7 @@ function getContentJS(): string {
       }
 
       // Extract attribute selectors like [href*="apply"]
-      var attrMatches = selector.match(/\\[([^\\]]+)\\]/g) || [];
+      var attrMatches = selector.match(/\[([^\]]+)\]/g) || [];
       attrMatches.forEach(function(attr) {
         if (tag) fallbacks.push(tag + attr);
         fallbacks.push(attr);
@@ -521,14 +568,14 @@ function getContentJS(): string {
       }
 
       // Tag-only fallback for specific interactive elements
-      if (tag && ['button','input','select','textarea'].indexOf(tag) >= 0) {
+      if (tag && ['button','input','select','textarea','a'].indexOf(tag) >= 0) {
         fallbacks.push(tag);
       }
     } catch(e) {}
     // Deduplicate and remove original
     var seen = {};
     return fallbacks.filter(function(s) {
-      if (s === selector || seen[s]) return false;
+      if (!s || s === selector || seen[s]) return false;
       seen[s] = true;
       return true;
     });
@@ -626,7 +673,36 @@ function getContentJS(): string {
         var iframeEl = tryIframes(selector);
         if (iframeEl && isElementVisible(iframeEl)) { resolve(iframeEl); return; }
 
-        // Strategy 2: Fallback selectors
+        // Strategy 2: Container-anchored recovery for nested selectors
+        var anchorSource = step.parent_selector || step.parentSelector || '';
+        var anchored = splitSelectorForAnchoring(selector);
+        var containerSelector = anchorSource || (anchored ? anchored.container : '');
+        if (containerSelector) {
+          var containerEl = safeQuerySelector(containerSelector);
+          if (containerEl) {
+            var leafSelector = anchored ? anchored.leaf : selector;
+            var exactInContainer = safeQuerySelector(leafSelector, containerEl);
+            if (exactInContainer && isElementVisible(exactInContainer)) { resolve(exactInContainer); return; }
+
+            var relaxedLeaf = stripPositionalPseudoSelectors(leafSelector);
+            if (relaxedLeaf) {
+              var anchoredCandidates = safeQuerySelectorAll(relaxedLeaf, containerEl).filter(isElementVisible);
+              if (anchoredCandidates.length > 0) {
+                var nth = extractNthIndex(leafSelector);
+                if (nth && anchoredCandidates[nth - 1]) { resolve(anchoredCandidates[nth - 1]); return; }
+
+                var bestAnchored = null, bestAnchoredScore = -1;
+                anchoredCandidates.forEach(function(c) {
+                  var s = scoreCandidate(c, step, selector) + 12;
+                  if (s > bestAnchoredScore) { bestAnchoredScore = s; bestAnchored = c; }
+                });
+                if (bestAnchored) { resolve(bestAnchored); return; }
+              }
+            }
+          }
+        }
+
+        // Strategy 3: Fallback selectors
         var fallbacks = generateFallbackSelectors(selector);
         for (var i = 0; i < fallbacks.length; i++) {
           var candidates = safeQuerySelectorAll(fallbacks[i]);
