@@ -426,7 +426,7 @@ function getContentCSS(): string {
 `;
 }
 
-function getContentJS(): string {
+export function getContentJS(): string {
   return `
 // Business Process Guide - Content Script
 (function() {
