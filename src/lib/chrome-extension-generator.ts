@@ -549,7 +549,7 @@ function getContentJS(): string {
       }
 
       // Extract attribute selectors like [href*="apply"]
-      var attrMatches = selector.match(/\[([^\]]+)\]/g) || [];
+      var attrMatches = selector.match(/\\[([^\\]]+)\\]/g) || [];
       attrMatches.forEach(function(attr) {
         if (tag) fallbacks.push(tag + attr);
         fallbacks.push(attr);
