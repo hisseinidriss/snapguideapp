@@ -109,7 +109,7 @@ Deno.serve(async (req) => {
           // If all major parts exist in the HTML, consider it likely valid
           let allFound = true;
           for (const part of parts) {
-            const cleanPart = part.replace(/:[^\s.#[]+/g, "").replace(/\\/g, "");
+            const cleanPart = part.replace(/:[^\s.#[(]+(\([^)]*\))?/g, "").replace(/\\/g, "");
             if (cleanPart.startsWith("#")) {
               const id = cleanPart.slice(1);
               if (!html.includes(id)) { allFound = false; break; }
