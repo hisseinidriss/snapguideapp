@@ -35,6 +35,16 @@ export interface SimulationReport {
     stepsExecutedCount: number;
   };
   results: TestResult[];
+  fixesApplied: FixRecord[];
+}
+
+export interface FixRecord {
+  table: string;
+  id: string;
+  field: string;
+  oldValue: any;
+  newValue: any;
+  description: string;
 }
 
 interface TourData {
