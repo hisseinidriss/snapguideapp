@@ -379,7 +379,7 @@ function selectorToMockElement(selector: string, text: string): string | null {
     const idAttr = idMatch ? ` id="${idMatch[1]}"` : "";
     const classAttr = classes.length ? ` class="${classes.join(" ")}"` : "";
     const attrs = attrParts.length ? " " + attrParts.join(" ") : "";
-    const style = ` style="width:200px;height:40px;padding:8px;margin:10px;display:block;background:#fff;border:1px solid #ddd;"`;
+    const style = ` style="width:200px;height:40px;padding:8px;margin:10px;display:block;position:relative;background:#fff;border:1px solid #ddd;box-sizing:border-box;"`;
 
     return `<${tag}${idAttr}${classAttr}${attrs}${style}>${text}</${tag}>`;
   } catch {
