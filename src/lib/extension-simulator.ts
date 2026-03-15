@@ -1342,7 +1342,8 @@ function simulateUserInteractions(results: TestResult[], tours: TourData[]) {
 
 function buildReport(
   appName: string, appUrl: string, startedAt: Date,
-  results: TestResult[], toursCount: number, stepsCount: number
+  results: TestResult[], toursCount: number, stepsCount: number,
+  fixes: FixRecord[] = []
 ): SimulationReport {
   const completedAt = new Date();
   const duration = completedAt.getTime() - startedAt.getTime();
@@ -1369,5 +1370,6 @@ function buildReport(
       stepsExecutedCount: stepsCount,
     },
     results: finalResults,
+    fixesApplied: fixes,
   };
 }
