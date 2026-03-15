@@ -200,6 +200,31 @@ const ExtensionSimulator = () => {
           </div>
         )}
 
+        {/* Fixes applied detail */}
+        {report && report.fixesApplied && report.fixesApplied.length > 0 && (
+          <Card className="p-4 mb-6 border-l-4 border-l-blue-500 bg-blue-500/5">
+            <div className="flex items-center gap-2 mb-3">
+              <Database className="h-4 w-4 text-blue-500" />
+              <span className="font-semibold text-sm">
+                {report.fixesApplied.length} Auto-Fix{report.fixesApplied.length !== 1 ? "es" : ""} Applied to Database
+              </span>
+            </div>
+            <div className="space-y-1.5">
+              {report.fixesApplied.map((fix, i) => (
+                <div key={i} className="flex items-start gap-2 text-xs">
+                  <Wrench className="h-3 w-3 text-blue-500 mt-0.5 shrink-0" />
+                  <span className="text-muted-foreground">
+                    {fix.description}
+                    <span className="text-foreground/40 ml-1">
+                      ({fix.field}: {JSON.stringify(fix.oldValue)} → {JSON.stringify(fix.newValue)})
+                    </span>
+                  </span>
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
+
         {/* Results by category */}
         {sortedCategories.length > 0 && (
           <div className="space-y-2">
