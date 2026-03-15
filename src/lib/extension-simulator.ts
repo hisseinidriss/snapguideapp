@@ -186,7 +186,9 @@ async function runSandboxExecution(
         selector: s.selector,
         placement: s.placement,
         sort_order: s.sort_order,
-        target_url: s.target_url,
+        // In sandbox, force same-page execution so target_url navigation does not short-circuit
+        // rendering checks (we validate target_url logic separately in Page Navigation tests).
+        target_url: null,
         click_selector: s.click_selector,
         step_type: s.step_type,
         video_url: s.video_url,
