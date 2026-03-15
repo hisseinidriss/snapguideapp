@@ -297,8 +297,8 @@ async function runSandboxExecution(
         result.jsErrors.push({ message: `Message listener error: ${err.message}`, source: "runtime.onMessage" });
       }
 
-      // Wait for tour UI to render (resolveStepElement has retry loops)
-      await new Promise(r => setTimeout(r, 1500));
+      // Wait for tour UI to render (resolveStepElement has 450ms retry loops)
+      await new Promise(r => setTimeout(r, 2500));
 
       // Inspect DOM for rendered UI elements
       inspectRenderedUI(doc, result);
