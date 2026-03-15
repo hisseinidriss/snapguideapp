@@ -117,7 +117,9 @@ interface SandboxResult {
 
 function createSandboxIframe(): HTMLIFrameElement {
   const iframe = document.createElement("iframe");
-  iframe.style.cssText = "position:fixed;top:-9999px;left:-9999px;width:1280px;height:720px;border:none;opacity:0;pointer-events:none;";
+  // Position off-screen but NOT with negative coordinates — elements need real layout
+  // for getBoundingClientRect() to return non-zero dimensions (required by isElementVisible).
+  iframe.style.cssText = "position:fixed;top:0;left:0;width:1280px;height:720px;border:none;opacity:0.01;pointer-events:none;z-index:-1;";
   iframe.sandbox.add("allow-scripts", "allow-same-origin");
   document.body.appendChild(iframe);
   return iframe;
