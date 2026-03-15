@@ -991,25 +991,27 @@ export function getContentJS(): string {
 
     const step = currentProcess.steps[currentStepIndex];
 
-    // Multi-page: navigate if step has a target_url different from current page
+    // Multi-page: navigate if step has a target_url on a DIFFERENT page
     if (step.target_url) {
-      const currentPath = window.location.pathname + window.location.search + window.location.hash;
-      const currentFull = window.location.href;
-      // Check if target_url is a relative path or full URL
-      let targetFull;
       try {
-        targetFull = new URL(step.target_url, window.location.origin).href;
+        const currentUrl = new URL(window.location.href);
+        const targetUrl = new URL(step.target_url, window.location.origin);
+        // Compare origin + pathname only (ignore query params, hash, trailing slashes)
+        // This prevents infinite navigation loops when sites add locale params or redirects
+        const currentBase = currentUrl.origin + currentUrl.pathname.replace(/\/+$/, '');
+        const targetBase = targetUrl.origin + targetUrl.pathname.replace(/\/+$/, '');
+        const needsNav = currentBase !== targetBase;
+        if (needsNav) {
+          // Save state so we can resume after navigation
+          sessionStorage.setItem('bpg_resume', JSON.stringify({
+            processIndex: _bpgData.processes.indexOf(currentProcess),
+            stepIndex: currentStepIndex
+          }));
+          window.location.href = targetUrl.href;
+          return;
+        }
       } catch(e) {
-        targetFull = step.target_url;
-      }
-      if (currentFull !== targetFull && currentPath !== step.target_url) {
-        // Save state so we can resume after navigation
-        sessionStorage.setItem('bpg_resume', JSON.stringify({
-          processIndex: _bpgData.processes.indexOf(currentProcess),
-          stepIndex: currentStepIndex
-        }));
-        window.location.href = targetFull;
-        return;
+        // If URL parsing fails, skip navigation check
       }
     }
 
