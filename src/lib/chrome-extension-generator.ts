@@ -216,7 +216,7 @@ function generateIcon(size: number): Promise<Uint8Array> {
   });
 }
 
-function getContentCSS(): string {
+export function getContentCSS(): string {
   return `
 /* Business Process Guide - Overlay Styles */
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
