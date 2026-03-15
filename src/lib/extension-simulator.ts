@@ -272,8 +272,8 @@ async function runSandboxExecution(
     script.textContent = contentJS;
     doc.body.appendChild(script);
 
-    // Wait for initialization
-    await new Promise(r => setTimeout(r, 300));
+    // Wait for initialization + data.json fetch to resolve
+    await new Promise(r => setTimeout(r, 600));
 
     // Check if guard was set (script initialized)
     if (!sandboxWin.__bpg_guard) {
@@ -281,11 +281,11 @@ async function runSandboxExecution(
     }
 
     // Simulate message from popup to start first tour
+    // The content script expects processIndex (numeric index into processes array), NOT processId
     if (tours.length > 0 && sandboxWin.__bpg_messageListener) {
-      const firstTour = tours[0];
       try {
         sandboxWin.__bpg_messageListener(
-          { type: "START_PROCESS", processId: firstTour.id, stepIndex: 0 },
+          { type: "START_PROCESS", processIndex: 0 },
           {},
           () => {}
         );
@@ -293,14 +293,14 @@ async function runSandboxExecution(
         result.jsErrors.push({ message: `Message listener error: ${err.message}`, source: "runtime.onMessage" });
       }
 
-      // Wait for tour UI to render
-      await new Promise(r => setTimeout(r, 800));
+      // Wait for tour UI to render (resolveStepElement has retry loops)
+      await new Promise(r => setTimeout(r, 1500));
 
       // Inspect DOM for rendered UI elements
       inspectRenderedUI(doc, result);
 
       // Simulate step navigation
-      await simulateStepNavigationInSandbox(doc, sandboxWin, result, firstTour);
+      await simulateStepNavigationInSandbox(doc, sandboxWin, result, tours[0]);
     }
 
     // CSS validation
