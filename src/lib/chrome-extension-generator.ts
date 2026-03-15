@@ -690,6 +690,79 @@ export function getContentJS(): string {
     return score;
   }
 
+  function findContainerByLooseId(selectorText) {
+    if (!selectorText || selectorText.indexOf('#') < 0) return null;
+    var idMatch = selectorText.match(/#([a-zA-Z_-][a-zA-Z0-9_-]*)/);
+    if (!idMatch) return null;
+
+    var wanted = (idMatch[1] || '').toLowerCase();
+    var wantedNorm = wanted.replace(/[^a-z0-9]/g, '');
+    var nodes = safeQuerySelectorAll('[id]');
+    var partial = null;
+
+    for (var i = 0; i < nodes.length; i++) {
+      var node = nodes[i];
+      var id = (node.id || '').toLowerCase();
+      if (!id) continue;
+      if (id === wanted) return node;
+      if (!partial && (id.indexOf(wanted) >= 0 || wanted.indexOf(id) >= 0)) partial = node;
+    }
+    if (partial) return partial;
+
+    var best = null;
+    var bestScore = 0;
+    for (var j = 0; j < nodes.length; j++) {
+      var n = nodes[j];
+      var id2 = (n.id || '').toLowerCase();
+      if (!id2) continue;
+      var idNorm = id2.replace(/[^a-z0-9]/g, '');
+      var score = 0;
+      if (wantedNorm && (idNorm.indexOf(wantedNorm) >= 0 || wantedNorm.indexOf(idNorm) >= 0)) score += 2;
+      if (wanted.indexOf('footer') >= 0 && id2.indexOf('footer') >= 0) score += 1;
+      if (wanted.indexOf('social') >= 0 && id2.indexOf('social') >= 0) score += 1;
+      if (score > bestScore) { bestScore = score; best = n; }
+    }
+
+    return bestScore >= 2 ? best : null;
+  }
+
+  function findSemanticStepFallback(step, selectorText) {
+    var hint = ((step && step.title) || '') + ' ' + ((step && step.content) || '') + ' ' + (selectorText || '');
+    hint = hint.toLowerCase();
+    var socialOrFooter = hint.indexOf('social') >= 0 || hint.indexOf('footer') >= 0;
+    if (!socialOrFooter) return null;
+
+    // 1) Look for containers that look like footer social blocks
+    var idNodes = safeQuerySelectorAll('[id]');
+    for (var i = 0; i < idNodes.length; i++) {
+      var c = idNodes[i];
+      var id = (c.id || '').toLowerCase();
+      if (id.indexOf('footer') >= 0 && id.indexOf('social') >= 0) {
+        var ul = safeQuerySelector('ul', c);
+        if (ul && isElementVisible(ul)) return ul;
+        var a = safeQuerySelector('a', c);
+        if (a && isElementVisible(a)) return a.closest('ul') || a;
+        if (isElementVisible(c)) return c;
+      }
+    }
+
+    // 2) Direct social links in footer
+    var socialSelectors = [
+      'footer a[href*="linkedin"]',
+      'footer a[href*="instagram"]',
+      'footer a[href*="youtube"]',
+      'footer a[href*="facebook"]',
+      'footer a[href*="twitter"]',
+      'footer a[href*="x.com"]'
+    ];
+    for (var s = 0; s < socialSelectors.length; s++) {
+      var socialEl = safeQuerySelector(socialSelectors[s]);
+      if (socialEl && isElementVisible(socialEl)) return socialEl.closest('ul') || socialEl;
+    }
+
+    return null;
+  }
+
   function resolveStepElement(step) {
     return new Promise(function(resolve) {
       if (!step.selector) { resolve(null); return; }
