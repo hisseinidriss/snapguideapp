@@ -410,8 +410,8 @@ function buildNestedMockElements(selectorParts: string[], text: string): string 
     const classAttr = classes.length ? ` class="${classes.join(" ")}"` : "";
     const isLast = i === selectorParts.length - 1;
     const style = isLast
-      ? ` style="width:200px;height:40px;padding:8px;display:block;background:#fff;border:1px solid #ddd;"`
-      : ` style="padding:4px;"`;
+      ? ` style="width:200px;height:40px;padding:8px;display:block;position:relative;background:#fff;border:1px solid #ddd;box-sizing:border-box;"`
+      : ` style="padding:4px;display:block;position:relative;"`;
 
     if (nthIndex > 1 && isLast) {
       // Create preceding siblings so nth-of-type matches
