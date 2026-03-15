@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { getContentJS, getPopupJS } from "@/lib/chrome-extension-generator";
 
 // ==================== Types ====================
 
