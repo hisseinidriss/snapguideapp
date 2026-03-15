@@ -624,17 +624,29 @@ async function validateLaunchers(results: TestResult[], appId: string, tours: To
 }
 
 function simulateCodeSyntax(results: TestResult[]) {
-  // The generated code is a template literal in chrome-extension-generator.ts.
-  // We validate known patterns that have caused issues.
-  results.push({
-    id: nextId(), category: "Generated Code", test: "Content script syntax",
-    status: "pass", message: "Content script uses safe bracket-parser for attribute selectors (no regex escaping issues).",
-  });
+  // Actually parse the generated JS to catch syntax errors
+  const scripts: { name: string; code: string }[] = [
+    { name: "Content script (content.js)", code: getContentJS() },
+    { name: "Popup script (popup.js)", code: getPopupJS() },
+  ];
 
-  results.push({
-    id: nextId(), category: "Generated Code", test: "Popup script syntax",
-    status: "pass", message: "Popup script uses standard DOM APIs without template literal conflicts.",
-  });
+  for (const script of scripts) {
+    try {
+      // Use Function constructor to syntax-check without executing
+      // Wrap in try to detect SyntaxErrors
+      new Function(script.code);
+      results.push({
+        id: nextId(), category: "Generated Code", test: `${script.name} syntax`,
+        status: "pass", message: `${script.name}: JavaScript syntax is valid.`,
+      });
+    } catch (err: any) {
+      results.push({
+        id: nextId(), category: "Generated Code", test: `${script.name} syntax`,
+        status: "error",
+        message: `${script.name}: SyntaxError — ${err.message}. This will crash the extension at runtime.`,
+      });
+    }
+  }
 
   results.push({
     id: nextId(), category: "Generated Code", test: "Self-healing engine",
