@@ -673,7 +673,36 @@ function getContentJS(): string {
         var iframeEl = tryIframes(selector);
         if (iframeEl && isElementVisible(iframeEl)) { resolve(iframeEl); return; }
 
-        // Strategy 2: Fallback selectors
+        // Strategy 2: Container-anchored recovery for nested selectors
+        var anchorSource = step.parent_selector || step.parentSelector || '';
+        var anchored = splitSelectorForAnchoring(selector);
+        var containerSelector = anchorSource || (anchored ? anchored.container : '');
+        if (containerSelector) {
+          var containerEl = safeQuerySelector(containerSelector);
+          if (containerEl) {
+            var leafSelector = anchored ? anchored.leaf : selector;
+            var exactInContainer = safeQuerySelector(leafSelector, containerEl);
+            if (exactInContainer && isElementVisible(exactInContainer)) { resolve(exactInContainer); return; }
+
+            var relaxedLeaf = stripPositionalPseudoSelectors(leafSelector);
+            if (relaxedLeaf) {
+              var anchoredCandidates = safeQuerySelectorAll(relaxedLeaf, containerEl).filter(isElementVisible);
+              if (anchoredCandidates.length > 0) {
+                var nth = extractNthIndex(leafSelector);
+                if (nth && anchoredCandidates[nth - 1]) { resolve(anchoredCandidates[nth - 1]); return; }
+
+                var bestAnchored = null, bestAnchoredScore = -1;
+                anchoredCandidates.forEach(function(c) {
+                  var s = scoreCandidate(c, step, selector) + 12;
+                  if (s > bestAnchoredScore) { bestAnchoredScore = s; bestAnchored = c; }
+                });
+                if (bestAnchored) { resolve(bestAnchored); return; }
+              }
+            }
+          }
+        }
+
+        // Strategy 3: Fallback selectors
         var fallbacks = generateFallbackSelectors(selector);
         for (var i = 0; i < fallbacks.length; i++) {
           var candidates = safeQuerySelectorAll(fallbacks[i]);
