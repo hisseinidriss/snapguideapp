@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, Trash2, Code, Pencil, Crosshair, Sparkles, Loader2, Upload, Circle, Square, Zap, Download, HelpCircle, CheckCircle2, ClipboardList, BarChart3, Menu, ShieldCheck, AlertTriangle, XCircle, CheckCircle, FileText, Video as VideoIcon, GripVertical, MoreVertical } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Code, Pencil, Crosshair, Sparkles, Loader2, Upload, Circle, Square, Zap, Download, HelpCircle, CheckCircle2, ClipboardList, BarChart3, Menu, ShieldCheck, AlertTriangle, XCircle, CheckCircle, FileText, Video as VideoIcon, GripVertical, MoreVertical, Play } from "lucide-react";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -343,6 +343,9 @@ const AppDetail = () => {
               <Button variant="outline" size="sm" onClick={() => navigate(`/app/${appId}/analytics`)}>
                 <BarChart3 className="mr-2 h-4 w-4" />Analytics
               </Button>
+              <Button variant="outline" size="sm" onClick={() => navigate(`/app/${appId}/simulator`)}>
+                <Play className="mr-2 h-4 w-4" />Simulate
+              </Button>
               <Button variant="outline" size="sm" onClick={async () => {
                 setValidating(true);
                 try {
@@ -390,6 +393,9 @@ const AppDetail = () => {
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem onClick={() => navigate(`/app/${appId}/analytics`)}>
                     <BarChart3 className="mr-2 h-4 w-4" />Analytics
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate(`/app/${appId}/simulator`)}>
+                    <Play className="mr-2 h-4 w-4" />Simulate
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={async () => {
                     setValidating(true);
