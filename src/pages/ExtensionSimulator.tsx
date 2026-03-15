@@ -11,7 +11,7 @@ import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { runExtensionSimulation, type SimulationReport, type TestResult, type TestStatus } from "@/lib/extension-simulator";
+import { runExtensionSimulation, type SimulationReport, type TestResult, type TestStatus, type FixRecord } from "@/lib/extension-simulator";
 
 const statusConfig: Record<TestStatus, { icon: typeof CheckCircle; color: string; label: string }> = {
   pending: { icon: Clock, color: "text-muted-foreground", label: "Pending" },
