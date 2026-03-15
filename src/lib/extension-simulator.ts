@@ -35,6 +35,16 @@ export interface SimulationReport {
     stepsExecutedCount: number;
   };
   results: TestResult[];
+  fixesApplied: FixRecord[];
+}
+
+export interface FixRecord {
+  table: string;
+  id: string;
+  field: string;
+  oldValue: any;
+  newValue: any;
+  description: string;
 }
 
 interface TourData {
@@ -568,6 +578,7 @@ export async function runExtensionSimulation(
   testCounter = 0;
   const startedAt = new Date();
   const results: TestResult[] = [];
+  const fixes: FixRecord[] = [];
 
   const emit = (phase: string, progress: number) => {
     onProgress?.(results, phase, progress);
@@ -579,11 +590,27 @@ export async function runExtensionSimulation(
   const { data: app } = await supabase.from("apps").select("*").eq("id", appId).single();
   if (!app) {
     results.push({ id: nextId(), category: "Setup", test: "App exists", status: "error", message: "App not found in database." });
-    return buildReport("", "", startedAt, results, 0, 0);
+    return buildReport("", "", startedAt, results, 0, 0, fixes);
   }
 
   const appName = app.name;
-  const appUrl = (app.url || "").trim();
+  let appUrl = (app.url || "").trim();
+
+  // Auto-fix: trim app URL whitespace
+  if (app.url && app.url !== appUrl) {
+    await supabase.from("apps").update({ url: appUrl }).eq("id", appId);
+    fixes.push({ table: "apps", id: appId, field: "url", oldValue: app.url, newValue: appUrl, description: "Trimmed whitespace from app URL" });
+    results.push({ id: nextId(), category: "Metadata", test: "App URL whitespace", status: "fixed" as TestStatus, message: "App URL had leading/trailing whitespace — trimmed automatically.", fixApplied: "Trimmed whitespace from app URL." });
+  }
+
+  // Auto-fix: remove trailing slash from URL
+  if (appUrl.endsWith("/") && appUrl.length > 1) {
+    const cleaned = appUrl.replace(/\/+$/, "");
+    await supabase.from("apps").update({ url: cleaned }).eq("id", appId);
+    fixes.push({ table: "apps", id: appId, field: "url", oldValue: appUrl, newValue: cleaned, description: "Removed trailing slash from app URL" });
+    results.push({ id: nextId(), category: "Metadata", test: "App URL trailing slash", status: "fixed" as TestStatus, message: "Removed trailing slash from app URL to prevent match pattern issues.", fixApplied: "Removed trailing slash." });
+    appUrl = cleaned;
+  }
 
   // ---- Phase 2: Metadata & manifest validation ----
   emit("Validating extension metadata…", 3);
@@ -592,6 +619,10 @@ export async function runExtensionSimulation(
   // ---- Phase 3: Load tours & steps ----
   emit("Loading tours and steps…", 6);
   const tours = await loadTours(appId, results);
+
+  // ---- Phase 3.5: Auto-fix tour data issues ----
+  emit("Auto-fixing detected issues…", 8);
+  await autoFixTourData(tours, results, fixes);
 
   // ---- Phase 4: Generated code syntax check ----
   emit("Checking generated code syntax…", 10);
@@ -660,7 +691,126 @@ export async function runExtensionSimulation(
   simulateUserInteractions(results, tours);
 
   emit("Complete", 100);
-  return buildReport(appName, appUrl, startedAt, results, tours.length, totalSteps);
+  return buildReport(appName, appUrl, startedAt, results, tours.length, totalSteps, fixes);
+}
+
+// ==================== Auto-Fix Engine ====================
+
+async function autoFixTourData(tours: TourData[], results: TestResult[], fixes: FixRecord[]) {
+  const validPlacements = ["top", "bottom", "left", "right", "center"];
+
+  for (const tour of tours) {
+    // Fix 1: Re-sequence duplicate/unordered sort_order
+    const orders = tour.steps.map(s => s.sort_order);
+    const hasDuplicates = new Set(orders).size !== orders.length;
+    const isSorted = orders.every((v, i) => i === 0 || v >= orders[i - 1]);
+
+    if (hasDuplicates || !isSorted) {
+      for (let i = 0; i < tour.steps.length; i++) {
+        const step = tour.steps[i];
+        const newOrder = i;
+        if (step.sort_order !== newOrder) {
+          await supabase.from("tour_steps").update({ sort_order: newOrder }).eq("id", step.id);
+          fixes.push({ table: "tour_steps", id: step.id, field: "sort_order", oldValue: step.sort_order, newValue: newOrder, description: `Re-sequenced step ${i + 1} in "${tour.name}"` });
+          step.sort_order = newOrder;
+        }
+      }
+      results.push({
+        id: nextId(), category: "Tour Flow", tourName: tour.name,
+        test: "Sort order fix", status: "fixed" as TestStatus,
+        message: `Tour "${tour.name}": Re-sequenced ${tour.steps.length} steps to fix ${hasDuplicates ? "duplicate" : "unordered"} sort_order values.`,
+        fixApplied: "Re-sequenced sort_order values (0, 1, 2, …).",
+      });
+    }
+
+    for (let i = 0; i < tour.steps.length; i++) {
+      const step = tour.steps[i];
+      const label = `"${tour.name}" → Step ${i + 1}`;
+
+      // Fix 2: Invalid placement → default to "bottom"
+      if (step.placement && !validPlacements.includes(step.placement)) {
+        const oldPlacement = step.placement;
+        await supabase.from("tour_steps").update({ placement: "bottom" }).eq("id", step.id);
+        fixes.push({ table: "tour_steps", id: step.id, field: "placement", oldValue: oldPlacement, newValue: "bottom", description: `Fixed invalid placement in ${label}` });
+        step.placement = "bottom";
+        results.push({
+          id: nextId(), category: "Tooltip Rendering", tourName: tour.name, stepIndex: i, stepTitle: step.title,
+          test: "Placement fix", status: "fixed" as TestStatus,
+          message: `${label}: Invalid placement "${oldPlacement}" → changed to "bottom".`,
+          fixApplied: `Changed placement from "${oldPlacement}" to "bottom".`,
+        });
+      }
+
+      // Fix 3: Video step with no video_url → change to standard
+      if (step.step_type === "video" && !step.video_url?.trim()) {
+        await supabase.from("tour_steps").update({ step_type: "standard" }).eq("id", step.id);
+        fixes.push({ table: "tour_steps", id: step.id, field: "step_type", oldValue: "video", newValue: "standard", description: `Changed empty video step to standard in ${label}` });
+        step.step_type = "standard";
+        results.push({
+          id: nextId(), category: "Tooltip Rendering", tourName: tour.name, stepIndex: i, stepTitle: step.title,
+          test: "Video step fix", status: "fixed" as TestStatus,
+          message: `${label}: Video step had no video URL — changed to standard step.`,
+          fixApplied: "Changed step_type from 'video' to 'standard'.",
+        });
+      }
+
+      // Fix 4: Trim whitespace in selectors
+      if (step.selector && step.selector !== step.selector.trim()) {
+        const trimmed = step.selector.trim();
+        await supabase.from("tour_steps").update({ selector: trimmed }).eq("id", step.id);
+        fixes.push({ table: "tour_steps", id: step.id, field: "selector", oldValue: step.selector, newValue: trimmed, description: `Trimmed selector whitespace in ${label}` });
+        step.selector = trimmed;
+        results.push({
+          id: nextId(), category: "Selector Resolution", tourName: tour.name, stepIndex: i, stepTitle: step.title,
+          test: "Selector whitespace fix", status: "fixed" as TestStatus,
+          message: `${label}: Trimmed whitespace from selector.`,
+          fixApplied: "Trimmed leading/trailing whitespace from selector.",
+        });
+      }
+
+      // Fix 5: Trim whitespace in click_selector
+      if (step.click_selector && step.click_selector !== step.click_selector.trim()) {
+        const trimmed = step.click_selector.trim();
+        await supabase.from("tour_steps").update({ click_selector: trimmed }).eq("id", step.id);
+        fixes.push({ table: "tour_steps", id: step.id, field: "click_selector", oldValue: step.click_selector, newValue: trimmed, description: `Trimmed click_selector whitespace in ${label}` });
+        step.click_selector = trimmed;
+        results.push({
+          id: nextId(), category: "Selector Resolution", tourName: tour.name, stepIndex: i, stepTitle: step.title,
+          test: "Click selector whitespace fix", status: "fixed" as TestStatus,
+          message: `${label}: Trimmed whitespace from click selector.`,
+          fixApplied: "Trimmed leading/trailing whitespace from click selector.",
+        });
+      }
+
+      // Fix 6: Missing step title → generate default
+      if (!step.title?.trim()) {
+        const defaultTitle = `Step ${i + 1}`;
+        await supabase.from("tour_steps").update({ title: defaultTitle }).eq("id", step.id);
+        fixes.push({ table: "tour_steps", id: step.id, field: "title", oldValue: step.title, newValue: defaultTitle, description: `Added default title in ${label}` });
+        step.title = defaultTitle;
+        results.push({
+          id: nextId(), category: "Tooltip Rendering", tourName: tour.name, stepIndex: i, stepTitle: step.title,
+          test: "Missing title fix", status: "fixed" as TestStatus,
+          message: `${label}: Missing title — set to "${defaultTitle}".`,
+          fixApplied: `Set default title "${defaultTitle}".`,
+        });
+      }
+
+      // Fix 7: target_url whitespace trim
+      if (step.target_url && step.target_url !== step.target_url.trim()) {
+        const trimmed = step.target_url.trim();
+        await supabase.from("tour_steps").update({ target_url: trimmed }).eq("id", step.id);
+        fixes.push({ table: "tour_steps", id: step.id, field: "target_url", oldValue: step.target_url, newValue: trimmed, description: `Trimmed target_url in ${label}` });
+        step.target_url = trimmed;
+        results.push({
+          id: nextId(), category: "Page Navigation", tourName: tour.name, stepIndex: i, stepTitle: step.title,
+          test: "Target URL whitespace fix", status: "fixed" as TestStatus,
+          message: `${label}: Trimmed whitespace from target URL.`,
+          fixApplied: "Trimmed whitespace from target_url.",
+        });
+      }
+    }
+  }
 }
 
 // ==================== Sandbox Result Processing ====================
@@ -1332,7 +1482,8 @@ function simulateUserInteractions(results: TestResult[], tours: TourData[]) {
 
 function buildReport(
   appName: string, appUrl: string, startedAt: Date,
-  results: TestResult[], toursCount: number, stepsCount: number
+  results: TestResult[], toursCount: number, stepsCount: number,
+  fixes: FixRecord[] = []
 ): SimulationReport {
   const completedAt = new Date();
   const duration = completedAt.getTime() - startedAt.getTime();
@@ -1359,5 +1510,6 @@ function buildReport(
       stepsExecutedCount: stepsCount,
     },
     results: finalResults,
+    fixesApplied: fixes,
   };
 }
