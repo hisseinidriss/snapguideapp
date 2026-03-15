@@ -346,7 +346,6 @@ const AppDetail = () => {
               <Button variant="outline" size="sm" onClick={() => navigate(`/app/${appId}/simulator`)}>
                 <Play className="mr-2 h-4 w-4" />Simulate
               </Button>
-              </Button>
               <Button variant="outline" size="sm" onClick={async () => {
                 setValidating(true);
                 try {
