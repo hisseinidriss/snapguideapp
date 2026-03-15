@@ -340,8 +340,8 @@ function buildMockDOM(tours: TourData[]): string {
     }
   }
 
-  // Add a generic container
-  return `<div id="app-root" style="width:1280px;height:720px;position:relative;background:#f5f5f5;">
+  // Add a generic container with explicit dimensions for layout
+  return `<div id="app-root" style="width:1280px;height:720px;position:relative;background:#f5f5f5;overflow:auto;">
     ${elements.join("\n    ")}
   </div>`;
 }
