@@ -786,7 +786,7 @@ export function getContentJS(): string {
         var anchored = splitSelectorForAnchoring(selector);
         var containerSelector = anchorSource || (anchored ? anchored.container : '');
         if (containerSelector) {
-          var containerEl = safeQuerySelector(containerSelector);
+          var containerEl = safeQuerySelector(containerSelector) || findContainerByLooseId(containerSelector);
           if (containerEl) {
             var leafSelector = anchored ? anchored.leaf : selector;
             var exactInContainer = safeQuerySelector(leafSelector, containerEl);
@@ -827,7 +827,11 @@ export function getContentJS(): string {
           }
         }
 
-        // Strategy 3: Text matching
+        // Strategy 4: Semantic fallback for known UI patterns (footer/social/help)
+        var semanticEl = findSemanticStepFallback(step, selector);
+        if (semanticEl) { resolve(semanticEl); return; }
+
+        // Strategy 5: Text matching
         var textEl = findByText(step);
         if (textEl) { resolve(textEl); return; }
 
