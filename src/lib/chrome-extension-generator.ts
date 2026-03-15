@@ -426,7 +426,7 @@ function getContentCSS(): string {
 `;
 }
 
-function getContentJS(): string {
+export function getContentJS(): string {
   return `
 // Business Process Guide - Content Script
 (function() {
@@ -512,7 +512,7 @@ function getContentJS(): string {
       var ch = selector.charAt(i);
 
       if (quote) {
-        if (ch === quote && selector.charAt(i - 1) !== '\\') {
+        if (ch === quote && selector.charAt(i - 1) !== String.fromCharCode(92)) {
           quote = '';
         }
         continue;
@@ -1624,7 +1624,7 @@ function getPopupHTML(appName: string, processes: Process[]): string {
 </html>`;
 }
 
-function getPopupJS(): string {
+export function getPopupJS(): string {
   return `
 document.addEventListener('DOMContentLoaded', () => {
   const list = document.getElementById('processList');
