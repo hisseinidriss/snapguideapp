@@ -3,7 +3,8 @@ import { useParams, Link } from "react-router-dom";
 import {
   ArrowLeft, Play, CheckCircle, AlertTriangle, XCircle, Wrench,
   Clock, Loader2, ChevronDown, ChevronRight, Shield, Code,
-  Monitor, Paintbrush, Zap, MousePointer, Route, Globe, Info
+  Monitor, Paintbrush, Zap, MousePointer, Route, Globe, Info,
+  Database
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
