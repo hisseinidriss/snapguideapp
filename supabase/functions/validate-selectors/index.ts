@@ -77,9 +77,9 @@ Deno.serve(async (req) => {
         let found = false;
         const sel = selector.trim();
 
-        // Check for ID selectors: #someId
-        if (sel.startsWith("#")) {
-          const id = sel.slice(1).replace(/\\/g, "");
+        // Check for simple ID selectors: #someId (no spaces or combinators)
+        if (sel.startsWith("#") && !/[\s>+~]/.test(sel)) {
+          const id = sel.slice(1).replace(/:[^\s(.#[]+(\([^)]*\))?/g, "").replace(/\\/g, "");
           found = html.includes(`id="${id}"`) || html.includes(`id='${id}'`);
         }
         // Check for class selectors: .someClass
