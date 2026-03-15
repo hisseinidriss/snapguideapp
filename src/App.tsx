@@ -18,6 +18,7 @@ import ResetPassword from "./pages/ResetPassword";
 import Account from "./pages/Account";
 import NotFound from "./pages/NotFound";
 import ScribeRecording from "./pages/ScribeRecording";
+import ExtensionSimulator from "./pages/ExtensionSimulator";
 
 const queryClient = new QueryClient();
 
