@@ -171,10 +171,12 @@ function onClick(e){
   e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
   if(e.target===bar||bar.contains(e.target))return;
   var sel=getSelector(e.target);
+  var meta={tag:e.target.tagName.toLowerCase(),classes:Array.from(e.target.classList||[]).filter(function(c){return!c.startsWith('__wt_');}),text:(e.target.textContent||'').trim().substring(0,80),parentSelector:''};
+  try{var p=e.target.parentElement;if(p){if(p.id)meta.parentSelector='#'+CSS.escape(p.id);else{var al=p.getAttribute('aria-label');if(al)meta.parentSelector=p.tagName.toLowerCase()+'[aria-label="'+al+'"]';}}}catch(ex){}
   navigator.clipboard.writeText(sel).then(function(){
     selSpan.textContent='✓ Copied: '+sel;
     selSpan.style.background='rgba(255,255,255,.3)';
-    try{localStorage.setItem('__wt_picked_selector',JSON.stringify({selector:sel,sessionId:'${sessionId}',ts:Date.now()}));}catch(ex){}
+    try{localStorage.setItem('__wt_picked_selector',JSON.stringify({selector:sel,sessionId:'${sessionId}',ts:Date.now(),meta:meta}));}catch(ex){}
     setTimeout(function(){destroy();},1200);
   });
 }
