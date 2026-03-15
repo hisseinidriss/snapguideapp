@@ -1624,7 +1624,7 @@ function getPopupHTML(appName: string, processes: Process[]): string {
 </html>`;
 }
 
-function getPopupJS(): string {
+export function getPopupJS(): string {
   return `
 document.addEventListener('DOMContentLoaded', () => {
   const list = document.getElementById('processList');
