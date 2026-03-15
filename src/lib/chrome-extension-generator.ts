@@ -41,6 +41,8 @@ export async function generateChromeExtension(
   trackingConfig?: { supabaseUrl: string; supabaseKey: string },
   browser: BrowserTarget = 'chrome'
 ) {
+  // Trim whitespace from appUrl to prevent invalid match patterns
+  appUrl = (appUrl || '').trim();
   // Fetch all processes and their steps
   const { data: tours } = await supabase
     .from("tours")
