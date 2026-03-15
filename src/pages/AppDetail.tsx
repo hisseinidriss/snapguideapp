@@ -394,6 +394,9 @@ const AppDetail = () => {
                   <DropdownMenuItem onClick={() => navigate(`/app/${appId}/analytics`)}>
                     <BarChart3 className="mr-2 h-4 w-4" />Analytics
                   </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate(`/app/${appId}/simulator`)}>
+                    <Play className="mr-2 h-4 w-4" />Simulate
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={async () => {
                     setValidating(true);
                     try {
