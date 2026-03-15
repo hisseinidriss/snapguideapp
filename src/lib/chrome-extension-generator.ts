@@ -440,80 +440,236 @@ function getContentJS(): string {
   let spotlightRing = null;
   let tooltipEl = null;
 
-  function safeQuerySelector(selector) {
+  // ==================== SELF-HEALING ELEMENT RESOLVER ====================
+
+  function safeQuerySelector(selector, root) {
     if (!selector) return null;
-    try {
-      return document.querySelector(selector);
-    } catch (error) {
-      return null;
-    }
+    try { return (root || document).querySelector(selector); } catch(e) { return null; }
   }
 
-  function waitForElement(selector, timeoutMs) {
-    return new Promise((resolve) => {
-      if (!selector) {
-        resolve(null);
-        return;
-      }
+  function safeQuerySelectorAll(selector, root) {
+    if (!selector) return [];
+    try { return Array.from((root || document).querySelectorAll(selector)); } catch(e) { return []; }
+  }
 
-      // Try multiple selector strategies
-      function tryFind() {
-        // Direct match
-        var el = safeQuerySelector(selector);
-        if (el) return el;
-        
-        // If selector looks like it could be inside an iframe, try iframes
+  function isElementVisible(el) {
+    if (!el || !el.getBoundingClientRect) return false;
+    var style = window.getComputedStyle(el);
+    if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') return false;
+    var rect = el.getBoundingClientRect();
+    return rect.width > 0 && rect.height > 0;
+  }
+
+  function tryIframes(selector) {
+    try {
+      var iframes = document.querySelectorAll('iframe');
+      for (var i = 0; i < iframes.length; i++) {
         try {
-          var iframes = document.querySelectorAll('iframe');
-          for (var i = 0; i < iframes.length; i++) {
-            try {
-              var iframeDoc = iframes[i].contentDocument || iframes[i].contentWindow.document;
-              if (iframeDoc) {
-                var found = iframeDoc.querySelector(selector);
-                if (found) return found;
-              }
-            } catch(e) { /* cross-origin iframe, skip */ }
-          }
+          var doc = iframes[i].contentDocument || iframes[i].contentWindow.document;
+          if (doc) { var f = doc.querySelector(selector); if (f) return f; }
         } catch(e) {}
-        
-        return null;
       }
+    } catch(e) {}
+    return null;
+  }
 
-      const immediate = tryFind();
-      if (immediate) {
-        resolve(immediate);
-        return;
-      }
-
-      const start = Date.now();
-      const observer = new MutationObserver(() => {
-        const found = tryFind();
-        if (found) {
-          observer.disconnect();
-          resolve(found);
-        }
+  function generateFallbackSelectors(selector) {
+    if (!selector) return [];
+    var fallbacks = [];
+    try {
+      // Extract tag from selector
+      var tagMatch = selector.match(/^([a-z][a-z0-9]*)/i);
+      var tag = tagMatch ? tagMatch[1].toLowerCase() : '';
+      
+      // Extract classes, filtering out dynamic/hashed ones
+      var classMatches = selector.match(/\\.([a-zA-Z_-][a-zA-Z0-9_-]*)/g) || [];
+      var stableClasses = classMatches.map(function(c) { return c; }).filter(function(c) {
+        var name = c.slice(1);
+        // Filter out hashed classes (contain long hex sequences)
+        if (/[a-f0-9]{8,}/i.test(name)) return false;
+        // Filter out auto-generated classes
+        if (/^_[a-zA-Z0-9]{5,}$/.test(name) || /^css-/.test(name)) return false;
+        return true;
       });
 
-      observer.observe(document.documentElement, { childList: true, subtree: true, attributes: true });
+      // tag + stable classes
+      if (tag && stableClasses.length > 0) {
+        fallbacks.push(tag + stableClasses.join(''));
+        // Just classes without tag
+        if (stableClasses.length > 1) fallbacks.push(stableClasses.join(''));
+        // Individual stable classes with tag
+        stableClasses.forEach(function(c) { fallbacks.push(tag + c); });
+      }
 
-      const tick = () => {
-        const found = tryFind();
-        if (found) {
-          observer.disconnect();
-          resolve(found);
+      // Extract attribute selectors like [href*="apply"]
+      var attrMatches = selector.match(/\\[([^\\]]+)\\]/g) || [];
+      attrMatches.forEach(function(attr) {
+        if (tag) fallbacks.push(tag + attr);
+        fallbacks.push(attr);
+      });
+
+      // Extract ID
+      var idMatch = selector.match(/#([a-zA-Z_-][a-zA-Z0-9_-]*)/);
+      if (idMatch) {
+        // Try partial ID match (for IDs that change prefix)
+        var idParts = idMatch[1].split(/[-_]+/).filter(function(p) { return p.length > 2; });
+        if (idParts.length > 1) {
+          var lastPart = idParts[idParts.length - 1];
+          fallbacks.push('[id$="' + lastPart + '"]');
+          fallbacks.push('[id*="' + lastPart + '"]');
+        }
+      }
+
+      // Tag-only fallback for specific interactive elements
+      if (tag && ['button','input','select','textarea'].indexOf(tag) >= 0) {
+        fallbacks.push(tag);
+      }
+    } catch(e) {}
+    // Deduplicate and remove original
+    var seen = {};
+    return fallbacks.filter(function(s) {
+      if (s === selector || seen[s]) return false;
+      seen[s] = true;
+      return true;
+    });
+  }
+
+  function findByText(step) {
+    var searchText = (step.title || '').trim();
+    if (!searchText) searchText = (step.content || '').trim();
+    if (!searchText || searchText.length > 100) return null;
+
+    // Normalize text for matching
+    var normalSearch = searchText.toLowerCase().replace(/\\s+/g, ' ');
+
+    // Only search interactive elements for performance
+    var interactiveTags = 'button, a, input, select, textarea, [role="button"], [role="link"], [role="tab"], [role="menuitem"]';
+    var candidates = [];
+    try { candidates = Array.from(document.querySelectorAll(interactiveTags)); } catch(e) {}
+
+    var matches = [];
+    for (var i = 0; i < candidates.length; i++) {
+      var el = candidates[i];
+      if (!isElementVisible(el)) continue;
+      var elText = (el.textContent || el.innerText || '').trim().toLowerCase().replace(/\\s+/g, ' ');
+      var ariaLabel = (el.getAttribute('aria-label') || '').toLowerCase();
+      var title = (el.getAttribute('title') || '').toLowerCase();
+      var placeholder = (el.getAttribute('placeholder') || '').toLowerCase();
+
+      if (elText === normalSearch || ariaLabel === normalSearch || title === normalSearch || placeholder === normalSearch) {
+        matches.push({ el: el, exact: true });
+      } else if (elText.indexOf(normalSearch) >= 0 || normalSearch.indexOf(elText) >= 0) {
+        matches.push({ el: el, exact: false });
+      }
+    }
+
+    // Prefer exact matches
+    var exactMatch = matches.find(function(m) { return m.exact; });
+    if (exactMatch) return exactMatch.el;
+    if (matches.length === 1) return matches[0].el;
+    return null;
+  }
+
+  function scoreCandidate(el, step, originalSelector) {
+    var score = 0;
+
+    // CSS selector match
+    if (originalSelector) {
+      try {
+        if (el.matches(originalSelector)) score += 50;
+      } catch(e) {}
+    }
+
+    // Text match
+    var elText = (el.textContent || el.innerText || '').trim().toLowerCase();
+    var stepTitle = (step.title || '').toLowerCase().trim();
+    var stepContent = (step.content || '').toLowerCase().trim();
+    if (stepTitle && elText.indexOf(stepTitle) >= 0) score += 30;
+    else if (stepContent && elText.indexOf(stepContent.substring(0, 40)) >= 0) score += 15;
+
+    // Tag match (extract tag from selector)
+    if (originalSelector) {
+      var tagMatch = originalSelector.match(/^([a-z][a-z0-9]*)/i);
+      if (tagMatch && el.tagName.toLowerCase() === tagMatch[1].toLowerCase()) score += 10;
+    }
+
+    // Class match
+    if (originalSelector) {
+      var classMatches = originalSelector.match(/\\.([a-zA-Z_-][a-zA-Z0-9_-]*)/g) || [];
+      classMatches.forEach(function(c) {
+        if (el.classList.contains(c.slice(1))) score += 10;
+      });
+    }
+
+    // Visibility in viewport bonus
+    var rect = el.getBoundingClientRect();
+    if (rect.top >= 0 && rect.top <= window.innerHeight) score += 5;
+
+    return score;
+  }
+
+  function resolveStepElement(step) {
+    return new Promise(function(resolve) {
+      if (!step.selector) { resolve(null); return; }
+
+      var selector = step.selector;
+      var retryInterval = 450;
+      var maxTimeout = 10000;
+      var start = Date.now();
+
+      function attempt() {
+        // Strategy 1: Primary selector (exact match)
+        var el = safeQuerySelector(selector);
+        if (el && isElementVisible(el)) { resolve(el); return; }
+
+        // Try in iframes
+        var iframeEl = tryIframes(selector);
+        if (iframeEl && isElementVisible(iframeEl)) { resolve(iframeEl); return; }
+
+        // Strategy 2: Fallback selectors
+        var fallbacks = generateFallbackSelectors(selector);
+        for (var i = 0; i < fallbacks.length; i++) {
+          var candidates = safeQuerySelectorAll(fallbacks[i]);
+          var visible = candidates.filter(isElementVisible);
+          if (visible.length === 1) { resolve(visible[0]); return; }
+          if (visible.length > 1) {
+            // Score candidates
+            var best = null, bestScore = -1;
+            visible.forEach(function(c) {
+              var s = scoreCandidate(c, step, selector);
+              if (s > bestScore) { bestScore = s; best = c; }
+            });
+            if (best && bestScore >= 20) { resolve(best); return; }
+          }
+        }
+
+        // Strategy 3: Text matching
+        var textEl = findByText(step);
+        if (textEl) { resolve(textEl); return; }
+
+        // Strategy 4: Hidden primary selector (element exists but not visible yet)
+        if (el) {
+          // Element exists but hidden - wait for it to become visible
+          if (Date.now() - start < maxTimeout) {
+            setTimeout(attempt, retryInterval);
+            return;
+          }
+          // Still hidden after timeout - return it anyway (might be in a scrollable area)
+          resolve(el);
           return;
         }
 
-        if (Date.now() - start >= timeoutMs) {
-          observer.disconnect();
-          resolve(null);
+        // Retry with MutationObserver + interval for async loading
+        if (Date.now() - start < maxTimeout) {
+          setTimeout(attempt, retryInterval);
           return;
         }
 
-        requestAnimationFrame(tick);
-      };
+        // All strategies exhausted
+        resolve(null);
+      }
 
-      requestAnimationFrame(tick);
+      attempt();
     });
   }
 
@@ -748,7 +904,7 @@ function getContentJS(): string {
 
     // Click action: click a button to open a modal/popup before looking for target
     if (step.click_selector) {
-      const clickTarget = await waitForElement(step.click_selector, 5000);
+      const clickTarget = await resolveStepElement({ selector: step.click_selector, title: '', content: '' });
       if (clickTarget) {
         clickTarget.click();
         // Wait a moment for the popup/modal to appear
@@ -756,7 +912,7 @@ function getContentJS(): string {
       }
     }
 
-    const targetEl = step.selector ? await waitForElement(step.selector, 5000) : null;
+    const targetEl = await resolveStepElement(step);
 
     if (targetEl) {
       targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
