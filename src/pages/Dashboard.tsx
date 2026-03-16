@@ -15,7 +15,7 @@ import {
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger,
 } from "@/components/ui/sheet";
-import { supabase } from "@/integrations/supabase/client";
+import { db, storage } from "@/services/backend";
 import { useAuth } from "@/contexts/AuthContext";
 import type { App } from "@/types/tour";
 import { useToast } from "@/hooks/use-toast";
