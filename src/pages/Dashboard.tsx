@@ -38,7 +38,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
 
   const fetchApps = async () => {
-    const { data, error } = await supabase.from("apps").select("*").order("created_at", { ascending: false });
+    const { data, error } = await db.from("apps").select("*").order("created_at", { ascending: false });
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
