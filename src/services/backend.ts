@@ -66,3 +66,7 @@ export const db = backend.db;
 export const auth = backend.auth;
 export const storage = backend.storage;
 export const functions = backend.functions;
+
+// Backward-compatible alias for files that use `supabase.from(...)` pattern directly.
+// When migrating to Azure, these calls will need to be updated to use the `db` export.
+export { db as supabase };
