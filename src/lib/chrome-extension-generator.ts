@@ -1,6 +1,6 @@
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/services/backend";
 
 interface ProcessStep {
   title: string;

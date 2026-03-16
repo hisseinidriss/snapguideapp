@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { TourStep } from "@/types/tour";
 import { Button } from "@/components/ui/button";
 import { X, ChevronLeft, ChevronRight, Play, AlertTriangle, RefreshCw, Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { functions } from "@/services/backend";
 
 interface LivePreviewProps {
   appUrl: string;

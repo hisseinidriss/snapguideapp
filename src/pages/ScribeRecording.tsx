@@ -16,7 +16,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { supabase } from "@/integrations/supabase/client";
+import { db } from "@/services/backend";
 import { useToast } from "@/hooks/use-toast";
 import { generateSOPPdf } from "@/lib/pdf-generator";
 import { generateInstruction } from "@/lib/instruction-generator";
