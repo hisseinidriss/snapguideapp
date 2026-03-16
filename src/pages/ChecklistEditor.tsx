@@ -10,7 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { db } from "@/services/backend";
+import { supabase } from "@/services/backend";
 import type { Tour, ChecklistItem } from "@/types/tour";
 import { useToast } from "@/hooks/use-toast";
 

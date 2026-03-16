@@ -1,4 +1,4 @@
-import { db } from "@/services/backend";
+import { supabase } from "@/services/backend";
 import { getContentJS, getPopupJS, getContentCSS } from "@/lib/chrome-extension-generator";
 
 // ==================== Types ====================

@@ -1,4 +1,4 @@
-import { db } from "@/services/backend";
+import { supabase } from "@/services/backend";
 
 interface ValidationResult {
   status: "pass" | "warning" | "error";
