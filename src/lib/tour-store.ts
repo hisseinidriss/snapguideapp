@@ -1,4 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/services/backend";
 import type { TourStep } from "@/types/tour";
 
 export function generateEmbedScript(

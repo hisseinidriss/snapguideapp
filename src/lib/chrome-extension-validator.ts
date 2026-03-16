@@ -1,4 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/services/backend";
 
 interface ValidationResult {
   status: "pass" | "warning" | "error";

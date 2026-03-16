@@ -15,7 +15,7 @@ import {
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger,
 } from "@/components/ui/sheet";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, storage } from "@/services/backend";
 import { useAuth } from "@/contexts/AuthContext";
 import type { App } from "@/types/tour";
 import { useToast } from "@/hooks/use-toast";
@@ -52,12 +52,12 @@ const Dashboard = () => {
   const uploadIcon = async (file: File, appId: string): Promise<string | null> => {
     const ext = file.name.split('.').pop();
     const path = `${appId}/icon.${ext}`;
-    const { error } = await supabase.storage.from("app-icons").upload(path, file, { upsert: true });
+    const { error } = await storage.from("app-icons").upload(path, file, { upsert: true });
     if (error) {
       toast({ title: "Icon upload failed", description: error.message, variant: "destructive" });
       return null;
     }
-    const { data: urlData } = supabase.storage.from("app-icons").getPublicUrl(path);
+    const { data: urlData } = storage.from("app-icons").getPublicUrl(path);
     return urlData.publicUrl + "?t=" + Date.now();
   };
 

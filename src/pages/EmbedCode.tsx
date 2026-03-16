@@ -3,7 +3,7 @@ import { ArrowLeft, Copy, Check } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/services/backend";
 import { generateEmbedScript } from "@/lib/tour-store";
 import type { TourStep, Launcher } from "@/types/tour";
 
