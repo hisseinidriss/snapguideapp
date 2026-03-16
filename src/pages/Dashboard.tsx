@@ -42,7 +42,7 @@ const Dashboard = () => {
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
-      setApps(data || []);
+      setApps((data as App[]) || []);
     }
     setLoading(false);
   };
