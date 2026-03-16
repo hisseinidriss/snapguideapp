@@ -57,7 +57,7 @@ const Dashboard = () => {
       toast({ title: "Icon upload failed", description: error.message, variant: "destructive" });
       return null;
     }
-    const { data: urlData } = supabase.storage.from("app-icons").getPublicUrl(path);
+    const { data: urlData } = storage.from("app-icons").getPublicUrl(path);
     return urlData.publicUrl + "?t=" + Date.now();
   };
 
