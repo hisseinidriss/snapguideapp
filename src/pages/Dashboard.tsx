@@ -69,7 +69,7 @@ const Dashboard = () => {
 
   const handleCreate = async () => {
     if (!newName.trim()) return;
-    const { data: inserted, error } = await db.from("apps").insert({ name: newName, url: newUrl, description: newDesc }).select().single();
+    const { data: inserted, error } = await db.from("apps").insert({ name: newName, url: newUrl, description: newDesc }).select().single() as any;
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
       return;
