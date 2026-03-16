@@ -25,7 +25,7 @@ const ResetPassword = () => {
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabase.auth.updateUser({ password });
+    const { error } = await auth.updateUser({ password });
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
