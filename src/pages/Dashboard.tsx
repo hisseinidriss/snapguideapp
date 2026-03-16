@@ -52,7 +52,7 @@ const Dashboard = () => {
   const uploadIcon = async (file: File, appId: string): Promise<string | null> => {
     const ext = file.name.split('.').pop();
     const path = `${appId}/icon.${ext}`;
-    const { error } = await supabase.storage.from("app-icons").upload(path, file, { upsert: true });
+    const { error } = await storage.from("app-icons").upload(path, file, { upsert: true });
     if (error) {
       toast({ title: "Icon upload failed", description: error.message, variant: "destructive" });
       return null;
