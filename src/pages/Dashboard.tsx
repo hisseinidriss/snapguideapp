@@ -114,7 +114,7 @@ const Dashboard = () => {
     if (iconFile) {
       iconUrl = await uploadIcon(iconFile, editApp.id);
     }
-    const { error } = await db.from("apps").update({ name: newName, url: newUrl, description: newDesc, icon_url: iconUrl } as any).eq("id", editApp.id);
+    const { error } = await supabase.from("apps").update({ name: newName, url: newUrl, description: newDesc, icon_url: iconUrl } as any).eq("id", editApp.id);
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
       return;
