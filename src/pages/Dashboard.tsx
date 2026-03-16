@@ -91,7 +91,7 @@ const Dashboard = () => {
   };
 
   const handleDelete = async (id: string) => {
-    const { error } = await db.from("apps").delete().eq("id", id);
+    const { error } = await supabase.from("apps").delete().eq("id", id);
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
       return;
