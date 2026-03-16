@@ -14,7 +14,7 @@ import type {
 // Database service - thin wrapper, Supabase client already matches our query pattern
 const db: DatabaseService = {
   from(table: string) {
-    return supabase.from(table) as any;
+    return (supabase as any).from(table);
   },
 };
 
