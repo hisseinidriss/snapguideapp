@@ -77,7 +77,7 @@ const Dashboard = () => {
     if (iconFile && inserted) {
       const iconUrl = await uploadIcon(iconFile, inserted.id);
       if (iconUrl) {
-        await db.from("apps").update({ icon_url: iconUrl } as any).eq("id", inserted.id);
+        await supabase.from("apps").update({ icon_url: iconUrl } as any).eq("id", inserted.id);
       }
     }
     await fetchApps();
