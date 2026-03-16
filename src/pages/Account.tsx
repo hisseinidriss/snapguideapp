@@ -23,7 +23,7 @@ const Account = () => {
       return;
     }
     setSaving(true);
-    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    const { error } = await auth.updateUser({ password: newPassword });
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
