@@ -6,7 +6,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { supabase, functions } from "@/services/backend";
+import { appsApi } from "@/api/apps";
+import { toursApi, tourStepsApi } from "@/api/tours";
+import { functionsApi } from "@/api/functions";
 import type { TourStep } from "@/types/tour";
 import StepEditorPanel from "@/components/StepEditorPanel";
 import LivePreview from "@/components/LivePreview";
@@ -48,18 +50,10 @@ interface SortableStepItemProps {
 
 const SortableStepItem = ({ step, index, totalSteps, isSelected, validationIcon, onSelect, onMoveUp, onMoveDown }: SortableStepItemProps) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: step.id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.4 : 1,
-  };
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 };
 
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      onClick={onSelect}
+    <div ref={setNodeRef} style={style} onClick={onSelect}
       className={`w-full text-left p-2.5 rounded-lg flex items-center gap-2 transition-colors cursor-pointer ${
         isSelected ? "bg-primary/10 border border-primary/20" : "hover:bg-muted border border-transparent"
       }`}
@@ -124,9 +118,9 @@ const TourEditor = () => {
     if (!appId || !tourId) return;
     const load = async () => {
       const [appRes, tourRes, stepsRes] = await Promise.all([
-        supabase.from("apps").select("name, url").eq("id", appId).single(),
-        supabase.from("tours").select("name").eq("id", tourId).single(),
-        supabase.from("tour_steps").select("*").eq("tour_id", tourId).order("sort_order"),
+        appsApi.get(appId),
+        toursApi.get(tourId),
+        tourStepsApi.list(tourId),
       ]);
       setAppName(appRes.data?.name || "");
       setAppUrl(appRes.data?.url || "");
@@ -140,25 +134,21 @@ const TourEditor = () => {
 
   const persistOrder = useCallback(async (newSteps: TourStep[]) => {
     await Promise.all(
-      newSteps.map((s, i) =>
-        supabase.from("tour_steps").update({ sort_order: i }).eq("id", s.id)
-      )
+      newSteps.map((s, i) => tourStepsApi.update(s.id, { sort_order: i }))
     );
   }, []);
 
   const addStep = async () => {
     if (!tourId) return;
-    const { data, error } = await supabase
-      .from("tour_steps")
-      .insert({ tour_id: tourId, title: "New Step", content: "Describe what happens here.", sort_order: steps.length })
-      .select()
-      .single();
+    const { data, error } = await tourStepsApi.create({
+      tour_id: tourId, title: "New Step", content: "Describe what happens here.", sort_order: steps.length,
+    });
     if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
     if (data) { setSteps((prev) => [...prev, data]); setSelectedStepId(data.id); }
   };
 
   const removeStep = async (id: string) => {
-    await supabase.from("tour_steps").delete().eq("id", id);
+    await tourStepsApi.delete(id);
     const newSteps = steps.filter((s) => s.id !== id);
     setSteps(newSteps);
     if (selectedStepId === id) setSelectedStepId(newSteps[0]?.id || null);
@@ -176,7 +166,7 @@ const TourEditor = () => {
     }
     if (sort_order !== undefined) cleanUpdates.sort_order = sort_order;
     if (Object.keys(cleanUpdates).length > 0) {
-      await supabase.from("tour_steps").update(cleanUpdates).eq("id", id);
+      await tourStepsApi.update(id, cleanUpdates as any);
     }
   }, []);
 
@@ -196,9 +186,7 @@ const TourEditor = () => {
     await persistOrder(newSteps);
   }, [steps, persistOrder]);
 
-  const handleDragStart = (event: DragStartEvent) => {
-    setActiveId(event.active.id as string);
-  };
+  const handleDragStart = (event: DragStartEvent) => { setActiveId(event.active.id as string); };
 
   const handleDragEnd = async (event: DragEndEvent) => {
     setActiveId(null);
@@ -221,10 +209,8 @@ const TourEditor = () => {
     setValidationStatus("validating");
     setSelectorResults({});
     try {
-      const { data, error } = await supabase.functions.invoke("validate-selectors", {
-        body: { url: appUrl, selectors },
-      });
-      if (error) throw error;
+      const { data, error } = await functionsApi.validateSelectors({ url: appUrl, selectors });
+      if (error) throw new Error(error.message);
       if (data?.results) {
         setSelectorResults(data.results);
         const broken = Object.entries(data.results).filter(([sel, r]: [string, any]) => sel && !r.found).length;
@@ -279,19 +265,11 @@ const TourEditor = () => {
         </Button>
       </div>
       <div className="flex-1 overflow-y-auto p-2 space-y-1">
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd}
-        >
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
           <SortableContext items={steps.map((s) => s.id)} strategy={verticalListSortingStrategy}>
             {steps.map((step, index) => (
               <SortableStepItem
-                key={step.id}
-                step={step}
-                index={index}
-                totalSteps={steps.length}
+                key={step.id} step={step} index={index} totalSteps={steps.length}
                 isSelected={selectedStepId === step.id}
                 validationIcon={getStepValidationIcon(step.selector)}
                 onSelect={() => { setSelectedStepId(step.id); setMobileStepListOpen(false); }}
@@ -330,42 +308,22 @@ const TourEditor = () => {
             <h1 className="text-sm font-semibold truncate">{tourName}</h1>
             <p className="text-xs text-muted-foreground truncate">{appName}</p>
           </div>
-
-          {/* Mobile step list trigger */}
           <Sheet open={mobileStepListOpen} onOpenChange={setMobileStepListOpen}>
             <SheetTrigger asChild>
               <Button variant="outline" size="sm" className="lg:hidden h-8">
-                <Menu className="mr-1.5 h-3.5 w-3.5" />
-                Steps ({steps.length})
+                <Menu className="mr-1.5 h-3.5 w-3.5" />Steps ({steps.length})
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="w-72 p-0">
-              <SheetHeader className="p-4 pb-0">
-                <SheetTitle>Steps</SheetTitle>
-              </SheetHeader>
-              <div className="flex flex-col h-full">
-                {stepListContent}
-              </div>
+              <SheetHeader className="p-4 pb-0"><SheetTitle>Steps</SheetTitle></SheetHeader>
+              <div className="flex flex-col h-full">{stepListContent}</div>
             </SheetContent>
           </Sheet>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setEditorVisible((v) => !v)}
-            className="h-8 hidden lg:inline-flex"
-          >
+          <Button variant="outline" size="sm" onClick={() => setEditorVisible((v) => !v)} className="h-8 hidden lg:inline-flex">
             {editorVisible ? <PanelLeftClose className="mr-1.5 h-3.5 w-3.5" /> : <PanelLeft className="mr-1.5 h-3.5 w-3.5" />}
             <span className="hidden sm:inline">{editorVisible ? "Hide Editor" : "Show Editor"}</span>
           </Button>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={validateSelectors}
-            disabled={validationStatus === "validating"}
-            className="h-8"
-          >
+          <Button variant="outline" size="sm" onClick={validateSelectors} disabled={validationStatus === "validating"} className="h-8">
             {validationStatus === "validating" ? (
               <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /><span className="hidden sm:inline">Validating...</span></>
             ) : (
@@ -376,37 +334,18 @@ const TourEditor = () => {
       </header>
 
       <div className="flex-1 flex overflow-hidden">
-        {/* Step List - desktop */}
-        <div className="hidden lg:flex w-64 border-r bg-card overflow-y-auto shrink-0 flex-col">
-          {stepListContent}
-        </div>
-
-        {/* Step Editor */}
+        <div className="hidden lg:flex w-64 border-r bg-card overflow-y-auto shrink-0 flex-col">{stepListContent}</div>
         {editorVisible && <div className="w-full lg:w-80 border-r overflow-y-auto shrink-0 p-4">
           {selectedStep ? (
-            <StepEditorPanel
-              step={selectedStep}
-              stepIndex={steps.indexOf(selectedStep)}
-              totalSteps={steps.length}
-              onUpdate={updateStep}
-              onRemove={removeStep}
-              onPickElement={() => setPickerOpen(true)}
-              onMoveToPosition={moveStepToPosition}
+            <StepEditorPanel step={selectedStep} stepIndex={steps.indexOf(selectedStep)} totalSteps={steps.length}
+              onUpdate={updateStep} onRemove={removeStep} onPickElement={() => setPickerOpen(true)} onMoveToPosition={moveStepToPosition}
             />
           ) : (
-            <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-              <p>Select a step to edit.</p>
-            </div>
+            <div className="flex items-center justify-center h-full text-muted-foreground text-sm"><p>Select a step to edit.</p></div>
           )}
         </div>}
-
-        {/* Live Preview - hidden on mobile */}
         <div className="hidden lg:block flex-1">
-          <LivePreview
-            appUrl={appUrl}
-            steps={steps}
-            previewActive={previewActive}
-            previewStepIndex={previewStepIndex}
+          <LivePreview appUrl={appUrl} steps={steps} previewActive={previewActive} previewStepIndex={previewStepIndex}
             onNext={() => setPreviewStepIndex((i) => Math.min(i + 1, steps.length - 1))}
             onPrev={() => setPreviewStepIndex((i) => Math.max(i - 1, 0))}
             onClose={() => setPreviewActive(false)}
@@ -415,15 +354,8 @@ const TourEditor = () => {
         </div>
       </div>
 
-      <ElementPickerDialog
-        open={pickerOpen}
-        onOpenChange={setPickerOpen}
-        appUrl={appUrl}
-        onSelectorPicked={(selector) => {
-          if (selectedStepId) {
-            updateStep(selectedStepId, { selector });
-          }
-        }}
+      <ElementPickerDialog open={pickerOpen} onOpenChange={setPickerOpen} appUrl={appUrl}
+        onSelectorPicked={(selector) => { if (selectedStepId) updateStep(selectedStepId, { selector }); }}
       />
     </div>
   );

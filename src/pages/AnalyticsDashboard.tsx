@@ -3,7 +3,9 @@ import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, Eye, CheckCircle2, LogOut, TrendingUp, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { supabase } from "@/services/backend";
+import { appsApi } from "@/api/apps";
+import { toursApi } from "@/api/tours";
+import { analyticsApi, type TourEvent } from "@/api/analytics";
 import type { Tour } from "@/types/tour";
 
 interface TourStats {
@@ -35,14 +37,14 @@ const AnalyticsDashboard = () => {
     if (!appId) return;
     const load = async () => {
       const [appRes, toursRes, eventsRes] = await Promise.all([
-        supabase.from("apps").select("name").eq("id", appId).single(),
-        supabase.from("tours").select("*").eq("app_id", appId),
-        supabase.from("tour_events").select("*").eq("app_id", appId).order("created_at", { ascending: true }),
+        appsApi.get(appId),
+        toursApi.list(appId),
+        analyticsApi.getEvents(appId),
       ]);
 
       setAppName(appRes.data?.name || "");
       const tours: Tour[] = toursRes.data || [];
-      const events = eventsRes.data || [];
+      const events: TourEvent[] = eventsRes.data || [];
 
       const tourStats: TourStats[] = tours.map((tour) => {
         const tourEvents = events.filter((e) => e.tour_id === tour.id);
