@@ -10,7 +10,8 @@ import { Switch } from "@/components/ui/switch";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { supabase } from "@/services/backend";
+import { checklistsApi, checklistItemsApi } from "@/api/checklists";
+import { toursApi } from "@/api/tours";
 import type { Tour, ChecklistItem } from "@/types/tour";
 import { useToast } from "@/hooks/use-toast";
 
@@ -31,9 +32,9 @@ const ChecklistEditor = () => {
     if (!appId || !checklistId) return;
     const load = async () => {
       const [checklistRes, toursRes, itemsRes] = await Promise.all([
-        supabase.from("checklists").select("*").eq("id", checklistId).single(),
-        supabase.from("tours").select("*").eq("app_id", appId).order("name"),
-        supabase.from("checklist_items").select("*").eq("checklist_id", checklistId).order("sort_order"),
+        checklistsApi.get(checklistId),
+        toursApi.list(appId),
+        checklistItemsApi.list(checklistId),
       ]);
       if (checklistRes.data) {
         setName(checklistRes.data.name);
@@ -42,7 +43,6 @@ const ChecklistEditor = () => {
       }
       setTours(toursRes.data || []);
 
-      // Enrich items with tour names
       const enriched = (itemsRes.data || []).map((item) => {
         const tour = toursRes.data?.find((t) => t.id === item.tour_id);
         return { ...item, tour_name: tour?.name || "Unknown process" };
@@ -56,7 +56,7 @@ const ChecklistEditor = () => {
   const saveChecklist = async () => {
     if (!checklistId) return;
     setSaving(true);
-    await supabase.from("checklists").update({ name, description, is_active: isActive }).eq("id", checklistId);
+    await checklistsApi.update(checklistId, { name, description, is_active: isActive });
     setSaving(false);
     toast({ title: "Saved", description: "Checklist updated successfully." });
   };
@@ -68,11 +68,7 @@ const ChecklistEditor = () => {
       return;
     }
     const sortOrder = items.length;
-    const { data, error } = await supabase
-      .from("checklist_items")
-      .insert({ checklist_id: checklistId, tour_id: tourId, sort_order: sortOrder })
-      .select()
-      .single();
+    const { data, error } = await checklistItemsApi.create({ checklist_id: checklistId, tour_id: tourId, sort_order: sortOrder });
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
       return;
@@ -84,13 +80,13 @@ const ChecklistEditor = () => {
   };
 
   const removeItem = async (id: string) => {
-    await supabase.from("checklist_items").delete().eq("id", id);
+    await checklistItemsApi.delete(id);
     setItems((prev) => prev.filter((i) => i.id !== id));
   };
 
   const toggleRequired = async (id: string, isRequired: boolean) => {
     setItems((prev) => prev.map((i) => (i.id === id ? { ...i, is_required: isRequired } : i)));
-    await supabase.from("checklist_items").update({ is_required: isRequired }).eq("id", id);
+    await checklistItemsApi.update(id, { is_required: isRequired });
   };
 
   const availableTours = tours.filter((t) => !items.some((i) => i.tour_id === t.id));
@@ -122,7 +118,6 @@ const ChecklistEditor = () => {
 
       <main className="container py-8 max-w-3xl">
         <div className="space-y-8 animate-fade-in">
-          {/* Checklist settings */}
           <Card className="p-6 space-y-5">
             <h2 className="text-lg font-semibold">Checklist Settings</h2>
             <div className="space-y-2">
@@ -142,24 +137,18 @@ const ChecklistEditor = () => {
             </div>
           </Card>
 
-          {/* Checklist items */}
           <Card className="p-6 space-y-5">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold">Processes ({items.length})</h2>
               {availableTours.length > 0 && (
                 <Select onValueChange={addItem}>
-                  <SelectTrigger className="w-[220px]">
-                    <SelectValue placeholder="Add a process..." />
-                  </SelectTrigger>
+                  <SelectTrigger className="w-[220px]"><SelectValue placeholder="Add a process..." /></SelectTrigger>
                   <SelectContent>
-                    {availableTours.map((t) => (
-                      <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
-                    ))}
+                    {availableTours.map((t) => (<SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>))}
                   </SelectContent>
                 </Select>
               )}
             </div>
-
             {items.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
                 <CheckCircle2 className="h-10 w-10 mx-auto mb-3 opacity-30" />
@@ -169,30 +158,17 @@ const ChecklistEditor = () => {
             ) : (
               <div className="space-y-2">
                 {items.map((item, i) => (
-                  <div
-                    key={item.id}
-                    className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors animate-fade-in"
-                    style={{ animationDelay: `${i * 30}ms` }}
-                  >
+                  <div key={item.id} className="flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors animate-fade-in" style={{ animationDelay: `${i * 30}ms` }}>
                     <GripVertical className="h-4 w-4 text-muted-foreground/40 shrink-0" />
                     <div className="flex items-center gap-2 shrink-0">
-                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-semibold">
-                        {i + 1}
-                      </span>
+                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-semibold">{i + 1}</span>
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{item.tour_name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {item.is_required ? "Required" : "Optional"}
-                      </p>
+                      <p className="text-xs text-muted-foreground">{item.is_required ? "Required" : "Optional"}</p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-xs h-7"
-                        onClick={() => toggleRequired(item.id, !item.is_required)}
-                      >
+                      <Button variant="ghost" size="sm" className="text-xs h-7" onClick={() => toggleRequired(item.id, !item.is_required)}>
                         {item.is_required ? "Make optional" : "Make required"}
                       </Button>
                       <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => removeItem(item.id)}>
@@ -205,7 +181,6 @@ const ChecklistEditor = () => {
             )}
           </Card>
 
-          {/* Preview */}
           <Card className="p-6 space-y-4">
             <h2 className="text-lg font-semibold">Preview</h2>
             <p className="text-xs text-muted-foreground">This is how the checklist will appear to users.</p>
@@ -213,7 +188,7 @@ const ChecklistEditor = () => {
               <h3 className="text-sm font-semibold mb-1">{name || "Checklist"}</h3>
               {description && <p className="text-xs text-muted-foreground mb-3">{description}</p>}
               <div className="space-y-2">
-                {items.map((item, i) => (
+                {items.map((item) => (
                   <div key={item.id} className="flex items-center gap-2.5">
                     <Circle className="h-4 w-4 text-muted-foreground/40 shrink-0" />
                     <span className="text-sm">{item.tour_name}</span>
@@ -222,9 +197,7 @@ const ChecklistEditor = () => {
                     )}
                   </div>
                 ))}
-                {items.length === 0 && (
-                  <p className="text-xs text-muted-foreground italic">No items yet</p>
-                )}
+                {items.length === 0 && (<p className="text-xs text-muted-foreground italic">No items yet</p>)}
               </div>
               <div className="mt-4 pt-3 border-t">
                 <div className="flex items-center justify-between text-xs text-muted-foreground">

@@ -1,6 +1,5 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import { auth } from "@/services/backend";
-import type { AuthUser, AuthSession } from "@/services/types";
+import { authApi, type AuthUser, type AuthSession } from "@/api/auth";
 
 interface AuthContextType {
   session: AuthSession | null;
@@ -23,23 +22,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const { data: { subscription } } = auth.onAuthStateChange(
+    const { data: { subscription } } = authApi.onAuthStateChange(
       (_event, session) => {
         setSession(session);
         setLoading(false);
       }
     );
 
-    auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setLoading(false);
-    });
-
     return () => subscription.unsubscribe();
   }, []);
 
   const handleSignOut = async () => {
-    await auth.signOut();
+    await authApi.signOut();
   };
 
   return (

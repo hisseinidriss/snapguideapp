@@ -18,7 +18,12 @@ import {
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { supabase, functions } from "@/services/backend";
+import { appsApi } from "@/api/apps";
+import { toursApi, tourStepsApi } from "@/api/tours";
+import { launchersApi } from "@/api/launchers";
+import { checklistsApi } from "@/api/checklists";
+import { recordingsApi } from "@/api/recordings";
+import { functionsApi } from "@/api/functions";
 import type { Tour, Launcher, LauncherType, Checklist } from "@/types/tour";
 import type { ProcessRecording } from "@/types/recording";
 import { useToast } from "@/hooks/use-toast";
@@ -136,11 +141,11 @@ const AppDetail = () => {
     if (!appId) return;
     const load = async () => {
       const [appRes, toursRes, launchersRes, checklistsRes, recordingsRes] = await Promise.all([
-        supabase.from("apps").select("*").eq("id", appId).single(),
-        supabase.from("tours").select("*").eq("app_id", appId).order("sort_order", { ascending: true }).order("created_at", { ascending: false }),
-        supabase.from("launchers").select("*").eq("app_id", appId).order("created_at", { ascending: false }),
-        supabase.from("checklists").select("*").eq("app_id", appId).order("created_at", { ascending: false }),
-        supabase.from("process_recordings").select("*").eq("app_id", appId).order("created_at", { ascending: false }),
+        appsApi.get(appId),
+        toursApi.list(appId),
+        launchersApi.list(appId),
+        checklistsApi.list(appId),
+        recordingsApi.list(appId),
       ]);
       if (appRes.data) { setAppName(appRes.data.name); setAppUrl(appRes.data.url || ""); }
       setTours(toursRes.data || []);
@@ -150,9 +155,9 @@ const AppDetail = () => {
 
       if (toursRes.data?.length) {
         const ids = toursRes.data.map((t) => t.id);
-        const { data: steps } = await supabase.from("tour_steps").select("tour_id").in("tour_id", ids);
+        const { data: steps } = await tourStepsApi.listByTourIds(ids);
         const counts: Record<string, number> = {};
-        steps?.forEach((s) => { counts[s.tour_id] = (counts[s.tour_id] || 0) + 1; });
+        steps?.forEach((s: any) => { counts[s.tour_id] = (counts[s.tour_id] || 0) + 1; });
         setStepCounts(counts);
       }
       setLoading(false);
@@ -163,21 +168,21 @@ const AppDetail = () => {
   const handleCreateProcess = async () => {
     if (!processName.trim() || !appId) return;
     const maxOrder = tours.reduce((max, t) => Math.max(max, t.sort_order ?? 0), -1);
-    const { error } = await supabase.from("tours").insert({ app_id: appId, name: processName, sort_order: maxOrder + 1 });
+    const { error } = await toursApi.create({ app_id: appId, name: processName, sort_order: maxOrder + 1 });
     if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
-    const { data } = await supabase.from("tours").select("*").eq("app_id", appId).order("sort_order", { ascending: true }).order("created_at", { ascending: false });
+    const { data } = await toursApi.list(appId);
     setTours(data || []);
     setProcessName(""); setOpen(false);
   };
 
   const handleDeleteProcess = async (id: string) => {
-    await supabase.from("tours").delete().eq("id", id);
+    await toursApi.delete(id);
     setTours((prev) => prev.filter((t) => t.id !== id));
   };
 
   const handleRenameProcess = async (id: string) => {
     if (!editingTourName.trim()) { setEditingTourId(null); return; }
-    const { error } = await supabase.from("tours").update({ name: editingTourName.trim() }).eq("id", id);
+    const { error } = await toursApi.update(id, { name: editingTourName.trim() });
     if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); }
     else { setTours((prev) => prev.map((t) => t.id === id ? { ...t, name: editingTourName.trim() } : t)); }
     setEditingTourId(null);
@@ -191,22 +196,20 @@ const AppDetail = () => {
     setGenerating(true);
     try {
       const tour = tours.find((t) => t.id === tourId);
-      const { data, error } = await supabase.functions.invoke("generate-tour-steps", {
-        body: { url: appUrl, tourName: tour?.name || "Onboarding" },
-      });
-      if (error) throw error;
+      const { data, error } = await functionsApi.generateTourSteps({ url: appUrl, tourName: tour?.name || "Onboarding" });
+      if (error) throw new Error(error.message);
       if (data?.error) throw new Error(data.error);
       const steps = data.steps || [];
       if (steps.length === 0) {
         toast({ title: "No steps generated", description: "AI couldn't generate steps from this page.", variant: "destructive" });
         return;
       }
-      const inserts = steps.map((s: any, i: number) => ({
+      for (const s of steps.map((s: any, i: number) => ({
         tour_id: tourId, title: s.title, content: s.content,
         selector: s.selector || "", placement: s.placement || "bottom", sort_order: i,
-      }));
-      const { error: insertError } = await supabase.from("tour_steps").insert(inserts);
-      if (insertError) throw insertError;
+      }))) {
+        await tourStepsApi.create(s);
+      }
       toast({ title: "Steps generated!", description: `${steps.length} steps were created from your page content.` });
       setStepCounts((prev) => ({ ...prev, [tourId]: (prev[tourId] || 0) + steps.length }));
     } catch (err: any) {
@@ -228,7 +231,7 @@ const AppDetail = () => {
     const [moved] = reordered.splice(oldIndex, 1);
     reordered.splice(newIndex, 0, moved);
     setTours(reordered);
-    const updates = reordered.map((t, i) => supabase.from("tours").update({ sort_order: i }).eq("id", t.id));
+    const updates = reordered.map((t, i) => toursApi.update(t.id, { sort_order: i }));
     await Promise.all(updates);
   };
 
@@ -247,13 +250,11 @@ const AppDetail = () => {
       const isDocx = file.name.endsWith('.docx') || file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
       
       if (isDocx) {
-        // Parse DOCX client-side to extract text
         const mammoth = await import('mammoth');
         const arrayBuffer = await file.arrayBuffer();
         const result = await mammoth.convertToHtml({ arrayBuffer });
         textContent = result.value;
       } else {
-        // For PDF and other files, send as base64
         const reader = new FileReader();
         base64 = await new Promise<string>((resolve, reject) => {
           reader.onload = () => resolve((reader.result as string).split(",")[1]);
@@ -262,10 +263,8 @@ const AppDetail = () => {
         });
       }
 
-      const { data, error } = await supabase.functions.invoke("generate-tour-from-manual", {
-        body: { fileBase64: base64, fileName: file.name, mimeType: file.type, textContent },
-      });
-      if (error) throw error;
+      const { data, error } = await functionsApi.generateTourFromManual({ fileBase64: base64, fileName: file.name, mimeType: file.type, textContent });
+      if (error) throw new Error(error.message);
       if (data?.error) throw new Error(data.error);
       const processes = data.processes || [];
       if (processes.length === 0) {
@@ -274,26 +273,25 @@ const AppDetail = () => {
       }
       let totalSteps = 0;
       for (const proc of processes) {
-        const { data: tourData, error: tourErr } = await supabase
-          .from("tours").insert({ app_id: appId, name: proc.name }).select().single();
+        const { data: tourData, error: tourErr } = await toursApi.create({ app_id: appId, name: proc.name });
         if (tourErr || !tourData) continue;
         const stepInserts = (proc.steps || []).map((s: any, i: number) => ({
           tour_id: tourData.id, title: s.title, content: s.content,
           selector: s.selector || "", placement: s.placement || "center", sort_order: i,
           target_url: s.target_url || null, click_selector: s.click_selector || null,
         }));
-        if (stepInserts.length > 0) {
-          await supabase.from("tour_steps").insert(stepInserts);
-          totalSteps += stepInserts.length;
+        for (const step of stepInserts) {
+          await tourStepsApi.create(step);
+          totalSteps++;
         }
       }
-      const { data: refreshed } = await supabase.from("tours").select("*").eq("app_id", appId).order("created_at", { ascending: false });
+      const { data: refreshed } = await toursApi.list(appId);
       setTours(refreshed || []);
       if (refreshed?.length) {
         const ids = refreshed.map((t) => t.id);
-        const { data: allSteps } = await supabase.from("tour_steps").select("tour_id").in("tour_id", ids);
+        const { data: allSteps } = await tourStepsApi.listByTourIds(ids);
         const counts: Record<string, number> = {};
-        allSteps?.forEach((s) => { counts[s.tour_id] = (counts[s.tour_id] || 0) + 1; });
+        allSteps?.forEach((s: any) => { counts[s.tour_id] = (counts[s.tour_id] || 0) + 1; });
         setStepCounts(counts);
       }
       toast({ title: "Processes created!", description: `${processes.length} process${processes.length !== 1 ? "es" : ""} with ${totalSteps} total steps extracted.` });
@@ -374,7 +372,7 @@ const AppDetail = () => {
                     { browser: 'edge' as BrowserTarget, label: 'Edge Extension' },
                     { browser: 'firefox' as BrowserTarget, label: 'Firefox Extension' },
                   ]).map(({ browser, label }) => (
-                    <DropdownMenuItem key={browser} onClick={() => generateChromeExtension(appId!, appName, appUrl, { supabaseUrl: import.meta.env.VITE_SUPABASE_URL, supabaseKey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY }, browser)}>
+                    <DropdownMenuItem key={browser} onClick={() => generateChromeExtension(appId!, appName, appUrl, { apiBaseUrl: import.meta.env.VITE_API_BASE_URL || "" }, browser)}>
                       <Download className="mr-2 h-4 w-4" />{label}
                     </DropdownMenuItem>
                   ))}
@@ -416,7 +414,7 @@ const AppDetail = () => {
                     { browser: 'edge' as BrowserTarget, label: 'Edge Extension' },
                     { browser: 'firefox' as BrowserTarget, label: 'Firefox Extension' },
                   ]).map(({ browser, label }) => (
-                    <DropdownMenuItem key={browser} onClick={() => generateChromeExtension(appId!, appName, appUrl, { supabaseUrl: import.meta.env.VITE_SUPABASE_URL, supabaseKey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY }, browser)}>
+                    <DropdownMenuItem key={browser} onClick={() => generateChromeExtension(appId!, appName, appUrl, { apiBaseUrl: import.meta.env.VITE_API_BASE_URL || "" }, browser)}>
                       <Download className="mr-2 h-4 w-4" />{label}
                     </DropdownMenuItem>
                   ))}
