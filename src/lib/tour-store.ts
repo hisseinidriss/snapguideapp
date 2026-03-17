@@ -1,10 +1,9 @@
-import { supabase } from "@/services/backend";
 import type { TourStep } from "@/types/tour";
 
 export function generateEmbedScript(
   steps: TourStep[],
   launchers?: any[],
-  options?: { tourId?: string; appId?: string; supabaseUrl?: string; supabaseKey?: string }
+  options?: { tourId?: string; appId?: string; apiBaseUrl?: string }
 ): string {
   const stepsJson = JSON.stringify(
     steps.map((s) => ({
@@ -37,10 +36,9 @@ export function generateEmbedScript(
 
   const tourId = options?.tourId || "";
   const appId = options?.appId || "";
-  const trackingUrl = options?.supabaseUrl
-    ? `${options.supabaseUrl}/functions/v1/track-events`
+  const trackingUrl = options?.apiBaseUrl
+    ? `${options.apiBaseUrl}/api/track-events`
     : "";
-  const anonKey = options?.supabaseKey || "";
 
   return `<!-- WalkThru Embed Script -->
 <script>
@@ -50,7 +48,6 @@ export function generateEmbedScript(
   var tourId = '${tourId}';
   var appId = '${appId}';
   var trackUrl = '${trackingUrl}';
-  var anonKey = '${anonKey}';
   
   var currentStep = 0;
   var overlay, tooltip;
@@ -67,7 +64,7 @@ export function generateEmbedScript(
     if (eventQueue.length === 0) return;
     var batch = eventQueue.splice(0);
     try {
-      var headers = { 'Content-Type': 'application/json', 'apikey': anonKey, 'Authorization': 'Bearer ' + anonKey };
+      var headers = { 'Content-Type': 'application/json' };
       fetch(trackUrl, { method: 'POST', headers: headers, body: JSON.stringify({ events: batch }) }).catch(function(){});
     } catch(e) {}
   }
@@ -128,15 +125,8 @@ export function generateEmbedScript(
     document.body.appendChild(tooltip);
     positionTooltip(tooltip, target, step.placement);
 
-    // Track video events
     if (isVideo && embedUrl) {
       track('video_started', index);
-      var iframe = tooltip.querySelector('iframe');
-      if (iframe) {
-        iframe.addEventListener('load', function() {
-          // Mark video as started
-        });
-      }
     }
   }
 
@@ -180,12 +170,10 @@ export function generateEmbedScript(
   window.__tb_start = function() { currentStep = 0; track('tour_started', null); createOverlay(); showStep(0); };
   window.__tb_skip_video = function() { track('video_skipped', currentStep); currentStep++; showStep(currentStep); };
 
-  // Add CSS animation
   var style = document.createElement('style');
   style.textContent = '@keyframes tb-fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}@keyframes tb-pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.3);opacity:0.7}}';
   document.head.appendChild(style);
 
-  // Create launchers
   launchers.forEach(function(l) {
     var target = l.selector ? document.querySelector(l.selector) : null;
     if (!target && l.selector) return;
@@ -213,15 +201,11 @@ export function generateEmbedScript(
     }
   });
 
-  // Auto-start if no launchers
   if (launchers.length === 0 && steps.length > 0) {
     window.__tb_start();
   }
 
-  // Flush on page unload
   window.addEventListener('beforeunload', flushEvents);
 })();
 </script>`;
 }
-
-export { supabase };

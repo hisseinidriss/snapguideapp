@@ -3,7 +3,9 @@ import { ArrowLeft, Copy, Check } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { supabase } from "@/services/backend";
+import { appsApi } from "@/api/apps";
+import { toursApi, tourStepsApi } from "@/api/tours";
+import { launchersApi } from "@/api/launchers";
 import { generateEmbedScript } from "@/lib/tour-store";
 import type { TourStep, Launcher } from "@/types/tour";
 
@@ -20,10 +22,10 @@ const EmbedCode = () => {
     if (!appId || !tourId) return;
     const load = async () => {
       const [appRes, tourRes, stepsRes, launchersRes] = await Promise.all([
-        supabase.from("apps").select("name").eq("id", appId).single(),
-        supabase.from("tours").select("name").eq("id", tourId).single(),
-        supabase.from("tour_steps").select("*").eq("tour_id", tourId).order("sort_order"),
-        supabase.from("launchers").select("*").eq("app_id", appId),
+        appsApi.get(appId),
+        toursApi.get(tourId),
+        tourStepsApi.list(tourId),
+        launchersApi.list(appId),
       ]);
       setAppName(appRes.data?.name || "");
       setTourName(tourRes.data?.name || "");
@@ -56,8 +58,7 @@ const EmbedCode = () => {
   const script = generateEmbedScript(steps, launchers, {
     tourId: tourId,
     appId: appId,
-    supabaseUrl: import.meta.env.VITE_SUPABASE_URL,
-    supabaseKey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+    apiBaseUrl: import.meta.env.VITE_API_BASE_URL || "",
   });
 
   const handleCopy = () => {
@@ -96,11 +97,7 @@ const EmbedCode = () => {
           <Card className="relative">
             <div className="absolute top-3 right-3">
               <Button variant="outline" size="sm" onClick={handleCopy}>
-                {copied ? (
-                  <><Check className="mr-1 h-3 w-3 text-success" />Copied</>
-                ) : (
-                  <><Copy className="mr-1 h-3 w-3" />Copy</>
-                )}
+                {copied ? (<><Check className="mr-1 h-3 w-3 text-success" />Copied</>) : (<><Copy className="mr-1 h-3 w-3" />Copy</>)}
               </Button>
             </div>
             <pre className="p-5 overflow-x-auto text-xs font-mono leading-relaxed text-foreground/80">
