@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { auth } from "@/services/backend";
+import { authApi } from "@/api/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,7 +23,7 @@ const Account = () => {
       return;
     }
     setSaving(true);
-    const { error } = await auth.updateUser({ password: newPassword });
+    const { error } = await authApi.updateUser({ password: newPassword });
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {

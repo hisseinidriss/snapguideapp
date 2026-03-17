@@ -15,7 +15,7 @@ import {
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger,
 } from "@/components/ui/sheet";
-import { supabase, storage } from "@/services/backend";
+import { appsApi } from "@/api/apps";
 import { useAuth } from "@/contexts/AuthContext";
 import type { App } from "@/types/tour";
 import { useToast } from "@/hooks/use-toast";
@@ -38,7 +38,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
 
   const fetchApps = async () => {
-    const { data, error } = await supabase.from("apps").select("*").order("created_at", { ascending: false });
+    const { data, error } = await appsApi.list();
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
@@ -50,15 +50,12 @@ const Dashboard = () => {
   useEffect(() => { fetchApps(); }, []);
 
   const uploadIcon = async (file: File, appId: string): Promise<string | null> => {
-    const ext = file.name.split('.').pop();
-    const path = `${appId}/icon.${ext}`;
-    const { error } = await storage.from("app-icons").upload(path, file, { upsert: true });
+    const { data, error } = await appsApi.uploadIcon(appId, file);
     if (error) {
       toast({ title: "Icon upload failed", description: error.message, variant: "destructive" });
       return null;
     }
-    const { data: urlData } = storage.from("app-icons").getPublicUrl(path);
-    return urlData.publicUrl + "?t=" + Date.now();
+    return data?.icon_url || null;
   };
 
   const handleIconSelect = (file: File | undefined) => {
@@ -69,7 +66,7 @@ const Dashboard = () => {
 
   const handleCreate = async () => {
     if (!newName.trim()) return;
-    const { data: inserted, error } = await supabase.from("apps").insert({ name: newName, url: newUrl, description: newDesc }).select().single();
+    const { data: inserted, error } = await appsApi.create({ name: newName, url: newUrl, description: newDesc });
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
       return;
@@ -77,7 +74,7 @@ const Dashboard = () => {
     if (iconFile && inserted) {
       const iconUrl = await uploadIcon(iconFile, inserted.id);
       if (iconUrl) {
-        await supabase.from("apps").update({ icon_url: iconUrl } as any).eq("id", inserted.id);
+        await appsApi.update(inserted.id, { icon_url: iconUrl } as any);
       }
     }
     await fetchApps();
@@ -91,7 +88,7 @@ const Dashboard = () => {
   };
 
   const handleDelete = async (id: string) => {
-    const { error } = await supabase.from("apps").delete().eq("id", id);
+    const { error } = await appsApi.delete(id);
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
       return;
@@ -114,7 +111,7 @@ const Dashboard = () => {
     if (iconFile) {
       iconUrl = await uploadIcon(iconFile, editApp.id);
     }
-    const { error } = await supabase.from("apps").update({ name: newName, url: newUrl, description: newDesc, icon_url: iconUrl } as any).eq("id", editApp.id);
+    const { error } = await appsApi.update(editApp.id, { name: newName, url: newUrl, description: newDesc, icon_url: iconUrl } as any);
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
       return;
