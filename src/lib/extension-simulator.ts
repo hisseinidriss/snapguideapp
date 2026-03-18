@@ -1,4 +1,4 @@
-import { supabase } from "@/services/backend";
+import { apiGet, apiPut } from "@/api";
 import { getContentJS, getPopupJS, getContentCSS } from "@/lib/chrome-extension-generator";
 
 // ==================== Types ====================
