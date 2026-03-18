@@ -714,7 +714,7 @@ async function autoFixTourData(tours: TourData[], results: TestResult[], fixes: 
         const step = tour.steps[i];
         const newOrder = i;
         if (step.sort_order !== newOrder) {
-          await supabase.from("tour_steps").update({ sort_order: newOrder }).eq("id", step.id);
+          await apiPut(`/api/tour-steps/${step.id}`, { sort_order: newOrder });
           fixes.push({ table: "tour_steps", id: step.id, field: "sort_order", oldValue: step.sort_order, newValue: newOrder, description: `Re-sequenced step ${i + 1} in "${tour.name}"` });
           step.sort_order = newOrder;
         }
