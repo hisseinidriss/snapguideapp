@@ -1376,9 +1376,7 @@ async function validateSelectorsOnLivePage(results: TestResult[], appUrl: string
   const selectors = Array.from(selectorMap.keys());
 
   try {
-    const { data, error } = await supabase.functions.invoke("validate-selectors", {
-      body: { url: appUrl, selectors },
-    });
+    const { data, error } = await apiPost<any>("/api/validate-selectors", { url: appUrl, selectors });
 
     if (error) {
       results.push({
