@@ -1428,7 +1428,7 @@ async function validateSelectorsOnLivePage(results: TestResult[], appUrl: string
 }
 
 async function validateLaunchers(results: TestResult[], appId: string, tours: TourData[]) {
-  const { data: launchers } = await supabase.from("launchers").select("*").eq("app_id", appId);
+  const { data: launchers } = await apiGet<any[]>(`/api/launchers?app_id=${appId}`);
   const active = (launchers || []).filter(l => l.is_active);
 
   if (active.length === 0) {
