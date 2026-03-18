@@ -141,9 +141,8 @@ export async function generateChromeExtension(
   zip.file("manifest.json", JSON.stringify(manifest, null, 2));
 
   // Embedded data as JSON
-  const trackingData = trackingConfig ? {
-    trackUrl: `${trackingConfig.supabaseUrl}/functions/v1/track-events`,
-    anonKey: trackingConfig.supabaseKey,
+  const trackingData = trackingConfig?.apiBaseUrl ? {
+    trackUrl: `${trackingConfig.apiBaseUrl}/api/track-events`,
   } : {};
 
   zip.file(

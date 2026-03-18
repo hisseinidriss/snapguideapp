@@ -121,10 +121,7 @@ export async function validateChromeExtension(
   }
 
   // 5. Check launchers
-  const { data: launchers } = await supabase
-    .from("launchers")
-    .select("id, name, selector, tour_id, is_active, type")
-    .eq("app_id", appId);
+  const { data: launchers } = await apiGet<any[]>(`/api/launchers?app_id=${appId}`);
 
   const activeLaunchers = (launchers || []).filter((l) => l.is_active);
 
