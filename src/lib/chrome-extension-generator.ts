@@ -1,6 +1,6 @@
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
-import { supabase } from "@/services/backend";
+import { apiGet } from "@/api";
 
 interface ProcessStep {
   title: string;
