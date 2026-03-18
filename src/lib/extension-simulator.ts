@@ -610,7 +610,7 @@ export async function runExtensionSimulation(
   // Auto-fix: remove trailing slash from URL
   if (appUrl.endsWith("/") && appUrl.length > 1) {
     const cleaned = appUrl.replace(/\/+$/, "");
-    await supabase.from("apps").update({ url: cleaned }).eq("id", appId);
+    await apiPut(`/api/apps/${appId}`, { url: cleaned });
     fixes.push({ table: "apps", id: appId, field: "url", oldValue: appUrl, newValue: cleaned, description: "Removed trailing slash from app URL" });
     results.push({ id: nextId(), category: "Metadata", test: "App URL trailing slash", status: "fixed" as TestStatus, message: "Removed trailing slash from app URL to prevent match pattern issues.", fixApplied: "Removed trailing slash." });
     appUrl = cleaned;
