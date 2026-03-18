@@ -1,6 +1,6 @@
 export { api, apiGet, apiPost, apiPut, apiPatch, apiDelete, apiUpload, setToken, clearToken, hasToken } from "./client";
 export type { ApiError, ApiResult } from "./client";
-export { authApi } from "./auth";
+
 export { appsApi } from "./apps";
 export { toursApi, tourStepsApi } from "./tours";
 export { launchersApi } from "./launchers";
