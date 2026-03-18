@@ -1037,8 +1037,7 @@ function validateMetadata(results: TestResult[], appName: string, appUrl: string
 }
 
 async function loadTours(appId: string, results: TestResult[]): Promise<TourData[]> {
-  const { data: tours, error: toursError } = await supabase
-    .from("tours").select("*").eq("app_id", appId).order("sort_order");
+  const { data: tours, error: toursError } = await apiGet<any[]>(`/api/tours?app_id=${appId}`);
 
   if (toursError) {
     results.push({ id: nextId(), category: "Data Loading", test: "Fetch tours", status: "error", message: "Failed to load tours: " + toursError.message });
@@ -1051,8 +1050,8 @@ async function loadTours(appId: string, results: TestResult[]): Promise<TourData
 
   results.push({ id: nextId(), category: "Data Loading", test: "Tours loaded", status: "pass", message: `${tours.length} tour(s) loaded.` });
 
-  const ids = tours.map(t => t.id);
-  const { data: steps } = await supabase.from("tour_steps").select("*").in("tour_id", ids).order("sort_order");
+  const ids = tours.map((t: any) => t.id);
+  const { data: steps } = await apiGet<any[]>(`/api/tour-steps?tour_ids=${ids.join(",")}`);
 
   return tours.map(t => ({
     id: t.id,
