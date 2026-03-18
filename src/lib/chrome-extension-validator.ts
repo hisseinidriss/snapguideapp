@@ -37,10 +37,7 @@ export async function validateChromeExtension(
   }
 
   // 3. Check tours exist
-  const { data: tours, error: toursError } = await supabase
-    .from("tours")
-    .select("id, name")
-    .eq("app_id", appId);
+  const { data: tours, error: toursError } = await apiGet<any[]>(`/api/tours?app_id=${appId}`);
 
   if (toursError) {
     results.push({ status: "error", message: "Failed to fetch processes: " + toursError.message });
