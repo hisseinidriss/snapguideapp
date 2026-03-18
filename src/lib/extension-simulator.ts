@@ -775,7 +775,7 @@ async function autoFixTourData(tours: TourData[], results: TestResult[], fixes: 
       // Fix 5: Trim whitespace in click_selector
       if (step.click_selector && step.click_selector !== step.click_selector.trim()) {
         const trimmed = step.click_selector.trim();
-        await supabase.from("tour_steps").update({ click_selector: trimmed }).eq("id", step.id);
+        await apiPut(`/api/tour-steps/${step.id}`, { click_selector: trimmed });
         fixes.push({ table: "tour_steps", id: step.id, field: "click_selector", oldValue: step.click_selector, newValue: trimmed, description: `Trimmed click_selector whitespace in ${label}` });
         step.click_selector = trimmed;
         results.push({
