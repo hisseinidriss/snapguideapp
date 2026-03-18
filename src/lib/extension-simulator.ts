@@ -1,4 +1,4 @@
-import { apiGet, apiPut } from "@/api";
+import { apiGet, apiPut, apiPost } from "@/api";
 import { getContentJS, getPopupJS, getContentCSS } from "@/lib/chrome-extension-generator";
 
 // ==================== Types ====================
