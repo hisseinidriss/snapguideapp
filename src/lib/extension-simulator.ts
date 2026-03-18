@@ -734,7 +734,7 @@ async function autoFixTourData(tours: TourData[], results: TestResult[], fixes: 
       // Fix 2: Invalid placement → default to "bottom"
       if (step.placement && !validPlacements.includes(step.placement)) {
         const oldPlacement = step.placement;
-        await supabase.from("tour_steps").update({ placement: "bottom" }).eq("id", step.id);
+        await apiPut(`/api/tour-steps/${step.id}`, { placement: "bottom" });
         fixes.push({ table: "tour_steps", id: step.id, field: "placement", oldValue: oldPlacement, newValue: "bottom", description: `Fixed invalid placement in ${label}` });
         step.placement = "bottom";
         results.push({
