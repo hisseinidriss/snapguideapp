@@ -602,7 +602,7 @@ export async function runExtensionSimulation(
 
   // Auto-fix: trim app URL whitespace
   if (app.url && app.url !== appUrl) {
-    await supabase.from("apps").update({ url: appUrl }).eq("id", appId);
+    await apiPut(`/api/apps/${appId}`, { url: appUrl });
     fixes.push({ table: "apps", id: appId, field: "url", oldValue: app.url, newValue: appUrl, description: "Trimmed whitespace from app URL" });
     results.push({ id: nextId(), category: "Metadata", test: "App URL whitespace", status: "fixed" as TestStatus, message: "App URL had leading/trailing whitespace — trimmed automatically.", fixApplied: "Trimmed whitespace from app URL." });
   }
