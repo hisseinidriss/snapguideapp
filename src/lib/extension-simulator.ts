@@ -1,4 +1,4 @@
-import { supabase } from "@/services/backend";
+import { apiGet, apiPut, apiPost } from "@/api";
 import { getContentJS, getPopupJS, getContentCSS } from "@/lib/chrome-extension-generator";
 
 // ==================== Types ====================
@@ -591,7 +591,7 @@ export async function runExtensionSimulation(
   // ---- Phase 1: Load app data ----
   emit("Loading app data…", 0);
 
-  const { data: app } = await supabase.from("apps").select("*").eq("id", appId).single();
+  const { data: app } = await apiGet<any>(`/api/apps/${appId}`);
   if (!app) {
     results.push({ id: nextId(), category: "Setup", test: "App exists", status: "error", message: "App not found in database." });
     return buildReport("", "", startedAt, results, 0, 0, fixes);
@@ -602,7 +602,7 @@ export async function runExtensionSimulation(
 
   // Auto-fix: trim app URL whitespace
   if (app.url && app.url !== appUrl) {
-    await supabase.from("apps").update({ url: appUrl }).eq("id", appId);
+    await apiPut(`/api/apps/${appId}`, { url: appUrl });
     fixes.push({ table: "apps", id: appId, field: "url", oldValue: app.url, newValue: appUrl, description: "Trimmed whitespace from app URL" });
     results.push({ id: nextId(), category: "Metadata", test: "App URL whitespace", status: "fixed" as TestStatus, message: "App URL had leading/trailing whitespace — trimmed automatically.", fixApplied: "Trimmed whitespace from app URL." });
   }
@@ -610,7 +610,7 @@ export async function runExtensionSimulation(
   // Auto-fix: remove trailing slash from URL
   if (appUrl.endsWith("/") && appUrl.length > 1) {
     const cleaned = appUrl.replace(/\/+$/, "");
-    await supabase.from("apps").update({ url: cleaned }).eq("id", appId);
+    await apiPut(`/api/apps/${appId}`, { url: cleaned });
     fixes.push({ table: "apps", id: appId, field: "url", oldValue: appUrl, newValue: cleaned, description: "Removed trailing slash from app URL" });
     results.push({ id: nextId(), category: "Metadata", test: "App URL trailing slash", status: "fixed" as TestStatus, message: "Removed trailing slash from app URL to prevent match pattern issues.", fixApplied: "Removed trailing slash." });
     appUrl = cleaned;
@@ -714,7 +714,7 @@ async function autoFixTourData(tours: TourData[], results: TestResult[], fixes: 
         const step = tour.steps[i];
         const newOrder = i;
         if (step.sort_order !== newOrder) {
-          await supabase.from("tour_steps").update({ sort_order: newOrder }).eq("id", step.id);
+          await apiPut(`/api/tour-steps/${step.id}`, { sort_order: newOrder });
           fixes.push({ table: "tour_steps", id: step.id, field: "sort_order", oldValue: step.sort_order, newValue: newOrder, description: `Re-sequenced step ${i + 1} in "${tour.name}"` });
           step.sort_order = newOrder;
         }
@@ -734,7 +734,7 @@ async function autoFixTourData(tours: TourData[], results: TestResult[], fixes: 
       // Fix 2: Invalid placement → default to "bottom"
       if (step.placement && !validPlacements.includes(step.placement)) {
         const oldPlacement = step.placement;
-        await supabase.from("tour_steps").update({ placement: "bottom" }).eq("id", step.id);
+        await apiPut(`/api/tour-steps/${step.id}`, { placement: "bottom" });
         fixes.push({ table: "tour_steps", id: step.id, field: "placement", oldValue: oldPlacement, newValue: "bottom", description: `Fixed invalid placement in ${label}` });
         step.placement = "bottom";
         results.push({
@@ -747,7 +747,7 @@ async function autoFixTourData(tours: TourData[], results: TestResult[], fixes: 
 
       // Fix 3: Video step with no video_url → change to standard
       if (step.step_type === "video" && !step.video_url?.trim()) {
-        await supabase.from("tour_steps").update({ step_type: "standard" }).eq("id", step.id);
+        await apiPut(`/api/tour-steps/${step.id}`, { step_type: "standard" });
         fixes.push({ table: "tour_steps", id: step.id, field: "step_type", oldValue: "video", newValue: "standard", description: `Changed empty video step to standard in ${label}` });
         step.step_type = "standard";
         results.push({
@@ -761,7 +761,7 @@ async function autoFixTourData(tours: TourData[], results: TestResult[], fixes: 
       // Fix 4: Trim whitespace in selectors
       if (step.selector && step.selector !== step.selector.trim()) {
         const trimmed = step.selector.trim();
-        await supabase.from("tour_steps").update({ selector: trimmed }).eq("id", step.id);
+        await apiPut(`/api/tour-steps/${step.id}`, { selector: trimmed });
         fixes.push({ table: "tour_steps", id: step.id, field: "selector", oldValue: step.selector, newValue: trimmed, description: `Trimmed selector whitespace in ${label}` });
         step.selector = trimmed;
         results.push({
@@ -775,7 +775,7 @@ async function autoFixTourData(tours: TourData[], results: TestResult[], fixes: 
       // Fix 5: Trim whitespace in click_selector
       if (step.click_selector && step.click_selector !== step.click_selector.trim()) {
         const trimmed = step.click_selector.trim();
-        await supabase.from("tour_steps").update({ click_selector: trimmed }).eq("id", step.id);
+        await apiPut(`/api/tour-steps/${step.id}`, { click_selector: trimmed });
         fixes.push({ table: "tour_steps", id: step.id, field: "click_selector", oldValue: step.click_selector, newValue: trimmed, description: `Trimmed click_selector whitespace in ${label}` });
         step.click_selector = trimmed;
         results.push({
@@ -789,7 +789,7 @@ async function autoFixTourData(tours: TourData[], results: TestResult[], fixes: 
       // Fix 6: Missing step title → generate default
       if (!step.title?.trim()) {
         const defaultTitle = `Step ${i + 1}`;
-        await supabase.from("tour_steps").update({ title: defaultTitle }).eq("id", step.id);
+        await apiPut(`/api/tour-steps/${step.id}`, { title: defaultTitle });
         fixes.push({ table: "tour_steps", id: step.id, field: "title", oldValue: step.title, newValue: defaultTitle, description: `Added default title in ${label}` });
         step.title = defaultTitle;
         results.push({
@@ -803,7 +803,7 @@ async function autoFixTourData(tours: TourData[], results: TestResult[], fixes: 
       // Fix 7: target_url whitespace trim
       if (step.target_url && step.target_url !== step.target_url.trim()) {
         const trimmed = step.target_url.trim();
-        await supabase.from("tour_steps").update({ target_url: trimmed }).eq("id", step.id);
+        await apiPut(`/api/tour-steps/${step.id}`, { target_url: trimmed });
         fixes.push({ table: "tour_steps", id: step.id, field: "target_url", oldValue: step.target_url, newValue: trimmed, description: `Trimmed target_url in ${label}` });
         step.target_url = trimmed;
         results.push({
@@ -1037,8 +1037,7 @@ function validateMetadata(results: TestResult[], appName: string, appUrl: string
 }
 
 async function loadTours(appId: string, results: TestResult[]): Promise<TourData[]> {
-  const { data: tours, error: toursError } = await supabase
-    .from("tours").select("*").eq("app_id", appId).order("sort_order");
+  const { data: tours, error: toursError } = await apiGet<any[]>(`/api/tours?app_id=${appId}`);
 
   if (toursError) {
     results.push({ id: nextId(), category: "Data Loading", test: "Fetch tours", status: "error", message: "Failed to load tours: " + toursError.message });
@@ -1051,8 +1050,8 @@ async function loadTours(appId: string, results: TestResult[]): Promise<TourData
 
   results.push({ id: nextId(), category: "Data Loading", test: "Tours loaded", status: "pass", message: `${tours.length} tour(s) loaded.` });
 
-  const ids = tours.map(t => t.id);
-  const { data: steps } = await supabase.from("tour_steps").select("*").in("tour_id", ids).order("sort_order");
+  const ids = tours.map((t: any) => t.id);
+  const { data: steps } = await apiGet<any[]>(`/api/tour-steps?tour_ids=${ids.join(",")}`);
 
   return tours.map(t => ({
     id: t.id,
@@ -1377,9 +1376,7 @@ async function validateSelectorsOnLivePage(results: TestResult[], appUrl: string
   const selectors = Array.from(selectorMap.keys());
 
   try {
-    const { data, error } = await supabase.functions.invoke("validate-selectors", {
-      body: { url: appUrl, selectors },
-    });
+    const { data, error } = await apiPost<any>("/api/validate-selectors", { url: appUrl, selectors });
 
     if (error) {
       results.push({
@@ -1431,7 +1428,7 @@ async function validateSelectorsOnLivePage(results: TestResult[], appUrl: string
 }
 
 async function validateLaunchers(results: TestResult[], appId: string, tours: TourData[]) {
-  const { data: launchers } = await supabase.from("launchers").select("*").eq("app_id", appId);
+  const { data: launchers } = await apiGet<any[]>(`/api/launchers?app_id=${appId}`);
   const active = (launchers || []).filter(l => l.is_active);
 
   if (active.length === 0) {

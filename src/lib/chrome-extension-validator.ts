@@ -1,4 +1,4 @@
-import { supabase } from "@/services/backend";
+import { apiGet } from "@/api";
 
 interface ValidationResult {
   status: "pass" | "warning" | "error";
@@ -37,10 +37,7 @@ export async function validateChromeExtension(
   }
 
   // 3. Check tours exist
-  const { data: tours, error: toursError } = await supabase
-    .from("tours")
-    .select("id, name")
-    .eq("app_id", appId);
+  const { data: tours, error: toursError } = await apiGet<any[]>(`/api/tours?app_id=${appId}`);
 
   if (toursError) {
     results.push({ status: "error", message: "Failed to fetch processes: " + toursError.message });
@@ -55,12 +52,8 @@ export async function validateChromeExtension(
   results.push({ status: "pass", message: `${tours.length} process(es) found.` });
 
   // 4. Check steps for each tour
-  const tourIds = tours.map((t) => t.id);
-  const { data: steps, error: stepsError } = await supabase
-    .from("tour_steps")
-    .select("id, title, content, selector, placement, sort_order, tour_id, target_url, click_selector")
-    .in("tour_id", tourIds)
-    .order("sort_order");
+  const tourIds = tours.map((t: any) => t.id);
+  const { data: steps, error: stepsError } = await apiGet<any[]>(`/api/tour-steps?tour_ids=${tourIds.join(",")}`);
 
   if (stepsError) {
     results.push({ status: "error", message: "Failed to fetch steps: " + stepsError.message });
@@ -128,10 +121,7 @@ export async function validateChromeExtension(
   }
 
   // 5. Check launchers
-  const { data: launchers } = await supabase
-    .from("launchers")
-    .select("id, name, selector, tour_id, is_active, type")
-    .eq("app_id", appId);
+  const { data: launchers } = await apiGet<any[]>(`/api/launchers?app_id=${appId}`);
 
   const activeLaunchers = (launchers || []).filter((l) => l.is_active);
 

@@ -1,6 +1,6 @@
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
-import { supabase } from "@/services/backend";
+import { apiGet } from "@/api";
 
 interface ProcessStep {
   title: string;
@@ -38,30 +38,20 @@ export async function generateChromeExtension(
   appId: string,
   appName: string,
   appUrl: string,
-  trackingConfig?: { supabaseUrl: string; supabaseKey: string },
+  trackingConfig?: { apiBaseUrl: string },
   browser: BrowserTarget = 'chrome'
 ) {
   // Trim whitespace from appUrl to prevent invalid match patterns
   appUrl = (appUrl || '').trim();
   // Fetch all processes and their steps
-  const { data: tours } = await supabase
-    .from("tours")
-    .select("*")
-    .eq("app_id", appId);
+  const { data: tours } = await apiGet<any[]>(`/api/tours?app_id=${appId}`);
 
-  const { data: launchers } = await supabase
-    .from("launchers")
-    .select("*")
-    .eq("app_id", appId);
+  const { data: launchers } = await apiGet<any[]>(`/api/launchers?app_id=${appId}`);
 
   const processes: Process[] = [];
   if (tours?.length) {
-    const ids = tours.map((t) => t.id);
-    const { data: steps } = await supabase
-      .from("tour_steps")
-      .select("*")
-      .in("tour_id", ids)
-      .order("sort_order");
+    const ids = tours.map((t: any) => t.id);
+    const { data: steps } = await apiGet<any[]>(`/api/tour-steps?tour_ids=${ids.join(",")}`);
 
     for (const tour of tours) {
       processes.push({
@@ -151,9 +141,8 @@ export async function generateChromeExtension(
   zip.file("manifest.json", JSON.stringify(manifest, null, 2));
 
   // Embedded data as JSON
-  const trackingData = trackingConfig ? {
-    trackUrl: `${trackingConfig.supabaseUrl}/functions/v1/track-events`,
-    anonKey: trackingConfig.supabaseKey,
+  const trackingData = trackingConfig?.apiBaseUrl ? {
+    trackUrl: `${trackingConfig.apiBaseUrl}/api/track-events`,
   } : {};
 
   zip.file(

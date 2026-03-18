@@ -1,22 +1,85 @@
-import { Tables, TablesInsert } from "@/integrations/supabase/types";
+// Standalone type definitions (no Supabase dependency)
 
-export type App = Tables<"apps">;
-export type AppInsert = TablesInsert<"apps">;
+export interface App {
+  id: string;
+  name: string;
+  description: string | null;
+  url: string | null;
+  icon_url: string | null;
+  created_at: string;
+  updated_at: string;
+}
 
-export type Tour = Tables<"tours">;
-export type TourInsert = TablesInsert<"tours">;
+export type AppInsert = Partial<App> & Pick<App, "name">;
 
-export type TourStep = Tables<"tour_steps">;
-export type TourStepInsert = TablesInsert<"tour_steps">;
+export interface Tour {
+  id: string;
+  app_id: string;
+  name: string;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
 
-export type Launcher = Tables<"launchers">;
-export type LauncherInsert = TablesInsert<"launchers">;
+export type TourInsert = Partial<Tour> & Pick<Tour, "app_id" | "name">;
 
-export type Checklist = Tables<"checklists">;
-export type ChecklistInsert = TablesInsert<"checklists">;
+export interface TourStep {
+  id: string;
+  tour_id: string;
+  title: string;
+  content: string;
+  selector: string | null;
+  placement: string;
+  sort_order: number;
+  target_url: string | null;
+  click_selector: string | null;
+  step_type: string;
+  video_url: string | null;
+  created_at: string;
+  updated_at: string;
+}
 
-export type ChecklistItem = Tables<"checklist_items">;
-export type ChecklistItemInsert = TablesInsert<"checklist_items">;
+export type TourStepInsert = Partial<TourStep> & Pick<TourStep, "tour_id">;
+
+export interface Launcher {
+  id: string;
+  app_id: string;
+  name: string;
+  type: string;
+  selector: string;
+  color: string | null;
+  label: string | null;
+  pulse: boolean | null;
+  is_active: boolean | null;
+  tour_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type LauncherInsert = Partial<Launcher> & Pick<Launcher, "app_id" | "name">;
+
+export interface Checklist {
+  id: string;
+  app_id: string;
+  name: string;
+  description: string | null;
+  is_active: boolean | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type ChecklistInsert = Partial<Checklist> & Pick<Checklist, "app_id" | "name">;
+
+export interface ChecklistItem {
+  id: string;
+  checklist_id: string;
+  tour_id: string;
+  sort_order: number;
+  is_required: boolean | null;
+  created_at: string;
+}
+
+export type ChecklistItemInsert = Partial<ChecklistItem> & Pick<ChecklistItem, "checklist_id" | "tour_id">;
 
 export type Placement = "top" | "bottom" | "left" | "right" | "center";
 export type LauncherType = "beacon" | "button" | "hotspot";
