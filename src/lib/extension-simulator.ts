@@ -747,7 +747,7 @@ async function autoFixTourData(tours: TourData[], results: TestResult[], fixes: 
 
       // Fix 3: Video step with no video_url → change to standard
       if (step.step_type === "video" && !step.video_url?.trim()) {
-        await supabase.from("tour_steps").update({ step_type: "standard" }).eq("id", step.id);
+        await apiPut(`/api/tour-steps/${step.id}`, { step_type: "standard" });
         fixes.push({ table: "tour_steps", id: step.id, field: "step_type", oldValue: "video", newValue: "standard", description: `Changed empty video step to standard in ${label}` });
         step.step_type = "standard";
         results.push({
