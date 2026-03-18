@@ -64,10 +64,10 @@ const Account = () => {
             </div>
             <div className="space-y-2">
               <Label>Name</Label>
-              <Input value={user?.user_metadata?.full_name || "—"} disabled className="bg-muted/50" />
+              <Input value={(user as any)?.user_metadata?.full_name || "—"} disabled className="bg-muted/50" />
             </div>
             <p className="text-xs text-muted-foreground">
-              Joined {user?.created_at ? new Date(user.created_at).toLocaleDateString() : "—"}
+              Joined {(user as any)?.created_at ? new Date((user as any).created_at).toLocaleDateString() : "—"}
             </p>
           </Card>
 
