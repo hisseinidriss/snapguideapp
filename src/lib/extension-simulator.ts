@@ -803,7 +803,7 @@ async function autoFixTourData(tours: TourData[], results: TestResult[], fixes: 
       // Fix 7: target_url whitespace trim
       if (step.target_url && step.target_url !== step.target_url.trim()) {
         const trimmed = step.target_url.trim();
-        await supabase.from("tour_steps").update({ target_url: trimmed }).eq("id", step.id);
+        await apiPut(`/api/tour-steps/${step.id}`, { target_url: trimmed });
         fixes.push({ table: "tour_steps", id: step.id, field: "target_url", oldValue: step.target_url, newValue: trimmed, description: `Trimmed target_url in ${label}` });
         step.target_url = trimmed;
         results.push({
