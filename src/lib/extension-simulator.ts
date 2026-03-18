@@ -591,7 +591,7 @@ export async function runExtensionSimulation(
   // ---- Phase 1: Load app data ----
   emit("Loading app data…", 0);
 
-  const { data: app } = await supabase.from("apps").select("*").eq("id", appId).single();
+  const { data: app } = await apiGet<any>(`/api/apps/${appId}`);
   if (!app) {
     results.push({ id: nextId(), category: "Setup", test: "App exists", status: "error", message: "App not found in database." });
     return buildReport("", "", startedAt, results, 0, 0, fixes);
