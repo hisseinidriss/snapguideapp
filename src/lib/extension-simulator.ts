@@ -789,7 +789,7 @@ async function autoFixTourData(tours: TourData[], results: TestResult[], fixes: 
       // Fix 6: Missing step title → generate default
       if (!step.title?.trim()) {
         const defaultTitle = `Step ${i + 1}`;
-        await supabase.from("tour_steps").update({ title: defaultTitle }).eq("id", step.id);
+        await apiPut(`/api/tour-steps/${step.id}`, { title: defaultTitle });
         fixes.push({ table: "tour_steps", id: step.id, field: "title", oldValue: step.title, newValue: defaultTitle, description: `Added default title in ${label}` });
         step.title = defaultTitle;
         results.push({
