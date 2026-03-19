@@ -48,6 +48,7 @@ interface SortableTourCardProps {
   generating: boolean;
   navigate: (path: string) => void;
   appId: string;
+  appName: string;
 }
 
 const SortableTourCard = ({ tour, index, stepCount, editingTourId, editingTourName, setEditingTourId, setEditingTourName, handleRenameProcess, handleAutoGenerate, handleDeleteProcess, generating, navigate, appId }: SortableTourCardProps) => {
