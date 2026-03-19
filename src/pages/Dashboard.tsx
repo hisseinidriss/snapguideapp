@@ -303,7 +303,7 @@ const Dashboard = () => {
             {viewMode === "grid" ? (
               <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                 {apps.map((app, i) => (
-                  <Card key={app.id} className="p-5 hover:shadow-md transition-shadow animate-fade-in overflow-hidden" style={{ animationDelay: `${i * 50}ms` }}>
+                  <Card key={app.id} className="p-5 hover:shadow-md transition-shadow animate-fade-in overflow-hidden relative" style={{ animationDelay: `${i * 50}ms` }}>
                     <div className="absolute inset-x-0 top-0 h-2 rounded-t-lg" style={{ backgroundColor: generateAppColor(app.name) }} />
                     <div className="flex items-start justify-between mb-3 pt-1">
                       {(app as any).icon_url ? (
