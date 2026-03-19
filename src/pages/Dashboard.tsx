@@ -20,24 +20,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import type { App } from "@/types/tour";
 import { useToast } from "@/hooks/use-toast";
 
-const generateAppHue = (name: string): number => {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  // Map to 0-310 range, then shift values >=300 to skip pink (300-360)
-  let hue = Math.abs(hash) % 300;
-  if (hue >= 280) hue += 60; // jump past pink
-  return hue;
-};
-
-const generateAppColor = (name: string): string => {
-  return `hsl(${generateAppHue(name)}, 45%, 90%)`;
-};
-
-const generateAppAccent = (name: string): string => {
-  return `hsl(${generateAppHue(name)}, 50%, 45%)`;
-};
+import { generateAppColor, generateAppAccent } from "@/lib/app-colors";
 
 const Dashboard = () => {
   const [apps, setApps] = useState<App[]>([]);

@@ -27,6 +27,7 @@ import { functionsApi } from "@/api/functions";
 import type { Tour, Launcher, LauncherType, Checklist } from "@/types/tour";
 import type { ProcessRecording } from "@/types/recording";
 import { useToast } from "@/hooks/use-toast";
+import { generateAppColor, generateAppAccent } from "@/lib/app-colors";
 
 const LAUNCHER_TYPES: { value: LauncherType; label: string; icon: typeof Circle; desc: string }[] = [
   { value: "beacon", label: "Beacon", icon: Circle, desc: "Pulsing dot that draws attention" },
