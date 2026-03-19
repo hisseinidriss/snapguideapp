@@ -518,6 +518,7 @@ const AppDetail = () => {
                     generating={generating}
                     navigate={navigate}
                     appId={appId!}
+                    appName={appName}
                   />
                 ))}
               </div>
