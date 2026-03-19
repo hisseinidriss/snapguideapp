@@ -64,14 +64,6 @@ const ElementPickerDialog = ({ open, onOpenChange, appUrl, onSelectorPicked }: E
     };
   }, [open, sessionId, onSelectorPicked, onOpenChange, toast]);
 
-  const handleCopyScript = () => {
-    // Console-pastable version
-    const script = bookmarklet.replace("javascript:void(", "(").replace(/\)$/, ")");
-    navigator.clipboard.writeText(script);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
