@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
-import { Copy, Check, MousePointer2, Terminal, Bookmark, ExternalLink } from "lucide-react";
+import { MousePointer2, Bookmark, ExternalLink } from "lucide-react";
 import { generatePickerScript } from "@/lib/element-picker";
 import { useToast } from "@/hooks/use-toast";
 
