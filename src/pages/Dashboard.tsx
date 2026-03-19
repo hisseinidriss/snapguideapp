@@ -345,7 +345,7 @@ const Dashboard = () => {
                     {app.url && <p className="text-xs text-muted-foreground mb-2 truncate">{app.url}</p>}
                     <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{app.description || "No description"}</p>
                     <div className="flex items-center justify-between">
-                      <Button variant="ghost" size="sm" asChild>
+                      <Button variant="ghost" size="sm" asChild style={{ color: generateAppAccent(app.name) }}>
                         <Link to={`/app/${app.id}`}>
                           Open
                           <ArrowRight className="ml-1 h-3 w-3" />
