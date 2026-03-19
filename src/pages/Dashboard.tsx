@@ -348,12 +348,12 @@ const Dashboard = () => {
             ) : (
               <div className="space-y-2">
                 {apps.map((app, i) => (
-                  <Card key={app.id} className="p-4 hover:shadow-md transition-shadow animate-fade-in flex items-center gap-4" style={{ animationDelay: `${i * 50}ms` }}>
+                  <Card key={app.id} className="p-4 hover:shadow-md transition-shadow animate-fade-in flex items-center gap-4" style={{ animationDelay: `${i * 50}ms`, borderLeft: `4px solid ${generateAppColor(app.name)}` }}>
                     {(app as any).icon_url ? (
                       <img src={(app as any).icon_url} alt={app.name} className="h-9 w-9 rounded-lg object-cover shrink-0" />
                     ) : (
-                      <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                        <span className="text-primary font-bold text-sm">{app.name.charAt(0).toUpperCase()}</span>
+                      <div className="h-9 w-9 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: generateAppColor(app.name) }}>
+                        <span className="font-bold text-sm" style={{ color: `hsl(${Math.abs([...app.name].reduce((h, c) => c.charCodeAt(0) + ((h << 5) - h), 0)) % 360}, 45%, 35%)` }}>{app.name.charAt(0).toUpperCase()}</span>
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
