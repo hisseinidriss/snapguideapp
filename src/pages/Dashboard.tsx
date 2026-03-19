@@ -20,6 +20,15 @@ import { useAuth } from "@/contexts/AuthContext";
 import type { App } from "@/types/tour";
 import { useToast } from "@/hooks/use-toast";
 
+const generateAppColor = (name: string): string => {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const hue = Math.abs(hash) % 360;
+  return `hsl(${hue}, 45%, 90%)`;
+};
+
 const Dashboard = () => {
   const [apps, setApps] = useState<App[]>([]);
   const [viewMode, setViewMode] = useState<"grid" | "list">(() => (localStorage.getItem("walkthru_view_mode") as "grid" | "list") || "grid");
