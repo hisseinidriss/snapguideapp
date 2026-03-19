@@ -27,6 +27,7 @@ import { functionsApi } from "@/api/functions";
 import type { Tour, Launcher, LauncherType, Checklist } from "@/types/tour";
 import type { ProcessRecording } from "@/types/recording";
 import { useToast } from "@/hooks/use-toast";
+import { generateAppColor, generateAppAccent } from "@/lib/app-colors";
 
 const LAUNCHER_TYPES: { value: LauncherType; label: string; icon: typeof Circle; desc: string }[] = [
   { value: "beacon", label: "Beacon", icon: Circle, desc: "Pulsing dot that draws attention" },
@@ -47,11 +48,14 @@ interface SortableTourCardProps {
   generating: boolean;
   navigate: (path: string) => void;
   appId: string;
+  appName: string;
 }
 
-const SortableTourCard = ({ tour, index, stepCount, editingTourId, editingTourName, setEditingTourId, setEditingTourName, handleRenameProcess, handleAutoGenerate, handleDeleteProcess, generating, navigate, appId }: SortableTourCardProps) => {
+const SortableTourCard = ({ tour, index, stepCount, editingTourId, editingTourName, setEditingTourId, setEditingTourName, handleRenameProcess, handleAutoGenerate, handleDeleteProcess, generating, navigate, appId, appName }: SortableTourCardProps) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: tour.id });
-  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
+  const accentColor = generateAppAccent(appName);
+  const bgColor = generateAppColor(appName);
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1, borderLeft: `4px solid ${bgColor}` };
 
   return (
     <Card ref={setNodeRef} style={style} className="p-4 animate-fade-in">
@@ -96,7 +100,7 @@ const SortableTourCard = ({ tour, index, stepCount, editingTourId, editingTourNa
             <DropdownMenuItem onClick={() => navigate(`/app/${appId}/tour/${tour.id}`)}>
               <Pencil className="mr-2 h-4 w-4" />Edit Steps
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => handleAutoGenerate(tour.id)} disabled={generating}>
+            <DropdownMenuItem onClick={() => handleAutoGenerate(tour.id)} disabled={generating} style={{ color: accentColor, backgroundColor: bgColor }} className="font-medium">
               {generating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
               Generate Steps with AI
             </DropdownMenuItem>
@@ -514,6 +518,7 @@ const AppDetail = () => {
                     generating={generating}
                     navigate={navigate}
                     appId={appId!}
+                    appName={appName}
                   />
                 ))}
               </div>
