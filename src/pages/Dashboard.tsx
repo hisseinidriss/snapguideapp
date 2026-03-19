@@ -20,13 +20,23 @@ import { useAuth } from "@/contexts/AuthContext";
 import type { App } from "@/types/tour";
 import { useToast } from "@/hooks/use-toast";
 
-const generateAppColor = (name: string): string => {
+const generateAppHue = (name: string): number => {
   let hash = 0;
   for (let i = 0; i < name.length; i++) {
     hash = name.charCodeAt(i) + ((hash << 5) - hash);
   }
-  const hue = Math.abs(hash) % 360;
-  return `hsl(${hue}, 45%, 90%)`;
+  // Map to 0-310 range, then shift values >=300 to skip pink (300-360)
+  let hue = Math.abs(hash) % 300;
+  if (hue >= 280) hue += 60; // jump past pink
+  return hue;
+};
+
+const generateAppColor = (name: string): string => {
+  return `hsl(${generateAppHue(name)}, 45%, 90%)`;
+};
+
+const generateAppAccent = (name: string): string => {
+  return `hsl(${generateAppHue(name)}, 50%, 45%)`;
 };
 
 const Dashboard = () => {
@@ -335,7 +345,7 @@ const Dashboard = () => {
                     {app.url && <p className="text-xs text-muted-foreground mb-2 truncate">{app.url}</p>}
                     <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{app.description || "No description"}</p>
                     <div className="flex items-center justify-between">
-                      <Button variant="ghost" size="sm" asChild>
+                      <Button variant="ghost" size="sm" asChild style={{ color: generateAppAccent(app.name) }}>
                         <Link to={`/app/${app.id}`}>
                           Open
                           <ArrowRight className="ml-1 h-3 w-3" />
@@ -361,7 +371,7 @@ const Dashboard = () => {
                       <p className="text-xs text-muted-foreground truncate">{app.url || app.description || "No description"}</p>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
-                      <Button variant="ghost" size="sm" asChild>
+                      <Button variant="ghost" size="sm" asChild style={{ color: generateAppAccent(app.name) }}>
                         <Link to={`/app/${app.id}`}>
                           Open
                           <ArrowRight className="ml-1 h-3 w-3" />
