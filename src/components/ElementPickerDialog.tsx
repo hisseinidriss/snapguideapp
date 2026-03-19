@@ -16,7 +16,6 @@ interface ElementPickerDialogProps {
 
 const ElementPickerDialog = ({ open, onOpenChange, appUrl, onSelectorPicked }: ElementPickerDialogProps) => {
   const { toast } = useToast();
-  const [copied, setCopied] = useState(false);
   const [sessionId] = useState(() => crypto.randomUUID());
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
