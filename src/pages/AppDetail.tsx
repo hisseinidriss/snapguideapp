@@ -51,9 +51,11 @@ interface SortableTourCardProps {
   appName: string;
 }
 
-const SortableTourCard = ({ tour, index, stepCount, editingTourId, editingTourName, setEditingTourId, setEditingTourName, handleRenameProcess, handleAutoGenerate, handleDeleteProcess, generating, navigate, appId }: SortableTourCardProps) => {
+const SortableTourCard = ({ tour, index, stepCount, editingTourId, editingTourName, setEditingTourId, setEditingTourName, handleRenameProcess, handleAutoGenerate, handleDeleteProcess, generating, navigate, appId, appName }: SortableTourCardProps) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: tour.id });
-  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
+  const accentColor = generateAppAccent(appName);
+  const bgColor = generateAppColor(appName);
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1, borderLeft: `4px solid ${bgColor}` };
 
   return (
     <Card ref={setNodeRef} style={style} className="p-4 animate-fade-in">
