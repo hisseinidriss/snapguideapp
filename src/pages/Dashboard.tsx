@@ -20,6 +20,15 @@ import { useAuth } from "@/contexts/AuthContext";
 import type { App } from "@/types/tour";
 import { useToast } from "@/hooks/use-toast";
 
+const generateAppColor = (name: string): string => {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const hue = Math.abs(hash) % 360;
+  return `hsl(${hue}, 45%, 90%)`;
+};
+
 const Dashboard = () => {
   const [apps, setApps] = useState<App[]>([]);
   const [viewMode, setViewMode] = useState<"grid" | "list">(() => (localStorage.getItem("walkthru_view_mode") as "grid" | "list") || "grid");
@@ -294,13 +303,14 @@ const Dashboard = () => {
             {viewMode === "grid" ? (
               <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                 {apps.map((app, i) => (
-                  <Card key={app.id} className="p-5 hover:shadow-md transition-shadow animate-fade-in" style={{ animationDelay: `${i * 50}ms` }}>
-                    <div className="flex items-start justify-between mb-3">
+                  <Card key={app.id} className="p-5 hover:shadow-md transition-shadow animate-fade-in overflow-hidden relative" style={{ animationDelay: `${i * 50}ms` }}>
+                    <div className="absolute inset-x-0 top-0 h-2 rounded-t-lg" style={{ backgroundColor: generateAppColor(app.name) }} />
+                    <div className="flex items-start justify-between mb-3 pt-1">
                       {(app as any).icon_url ? (
                         <img src={(app as any).icon_url} alt={app.name} className="h-10 w-10 rounded-lg object-cover" />
                       ) : (
-                        <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                          <span className="text-primary font-bold">{app.name.charAt(0).toUpperCase()}</span>
+                        <div className="h-10 w-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: generateAppColor(app.name) }}>
+                          <span className="font-bold" style={{ color: `hsl(${Math.abs([...app.name].reduce((h, c) => c.charCodeAt(0) + ((h << 5) - h), 0)) % 360}, 45%, 35%)` }}>{app.name.charAt(0).toUpperCase()}</span>
                         </div>
                       )}
                       <DropdownMenu>
@@ -338,12 +348,12 @@ const Dashboard = () => {
             ) : (
               <div className="space-y-2">
                 {apps.map((app, i) => (
-                  <Card key={app.id} className="p-4 hover:shadow-md transition-shadow animate-fade-in flex items-center gap-4" style={{ animationDelay: `${i * 50}ms` }}>
+                  <Card key={app.id} className="p-4 hover:shadow-md transition-shadow animate-fade-in flex items-center gap-4" style={{ animationDelay: `${i * 50}ms`, borderLeft: `4px solid ${generateAppColor(app.name)}` }}>
                     {(app as any).icon_url ? (
                       <img src={(app as any).icon_url} alt={app.name} className="h-9 w-9 rounded-lg object-cover shrink-0" />
                     ) : (
-                      <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                        <span className="text-primary font-bold text-sm">{app.name.charAt(0).toUpperCase()}</span>
+                      <div className="h-9 w-9 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: generateAppColor(app.name) }}>
+                        <span className="font-bold text-sm" style={{ color: `hsl(${Math.abs([...app.name].reduce((h, c) => c.charCodeAt(0) + ((h << 5) - h), 0)) % 360}, 45%, 35%)` }}>{app.name.charAt(0).toUpperCase()}</span>
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
