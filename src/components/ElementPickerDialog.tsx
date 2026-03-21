@@ -57,9 +57,11 @@ const ElementPickerDialog = ({ open, onOpenChange, appUrl, onSelectorPicked }: E
         if (raw) {
           const data = JSON.parse(raw);
           if (data.sessionId === sessionId && data.selector) {
-            onSelectorPicked(data.selector);
+            const result: PickerResult = { selector: data.selector, fallbacks: data.fallbacks || [], meta: data.meta };
+            onSelectorPicked(data.selector, result);
             onOpenChange(false);
-            toast({ title: "Selector captured!", description: data.selector });
+            const fallbackCount = result.fallbacks?.length || 0;
+            toast({ title: "Selector captured!", description: `${data.selector}${fallbackCount > 0 ? ` (+${fallbackCount} fallbacks)` : ''}` });
             localStorage.removeItem("__wt_picked_selector");
           }
         }
