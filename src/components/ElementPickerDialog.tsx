@@ -7,11 +7,17 @@ import { MousePointer2, Bookmark, ExternalLink } from "lucide-react";
 import { generatePickerScript } from "@/lib/element-picker";
 import { useToast } from "@/hooks/use-toast";
 
+interface PickerResult {
+  selector: string;
+  fallbacks?: string[];
+  meta?: Record<string, unknown>;
+}
+
 interface ElementPickerDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   appUrl: string;
-  onSelectorPicked: (selector: string) => void;
+  onSelectorPicked: (selector: string, result?: PickerResult) => void;
 }
 
 const ElementPickerDialog = ({ open, onOpenChange, appUrl, onSelectorPicked }: ElementPickerDialogProps) => {
