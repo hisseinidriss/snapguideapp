@@ -4,9 +4,12 @@
  * captures a unique CSS selector on click, copying it to clipboard.
  * 
  * Improvements:
+ * - Smart target: prefers interactive child (input/select/button) over wrapper divs
+ * - Label-aware: finds associated label text for form fields
  * - Multiple fallback selectors (primary + up to 3 alternatives)
  * - Rich metadata (aria-label, role, href, data-*, bounding box, text fingerprint)
  * - Live uniqueness badge (✅ 1 match / ⚠️ N matches) on hover
+ * - Avoids fragile :nth-of-type when possible; validates before returning
  */
 export function generatePickerScript(sessionId: string): string {
   return `javascript:void((function(){
@@ -31,6 +34,30 @@ function sapStableId(el){
   if(id.indexOf('--')!==-1){var stable=id.split('--').pop();if(stable&&stable.length>2&&!/^[0-9]+$/.test(stable))return stable;}
   return null;
 }
+/* Smart target: if hovering a wrapper div/span, prefer the interactive child inside */
+function smartTarget(el){
+  var tag=el.tagName.toLowerCase();
+  var interactive=['input','select','textarea','button','a'];
+  if(interactive.indexOf(tag)!==-1)return el;
+  /* Check if this element contains exactly one interactive child */
+  for(var i=0;i<interactive.length;i++){
+    var children=el.querySelectorAll(interactive[i]);
+    if(children.length===1)return children[0];
+  }
+  return el;
+}
+/* Find label text associated with a form field */
+function findLabelText(el){
+  /* Check for id-linked label */
+  if(el.id){var lbl=document.querySelector('label[for="'+CSS.escape(el.id)+'"]');if(lbl)return lbl.textContent.trim();}
+  /* Check for wrapping label */
+  var p=el.closest('label');if(p)return p.textContent.trim();
+  /* Check for preceding sibling label */
+  var prev=el.previousElementSibling;if(prev&&prev.tagName==='LABEL')return prev.textContent.trim();
+  /* Check parent for a label child before this element */
+  if(el.parentElement){var labels=el.parentElement.querySelectorAll('label');for(var i=0;i<labels.length;i++){var l=labels[i];if(l.textContent&&l.textContent.trim().length>1&&l.textContent.trim().length<80)return l.textContent.trim();}}
+  return null;
+}
 function nepTileSelector(el){
   var cur=el;var depth=0;
   while(cur&&cur!==document.body&&depth<10){
@@ -43,15 +70,6 @@ function nepTileSelector(el){
         }
       }
     }
-    cur=cur.parentElement;depth++;
-  }
-  return null;
-}
-function nepSectionSelector(el){
-  var cur=el;var depth=0;
-  while(cur&&cur!==document.body&&depth<15){
-    var secId=cur.getAttribute&&cur.getAttribute('data-nep-section-id');
-    if(secId){var s='[data-nep-section-id="'+secId+'"]';if(tryUnique(s))return{sel:s,el:cur};}
     cur=cur.parentElement;depth++;
   }
   return null;
@@ -72,9 +90,18 @@ function attrSel(el){
   if(rl&&al){var s='[role="'+rl+'"][aria-label="'+al+'"]';if(tryUnique(s))return s;}
   var tp=el.getAttribute('type');
   if(rl&&tp){var s=tag+'[role="'+rl+'"][type="'+tp+'"]';if(tryUnique(s))return s;}
+  /* For form fields: try type attribute alone or combined with parent context */
+  if(tag==='input'&&tp){var s=tag+'[type="'+tp+'"]';if(tryUnique(s))return s;}
   var sapAttrs=['data-sap-ui','data-sap-ui-type','data-sap-ui-customstyle','data-sap-ui-icon','data-help-id','data-automation-id','data-nep-section-id'];
   for(var i=0;i<sapAttrs.length;i++){var v=el.getAttribute(sapAttrs[i]);if(v&&!isSapDynamic(v)&&v.length<100){var s='['+sapAttrs[i]+'="'+v+'"]';if(tryUnique(s))return s;}}
   if(el.classList){var cls=Array.from(el.classList);for(var i=0;i<cls.length;i++){var m=cls[i].match(/^nepTile([0-9a-fA-F]{20,})$/);if(m){var s='.nepFCardContainer.'+cls[i];if(tryUnique(s))return s;var s2='.'+cls[i];if(tryUnique(s2))return s2;}}}
+  /* Try stable classes (non-dynamic, non-utility) */
+  if(el.classList&&el.classList.length>0){
+    var stableClasses=Array.from(el.classList).filter(function(c){return!c.startsWith('__wt_')&&!c.startsWith('sap')&&c.length>2&&c.length<50&&!/^[0-9]/.test(c);});
+    for(var i=0;i<stableClasses.length;i++){var s=tag+'.'+esc(stableClasses[i]);if(tryUnique(s))return s;}
+    /* Try combining 2 classes */
+    if(stableClasses.length>=2){for(var i=0;i<stableClasses.length-1;i++){for(var j=i+1;j<stableClasses.length;j++){var s=tag+'.'+esc(stableClasses[i])+'.'+esc(stableClasses[j]);if(tryUnique(s))return s;}}}
+  }
   var das=Array.from(el.attributes).filter(function(a){return a.name.startsWith('data-')&&a.value&&a.value.length<80&&!isSapDynamic(a.value);});
   for(var i=0;i<das.length;i++){var s=tag+'['+das[i].name+'="'+das[i].value+'"]';if(tryUnique(s))return s;}
   if(el.id&&!isSapDynamic(el.id)){var s='#'+esc(el.id);if(tryUnique(s))return s;}
@@ -92,6 +119,8 @@ function stableAncestor(el){
     if(p.id&&!isSapDynamic(p.id))return{sel:'#'+esc(p.id),el:p};
     var al=p.getAttribute('aria-label');
     if(al&&al.length<100){var s=p.tagName.toLowerCase()+'[aria-label="'+al+'"]';if(tryUnique(s))return{sel:s,el:p};}
+    /* Try stable class on ancestor */
+    if(p.classList){var stCls=Array.from(p.classList).filter(function(c){return!c.startsWith('__wt_')&&c.length>2&&c.length<50;});for(var i=0;i<stCls.length;i++){var s=p.tagName.toLowerCase()+'.'+esc(stCls[i]);if(tryUnique(s))return{sel:s,el:p};}}
     p=p.parentElement;depth++;
   }
   return null;
@@ -107,6 +136,14 @@ function getSelector(el){
     var tag=orig.tagName.toLowerCase();
     var childAttr=attrSel(orig);
     if(childAttr)return anc.sel+' '+childAttr;
+    /* Try ancestor + tag + type for form fields */
+    var tp=orig.getAttribute('type');
+    if(tp){var s=anc.sel+' '+tag+'[type="'+tp+'"]';if(tryUnique(s))return s;}
+    /* Try ancestor + tag + class combos */
+    if(orig.classList&&orig.classList.length>0){
+      var stCls=Array.from(orig.classList).filter(function(c){return!c.startsWith('__wt_')&&c.length>2;});
+      for(var i=0;i<stCls.length;i++){var s=anc.sel+' '+tag+'.'+esc(stCls[i]);if(tryUnique(s))return s;}
+    }
     var txt=orig.textContent&&orig.textContent.trim();
     if(txt&&txt.length>1&&txt.length<80){
       var sameTag=Array.from(anc.el.querySelectorAll(tag));
@@ -119,9 +156,24 @@ function getSelector(el){
     }
     var siblings=Array.from(anc.el.querySelectorAll(tag));
     if(siblings.length===1)return anc.sel+' '+tag;
+    /* Use nth-child as it's more reliable than nth-of-type for deeply nested elements */
     var idx=siblings.indexOf(orig);
-    if(idx!==-1&&siblings.length<20)return anc.sel+' '+tag+':nth-of-type('+(idx+1)+')';
+    if(idx!==-1&&siblings.length<20){
+      var s1=anc.sel+' '+tag+':nth-of-type('+(idx+1)+')';
+      if(tryUnique(s1))return s1;
+      /* Fallback: try nth-child on the direct parent */
+      if(orig.parentElement){
+        var directSibs=Array.from(orig.parentElement.children);
+        var childIdx=directSibs.indexOf(orig)+1;
+        if(childIdx>0){
+          var parentSel=attrSel(orig.parentElement);
+          if(parentSel){var s2=parentSel+' > '+tag+':nth-child('+childIdx+')';if(tryUnique(s2))return s2;}
+          if(orig.parentElement.id&&!isSapDynamic(orig.parentElement.id)){var s3='#'+esc(orig.parentElement.id)+' > '+tag+':nth-child('+childIdx+')';if(tryUnique(s3))return s3;}
+        }
+      }
+    }
   }
+  /* Path-based fallback */
   var path=[];
   var cur=orig;
   while(cur&&cur!==document.body&&cur!==document.documentElement){
@@ -135,20 +187,25 @@ function getSelector(el){
     if(allCls&&cur.parentElement&&cur.parentElement.querySelectorAll(tag+allCls).length===1){path.unshift(tag+allCls);break;}
     var parent=cur.parentElement;
     if(parent){var sibs=Array.from(parent.children).filter(function(c){return c.tagName===cur.tagName;});
-    if(sibs.length>1){var idx=sibs.indexOf(cur)+1;path.unshift(tag+':nth-of-type('+idx+')');}else{path.unshift(tag+(allCls||''));}}
+    if(sibs.length>1){var idx=sibs.indexOf(cur)+1;path.unshift(tag+':nth-child('+idx+')');}else{path.unshift(tag+(allCls||''));}}
     else{path.unshift(tag);}
     cur=parent;
   }
-  return path.join(' > ');
+  var result=path.join(' > ');
+  /* Final validation: if 0 matches, try simplifying */
+  if(countMatches(result)===0&&path.length>2){
+    /* Try removing middle path segments */
+    var simplified=path[0]+' '+path[path.length-1];
+    if(tryUnique(simplified))return simplified;
+  }
+  return result;
 }
 /* Generate multiple alternative selectors for fallback */
 function getAllSelectors(el){
   var selectors=[];
   var seen={};
   function addSel(s){if(s&&!seen[s]){seen[s]=true;selectors.push(s);}}
-  /* Primary selector */
   addSel(getSelector(el));
-  /* Try attribute-based alternatives */
   var tag=el.tagName.toLowerCase();
   var al=el.getAttribute('aria-label');
   if(al&&al.length<100)addSel(tag+'[aria-label="'+al+'"]');
@@ -160,22 +217,44 @@ function getAllSelectors(el){
   if(nm)addSel(tag+'[name="'+nm+'"]');
   var href=el.getAttribute('href');
   if(href&&href.length<150)addSel(tag+'[href="'+href+'"]');
-  /* ID-based (non-dynamic) */
   if(el.id&&!isSapDynamic(el.id))addSel('#'+esc(el.id));
-  /* SAP stable ID suffix */
   var stId=sapStableId(el);
   if(stId)addSel('[id$="--'+stId+'"]');
+  /* Label-based: find associated label and use it for context */
+  var labelText=findLabelText(el);
+  if(labelText&&labelText.length<60){
+    var labels=document.querySelectorAll('label');
+    for(var i=0;i<labels.length;i++){
+      if(labels[i].textContent&&labels[i].textContent.trim()===labelText){
+        var forId=labels[i].getAttribute('for');
+        if(forId){addSel('#'+esc(forId));}
+        /* Try label sibling approach */
+        var next=labels[i].nextElementSibling;
+        if(next&&next===el){addSel(tag);}
+        /* Try label parent approach */
+        var inp=labels[i].parentElement?labels[i].parentElement.querySelector(tag):null;
+        if(inp&&inp===el){
+          var pSel=attrSel(labels[i].parentElement);
+          if(pSel)addSel(pSel+' '+tag);
+        }
+        break;
+      }
+    }
+  }
   /* Ancestor-scoped alternatives */
   var anc=stableAncestor(el);
   if(anc){
     if(al)addSel(anc.sel+' '+tag+'[aria-label="'+al+'"]');
     if(tt)addSel(anc.sel+' '+tag+'[title="'+tt+'"]');
+    if(nm)addSel(anc.sel+' '+tag+'[name="'+nm+'"]');
+    var tp=el.getAttribute('type');
+    if(tp)addSel(anc.sel+' '+tag+'[type="'+tp+'"]');
     var cls=Array.from(el.classList||[]).filter(function(c){return!c.startsWith('__wt_')&&c.length<40;});
     if(cls.length>0){var clsSel=tag+'.'+cls.map(esc).join('.');addSel(anc.sel+' '+clsSel);}
   }
-  /* Filter to unique selectors only, then include non-unique as last resort */
+  /* Filter: unique first, then non-unique with matches, exclude 0-match */
   var unique=selectors.filter(function(s){return tryUnique(s);});
-  var nonUnique=selectors.filter(function(s){return!tryUnique(s)&&countMatches(s)>0;});
+  var nonUnique=selectors.filter(function(s){var n=countMatches(s);return n>1&&n<10;});
   var result=unique.concat(nonUnique);
   return result.slice(0,4);
 }
@@ -183,10 +262,12 @@ function getAllSelectors(el){
 function collectMeta(el){
   var rect=el.getBoundingClientRect();
   var txt=(el.textContent||'').trim();
+  var labelText=findLabelText(el);
   var meta={
     tag:el.tagName.toLowerCase(),
     classes:Array.from(el.classList||[]).filter(function(c){return!c.startsWith('__wt_');}),
     text:txt.substring(0,120),
+    label:labelText||'',
     ariaLabel:el.getAttribute('aria-label')||'',
     role:el.getAttribute('role')||'',
     href:el.getAttribute('href')||'',
@@ -198,9 +279,7 @@ function collectMeta(el){
     boundingBox:{top:Math.round(rect.top),left:Math.round(rect.left),width:Math.round(rect.width),height:Math.round(rect.height)},
     parentSelector:''
   };
-  /* Capture data-* attributes */
   try{Array.from(el.attributes).forEach(function(a){if(a.name.startsWith('data-')&&a.value&&a.value.length<100&&!isSapDynamic(a.value)){meta.dataAttrs[a.name]=a.value;}});}catch(ex){}
-  /* Parent context */
   try{var p=el.parentElement;if(p){if(p.id)meta.parentSelector='#'+CSS.escape(p.id);else{var pal=p.getAttribute('aria-label');if(pal)meta.parentSelector=p.tagName.toLowerCase()+'[aria-label="'+pal+'"]';}}}catch(ex){}
   return meta;
 }
@@ -213,7 +292,9 @@ function updateBadge(sel){
 function onMove(e){
   if(e.target===bar||bar.contains(e.target))return;
   if(lastEl)lastEl.classList.remove('__wt_picker_highlight');
-  lastEl=e.target;
+  /* Smart target: prefer interactive child over wrapper */
+  var target=smartTarget(e.target);
+  lastEl=target;
   lastEl.classList.add('__wt_picker_highlight');
   var sel=getSelector(lastEl);
   selSpan.textContent=sel;
@@ -222,9 +303,10 @@ function onMove(e){
 function onClick(e){
   e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
   if(e.target===bar||bar.contains(e.target))return;
-  var allSels=getAllSelectors(e.target);
-  var primary=allSels[0]||getSelector(e.target);
-  var meta=collectMeta(e.target);
+  var target=smartTarget(e.target);
+  var allSels=getAllSelectors(target);
+  var primary=allSels[0]||getSelector(target);
+  var meta=collectMeta(target);
   navigator.clipboard.writeText(primary).then(function(){
     selSpan.textContent='\\u2713 Copied: '+primary;
     selSpan.style.background='rgba(255,255,255,.3)';
