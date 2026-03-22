@@ -17,6 +17,7 @@ import NotFound from "./pages/NotFound";
 import ScribeRecording from "./pages/ScribeRecording";
 import ExtensionSimulator from "./pages/ExtensionSimulator";
 import WalkThruReport from "./pages/WalkThruReport";
+import ExtensionCABReport from "./pages/ExtensionCABReport";
 
 const queryClient = new QueryClient();
 
