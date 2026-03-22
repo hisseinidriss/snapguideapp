@@ -421,7 +421,7 @@ const ExtensionCABReport = () => {
         {/* 7. Security Assessment */}
         <section id="security">
           <h2 className="text-2xl font-bold border-b border-border pb-2 flex items-center gap-2">
-            <Shield className="h-6 w-6 text-primary" /> 6. Security Assessment
+            <Shield className="h-6 w-6 text-primary" /> 7. Security Assessment
           </h2>
 
           <h3>6.1 Threat Model</h3>
