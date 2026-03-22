@@ -386,7 +386,9 @@ frame-src https://www.youtube.com https://youtube.com
             <li>All styling is in the bundled <code>content.css</code> file</li>
             <li>All logic is in the bundled <code>content.js</code> and <code>popup.js</code> files</li>
             <li>Step progress is stored in <code>chrome.storage.local</code> (browser-local, no sync)</li>
-            <li>There are no <code>fetch()</code> calls to external servers (unless analytics is explicitly configured)</li>
+            <li>The <strong>only</strong> network activity is analytics tracking — the extension sends lightweight usage events 
+              (e.g., <code>tour_started</code>, <code>step_viewed</code>, <code>tour_completed</code>, <code>tour_abandoned</code>) to the <code>/api/track-events</code> endpoint. 
+              This is how the Analytics Dashboard generates extension activity reports. No user data, credentials, or page content is ever transmitted — only the event type, tour ID, step index, and a random session ID.</li>
           </ul>
           <p>
             <strong>Trade-off:</strong> Since the extension is a point-in-time snapshot, any changes made to business processes 
