@@ -469,7 +469,7 @@ frame-src https://www.youtube.com https://youtube.com
             videos in video-type steps only.
           </p>
 
-          <h3>6.3 DOM Isolation</h3>
+          <h3>7.3 DOM Isolation</h3>
           <p>
             The extension's CSS uses unique class prefixes (<code>bpg-</code>) and all DOM elements are created dynamically 
             by the content script. The extension does not modify existing DOM elements — it only <em>reads</em> their position 
