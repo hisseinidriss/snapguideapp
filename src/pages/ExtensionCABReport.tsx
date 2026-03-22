@@ -309,7 +309,116 @@ const ExtensionCABReport = () => {
           </p>
         </section>
 
-        {/* 6. Security Assessment */}
+        {/* 6. Analytics Data Flow */}
+        <section id="analytics-flow">
+          <h2 className="text-2xl font-bold border-b border-border pb-2 flex items-center gap-2">
+            <Server className="h-6 w-6 text-primary" /> 6. Analytics Data Flow
+          </h2>
+
+          <p>
+            When analytics is enabled, the extension sends lightweight, anonymous usage events through a simple pipeline.
+            The diagram below shows the complete data journey from user interaction to the analytics dashboard.
+          </p>
+
+          {/* Visual Flow Diagram */}
+          <div className="not-prose my-8">
+            <div className="bg-muted/50 rounded-lg p-6 border border-border">
+              <h3 className="text-sm font-semibold text-foreground mb-6 text-center">End-to-End Analytics Pipeline</h3>
+              
+              {/* Horizontal flow for larger screens, vertical for mobile */}
+              <div className="flex flex-col lg:flex-row items-center gap-3 lg:gap-0">
+                {[
+                  {
+                    icon: "🧩",
+                    title: "Browser Extension",
+                    desc: "User interacts with a tour step",
+                    detail: "Queues event locally (1s batch)",
+                    color: "bg-blue-100 dark:bg-blue-900/20 border-blue-300 dark:border-blue-700",
+                  },
+                  {
+                    icon: "📡",
+                    title: "POST /api/track-events",
+                    desc: "Batched HTTP request",
+                    detail: "{ tour_id, event_type, step_index, session_id }",
+                    color: "bg-amber-100 dark:bg-amber-900/20 border-amber-300 dark:border-amber-700",
+                  },
+                  {
+                    icon: "🗄️",
+                    title: "tour_events Table",
+                    desc: "Database inserts validated rows",
+                    detail: "No PII — only IDs & event types",
+                    color: "bg-emerald-100 dark:bg-emerald-900/20 border-emerald-300 dark:border-emerald-700",
+                  },
+                  {
+                    icon: "📊",
+                    title: "Analytics Dashboard",
+                    desc: "Admin views aggregated metrics",
+                    detail: "Completion rates, drop-off points, usage trends",
+                    color: "bg-purple-100 dark:bg-purple-900/20 border-purple-300 dark:border-purple-700",
+                  },
+                ].map((node, i, arr) => (
+                  <div key={i} className="flex flex-col lg:flex-row items-center gap-3 lg:gap-0 w-full lg:w-auto">
+                    <div className={`${node.color} border rounded-lg p-4 text-center w-full lg:w-40 flex-shrink-0`}>
+                      <span className="text-2xl block mb-1">{node.icon}</span>
+                      <p className="text-xs font-bold text-foreground leading-tight">{node.title}</p>
+                      <p className="text-[10px] text-muted-foreground mt-1">{node.desc}</p>
+                      <p className="text-[9px] text-muted-foreground/70 mt-1 italic">{node.detail}</p>
+                    </div>
+                    {i < arr.length - 1 && (
+                      <>
+                        <span className="hidden lg:block text-muted-foreground text-lg px-2">→</span>
+                        <span className="lg:hidden text-muted-foreground text-lg">↓</span>
+                      </>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Data transmitted table */}
+          <h3>6.1 What Data Is Transmitted</h3>
+          <div className="not-prose my-4">
+            <table className="w-full text-sm border border-border rounded-lg overflow-hidden">
+              <thead className="bg-muted">
+                <tr>
+                  <th className="text-left p-3 font-semibold text-foreground">Field</th>
+                  <th className="text-left p-3 font-semibold text-foreground">Example Value</th>
+                  <th className="text-left p-3 font-semibold text-foreground">Contains PII?</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {[
+                  { field: "tour_id", example: "a1b2c3d4-...", pii: false },
+                  { field: "app_id", example: "e5f6g7h8-...", pii: false },
+                  { field: "event_type", example: "tour_started", pii: false },
+                  { field: "step_index", example: "3", pii: false },
+                  { field: "session_id", example: "wt_k7x9m2...", pii: false },
+                ].map((row, i) => (
+                  <tr key={i}>
+                    <td className="p-3 font-mono text-xs text-muted-foreground">{row.field}</td>
+                    <td className="p-3 font-mono text-xs text-muted-foreground">{row.example}</td>
+                    <td className="p-3">
+                      <span className="inline-flex px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400">
+                        No
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <h3>6.2 Security Controls</h3>
+          <ul>
+            <li><strong>No authentication required</strong> — the tracking endpoint accepts anonymous events (no tokens or credentials leave the extension)</li>
+            <li><strong>Server-side validation</strong> — the API only accepts whitelisted event types; malformed payloads are rejected</li>
+            <li><strong>No reverse path</strong> — the extension never reads from the database at runtime; data flows in one direction only</li>
+            <li><strong>Opt-in only</strong> — analytics is disabled by default; a tracking URL must be explicitly configured during extension generation</li>
+          </ul>
+        </section>
+
+        {/* 7. Security Assessment */}
         <section id="security">
           <h2 className="text-2xl font-bold border-b border-border pb-2 flex items-center gap-2">
             <Shield className="h-6 w-6 text-primary" /> 6. Security Assessment
