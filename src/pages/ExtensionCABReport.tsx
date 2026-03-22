@@ -551,10 +551,10 @@ frame-src https://www.youtube.com https://youtube.com
           </p>
         </section>
 
-        {/* 9. File Inventory */}
+        {/* 10. File Inventory */}
         <section id="file-inventory">
           <h2 className="text-2xl font-bold border-b border-border pb-2 flex items-center gap-2">
-            <FileCode className="h-6 w-6 text-primary" /> 9. File Inventory & Code Review
+            <FileCode className="h-6 w-6 text-primary" /> 10. File Inventory & Code Review
           </h2>
           <p>Every extension package contains exactly these files — no more, no less:</p>
           <div className="not-prose my-4">
