@@ -386,7 +386,9 @@ frame-src https://www.youtube.com https://youtube.com
             <li>All styling is in the bundled <code>content.css</code> file</li>
             <li>All logic is in the bundled <code>content.js</code> and <code>popup.js</code> files</li>
             <li>Step progress is stored in <code>chrome.storage.local</code> (browser-local, no sync)</li>
-            <li>There are no <code>fetch()</code> calls to external servers (unless analytics is explicitly configured)</li>
+            <li>The <strong>only</strong> network activity is analytics tracking — the extension sends lightweight usage events 
+              (e.g., <code>tour_started</code>, <code>step_viewed</code>, <code>tour_completed</code>, <code>tour_abandoned</code>) to the <code>/api/track-events</code> endpoint. 
+              This is how the Analytics Dashboard generates extension activity reports. No user data, credentials, or page content is ever transmitted — only the event type, tour ID, step index, and a random session ID.</li>
           </ul>
           <p>
             <strong>Trade-off:</strong> Since the extension is a point-in-time snapshot, any changes made to business processes 
@@ -491,8 +493,8 @@ frame-src https://www.youtube.com https://youtube.com
               <div className="bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-200 dark:border-emerald-800 rounded-lg p-4">
                 <h4 className="font-semibold text-sm text-emerald-700 dark:text-emerald-400 mb-2">✅ Low Risk Factors</h4>
                 <ul className="space-y-1.5 text-xs text-emerald-600 dark:text-emerald-300">
-                  <li>• No network connectivity required</li>
-                  <li>• No data collection or transmission</li>
+                  <li>• Minimal network activity (anonymous analytics events only)</li>
+                  <li>• No user data collection or transmission</li>
                   <li>• No access to credentials or sensitive data</li>
                   <li>• Read-only interaction with the host page</li>
                   <li>• Scoped to a single application URL</li>
@@ -517,8 +519,8 @@ frame-src https://www.youtube.com https://youtube.com
           <div className="not-prose my-4 bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-200 dark:border-emerald-800 rounded-lg p-5 text-center">
             <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-400 mb-1">LOW RISK</p>
             <p className="text-sm text-emerald-600 dark:text-emerald-300">
-              The extension is a self-contained, read-only, offline UI overlay with no data access, no network activity, 
-              and no ability to modify application state. It is comparable in risk profile to a browser bookmark or a static PDF document.
+              The extension is a self-contained, read-only UI overlay with minimal network activity (anonymous analytics events only), 
+              no access to user data or credentials, and no ability to modify application state.
             </p>
           </div>
         </section>
