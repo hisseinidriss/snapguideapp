@@ -424,7 +424,7 @@ const ExtensionCABReport = () => {
             <Shield className="h-6 w-6 text-primary" /> 7. Security Assessment
           </h2>
 
-          <h3>6.1 Threat Model</h3>
+          <h3>7.1 Threat Model</h3>
           <div className="not-prose my-4">
             <table className="w-full text-sm border border-border rounded-lg overflow-hidden">
               <thead className="bg-muted">
