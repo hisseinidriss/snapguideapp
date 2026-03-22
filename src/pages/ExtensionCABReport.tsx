@@ -635,9 +635,9 @@ frame-src https://www.youtube.com https://youtube.com
           </div>
         </section>
 
-        {/* 11. FAQ */}
+        {/* 12. FAQ */}
         <section id="faq">
-          <h2 className="text-2xl font-bold border-b border-border pb-2">11. Frequently Asked Questions</h2>
+          <h2 className="text-2xl font-bold border-b border-border pb-2">12. Frequently Asked Questions</h2>
 
           <h3>Can the extension access my SAP/Neptune data?</h3>
           <p>
