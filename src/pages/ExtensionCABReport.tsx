@@ -506,10 +506,10 @@ frame-src https://www.youtube.com https://youtube.com
           </p>
         </section>
 
-        {/* 8. Permissions */}
+        {/* 9. Permissions */}
         <section id="permissions">
           <h2 className="text-2xl font-bold border-b border-border pb-2 flex items-center gap-2">
-            <Lock className="h-6 w-6 text-primary" /> 8. Browser Permissions Explained
+            <Lock className="h-6 w-6 text-primary" /> 9. Browser Permissions Explained
           </h2>
           <div className="not-prose my-4">
             <table className="w-full text-sm border border-border rounded-lg overflow-hidden">
