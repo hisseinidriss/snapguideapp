@@ -592,10 +592,10 @@ frame-src https://www.youtube.com https://youtube.com
           </p>
         </section>
 
-        {/* 10. Risk Assessment */}
+        {/* 11. Risk Assessment */}
         <section id="risk-assessment">
           <h2 className="text-2xl font-bold border-b border-border pb-2 flex items-center gap-2">
-            <Server className="h-6 w-6 text-primary" /> 10. Risk Assessment
+            <Server className="h-6 w-6 text-primary" /> 11. Risk Assessment
           </h2>
 
           <div className="not-prose my-4">
