@@ -17,6 +17,7 @@ import NotFound from "./pages/NotFound";
 import ScribeRecording from "./pages/ScribeRecording";
 import ExtensionSimulator from "./pages/ExtensionSimulator";
 import WalkThruReport from "./pages/WalkThruReport";
+import ExtensionCABReport from "./pages/ExtensionCABReport";
 
 const queryClient = new QueryClient();
 
@@ -39,6 +40,7 @@ const App = () => (
             <Route path="/app/:appId/recording/:recordingId" element={<ScribeRecording />} />
             <Route path="/app/:appId/simulator" element={<ExtensionSimulator />} />
             <Route path="/report" element={<WalkThruReport />} />
+            <Route path="/cab-report" element={<ExtensionCABReport />} />
             <Route path="/guide" element={<UserGuide />} />
             <Route path="/account" element={<Account />} />
             <Route path="*" element={<NotFound />} />
