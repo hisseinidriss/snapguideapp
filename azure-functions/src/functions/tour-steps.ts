@@ -87,7 +87,12 @@ app.http("tour-steps-update-delete", {
         for (const [key, value] of Object.entries(body)) {
           if (allowedFields.includes(key)) {
             fields.push(`${key} = $${i++}`);
-            values.push(value);
+            // Stringify JSON fields for PostgreSQL
+            if ((key === 'fallback_selectors' || key === 'element_metadata') && value !== null && typeof value === 'object') {
+              values.push(JSON.stringify(value));
+            } else {
+              values.push(value);
+            }
           }
         }
         if (fields.length === 0) return errorResponse("No valid fields", 400);
