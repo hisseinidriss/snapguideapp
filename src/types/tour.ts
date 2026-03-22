@@ -35,6 +35,8 @@ export interface TourStep {
   click_selector: string | null;
   step_type: string;
   video_url: string | null;
+  fallback_selectors: string[] | null;
+  element_metadata: Record<string, any> | null;
   created_at: string;
   updated_at: string;
 }

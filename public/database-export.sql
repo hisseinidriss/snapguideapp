@@ -57,6 +57,8 @@ CREATE TABLE IF NOT EXISTS public.tour_steps (
   step_type text NOT NULL DEFAULT 'standard',
   video_url text,
   sort_order integer NOT NULL DEFAULT 0,
+  fallback_selectors jsonb DEFAULT '[]'::jsonb,
+  element_metadata jsonb DEFAULT '{}'::jsonb,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );

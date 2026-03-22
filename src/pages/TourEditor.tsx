@@ -355,7 +355,18 @@ const TourEditor = () => {
       </div>
 
       <ElementPickerDialog open={pickerOpen} onOpenChange={setPickerOpen} appUrl={appUrl}
-        onSelectorPicked={(selector) => { if (selectedStepId) updateStep(selectedStepId, { selector }); }}
+        onSelectorPicked={(selector, result) => {
+          if (selectedStepId) {
+            const updates: Partial<TourStep> = { selector };
+            if (result?.fallbacks && result.fallbacks.length > 0) {
+              updates.fallback_selectors = result.fallbacks;
+            }
+            if (result?.meta) {
+              updates.element_metadata = result.meta as Record<string, any>;
+            }
+            updateStep(selectedStepId, updates);
+          }
+        }}
       />
     </div>
   );

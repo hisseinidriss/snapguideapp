@@ -22,13 +22,15 @@ app.http("tour-steps-list-create", {
 
       if (req.method === "POST") {
         const body = await req.json() as any;
-        const { tour_id, title, content, selector, placement, target_url, click_selector, step_type, video_url, sort_order } = body;
+        const { tour_id, title, content, selector, placement, target_url, click_selector, step_type, video_url, sort_order, fallback_selectors, element_metadata } = body;
         const result = await query(
-          `INSERT INTO tour_steps (tour_id, title, content, selector, placement, target_url, click_selector, step_type, video_url, sort_order)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
+          `INSERT INTO tour_steps (tour_id, title, content, selector, placement, target_url, click_selector, step_type, video_url, sort_order, fallback_selectors, element_metadata)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
           [tour_id, title || "New Step", content || "Describe what happens here.", selector || "",
            placement || "bottom", target_url || null, click_selector || null,
-           step_type || "standard", video_url || null, sort_order || 0]
+           step_type || "standard", video_url || null, sort_order || 0,
+           fallback_selectors ? JSON.stringify(fallback_selectors) : '[]',
+           element_metadata ? JSON.stringify(element_metadata) : '{}']
         );
         return jsonResponse(result.rows[0], 201);
       }
@@ -78,14 +80,19 @@ app.http("tour-steps-update-delete", {
     try {
       if (req.method === "PATCH") {
         const body = await req.json() as any;
-        const allowedFields = ["title", "content", "selector", "placement", "target_url", "click_selector", "step_type", "video_url", "sort_order", "tour_id"];
+        const allowedFields = ["title", "content", "selector", "placement", "target_url", "click_selector", "step_type", "video_url", "sort_order", "tour_id", "fallback_selectors", "element_metadata"];
         const fields: string[] = [];
         const values: any[] = [];
         let i = 1;
         for (const [key, value] of Object.entries(body)) {
           if (allowedFields.includes(key)) {
             fields.push(`${key} = $${i++}`);
-            values.push(value);
+            // Stringify JSON fields for PostgreSQL
+            if ((key === 'fallback_selectors' || key === 'element_metadata') && value !== null && typeof value === 'object') {
+              values.push(JSON.stringify(value));
+            } else {
+              values.push(value);
+            }
           }
         }
         if (fields.length === 0) return errorResponse("No valid fields", 400);
