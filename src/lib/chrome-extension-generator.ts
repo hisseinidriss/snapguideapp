@@ -803,7 +803,29 @@ export function getContentJS(): string {
           }
         }
 
-        // Strategy 3: Fallback selectors
+        // Strategy 3: Stored fallback selectors from picker (higher quality)
+        var storedFallbacks = step.fallback_selectors || [];
+        for (var sf = 0; sf < storedFallbacks.length; sf++) {
+          var sfEl = safeQuerySelector(storedFallbacks[sf]);
+          if (sfEl && isElementVisible(sfEl)) { resolve(sfEl); return; }
+        }
+
+        // Strategy 3b: Metadata-based recovery (aria-label, name, placeholder)
+        var meta = step.element_metadata || {};
+        if (meta.ariaLabel) {
+          var metaEl = safeQuerySelector((meta.tag || '*') + '[aria-label="' + meta.ariaLabel + '"]');
+          if (metaEl && isElementVisible(metaEl)) { resolve(metaEl); return; }
+        }
+        if (meta.name) {
+          var nameEl = safeQuerySelector((meta.tag || '*') + '[name="' + meta.name + '"]');
+          if (nameEl && isElementVisible(nameEl)) { resolve(nameEl); return; }
+        }
+        if (meta.placeholder) {
+          var phEl = safeQuerySelector((meta.tag || '*') + '[placeholder="' + meta.placeholder + '"]');
+          if (phEl && isElementVisible(phEl)) { resolve(phEl); return; }
+        }
+
+        // Strategy 4: Generated fallback selectors (dynamic)
         var fallbacks = generateFallbackSelectors(selector);
         for (var i = 0; i < fallbacks.length; i++) {
           var candidates = safeQuerySelectorAll(fallbacks[i]);
