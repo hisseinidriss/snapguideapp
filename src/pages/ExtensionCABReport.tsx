@@ -46,6 +46,7 @@ const ExtensionCABReport = () => {
             <li><a href="#what-it-doesnt" className="text-primary hover:underline">What the Extension Does NOT Do</a></li>
             <li><a href="#how-it-works" className="text-primary hover:underline">How It Works — Technical Deep Dive</a></li>
             <li><a href="#database" className="text-primary hover:underline">Database Relationship</a></li>
+            <li><a href="#analytics-flow" className="text-primary hover:underline">Analytics Data Flow</a></li>
             <li><a href="#security" className="text-primary hover:underline">Security Assessment</a></li>
             <li><a href="#standalone" className="text-primary hover:underline">Standalone Operation</a></li>
             <li><a href="#permissions" className="text-primary hover:underline">Browser Permissions Explained</a></li>
