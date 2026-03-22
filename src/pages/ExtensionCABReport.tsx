@@ -457,7 +457,7 @@ const ExtensionCABReport = () => {
             </table>
           </div>
 
-          <h3>6.2 Content Security Policy</h3>
+          <h3>7.2 Content Security Policy</h3>
           <p>The extension's manifest enforces a strict Content Security Policy:</p>
           <pre className="text-xs"><code>{`script-src 'self'; object-src 'self'; 
 frame-src https://www.youtube.com https://youtube.com 
