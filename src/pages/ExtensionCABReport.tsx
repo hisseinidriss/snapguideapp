@@ -519,8 +519,8 @@ frame-src https://www.youtube.com https://youtube.com
           <div className="not-prose my-4 bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-200 dark:border-emerald-800 rounded-lg p-5 text-center">
             <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-400 mb-1">LOW RISK</p>
             <p className="text-sm text-emerald-600 dark:text-emerald-300">
-              The extension is a self-contained, read-only, offline UI overlay with no data access, no network activity, 
-              and no ability to modify application state. It is comparable in risk profile to a browser bookmark or a static PDF document.
+              The extension is a self-contained, read-only UI overlay with minimal network activity (anonymous analytics events only), 
+              no access to user data or credentials, and no ability to modify application state.
             </p>
           </div>
         </section>
