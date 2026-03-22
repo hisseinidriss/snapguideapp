@@ -478,10 +478,10 @@ frame-src https://www.youtube.com https://youtube.com
           </p>
         </section>
 
-        {/* 7. Standalone Operation */}
+        {/* 8. Standalone Operation */}
         <section id="standalone">
           <h2 className="text-2xl font-bold border-b border-border pb-2 flex items-center gap-2">
-            <Globe className="h-6 w-6 text-primary" /> 7. Standalone Operation
+            <Globe className="h-6 w-6 text-primary" /> 8. Standalone Operation
           </h2>
           <div className="bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-200 dark:border-emerald-800 rounded-lg p-5 my-4 not-prose">
             <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-400 mb-2">Yes — the extension works 100% on its own.</p>
