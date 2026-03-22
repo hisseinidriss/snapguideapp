@@ -341,6 +341,8 @@ export type Database = {
           click_selector: string | null
           content: string
           created_at: string
+          element_metadata: Json | null
+          fallback_selectors: Json | null
           id: string
           placement: string
           selector: string | null
@@ -356,6 +358,8 @@ export type Database = {
           click_selector?: string | null
           content?: string
           created_at?: string
+          element_metadata?: Json | null
+          fallback_selectors?: Json | null
           id?: string
           placement?: string
           selector?: string | null
@@ -371,6 +375,8 @@ export type Database = {
           click_selector?: string | null
           content?: string
           created_at?: string
+          element_metadata?: Json | null
+          fallback_selectors?: Json | null
           id?: string
           placement?: string
           selector?: string | null
