@@ -80,7 +80,7 @@ app.http("tour-steps-update-delete", {
     try {
       if (req.method === "PATCH") {
         const body = await req.json() as any;
-        const allowedFields = ["title", "content", "selector", "placement", "target_url", "click_selector", "step_type", "video_url", "sort_order", "tour_id"];
+        const allowedFields = ["title", "content", "selector", "placement", "target_url", "click_selector", "step_type", "video_url", "sort_order", "tour_id", "fallback_selectors", "element_metadata"];
         const fields: string[] = [];
         const values: any[] = [];
         let i = 1;
