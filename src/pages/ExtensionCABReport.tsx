@@ -493,8 +493,8 @@ frame-src https://www.youtube.com https://youtube.com
               <div className="bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-200 dark:border-emerald-800 rounded-lg p-4">
                 <h4 className="font-semibold text-sm text-emerald-700 dark:text-emerald-400 mb-2">✅ Low Risk Factors</h4>
                 <ul className="space-y-1.5 text-xs text-emerald-600 dark:text-emerald-300">
-                  <li>• No network connectivity required</li>
-                  <li>• No data collection or transmission</li>
+                  <li>• Minimal network activity (anonymous analytics events only)</li>
+                  <li>• No user data collection or transmission</li>
                   <li>• No access to credentials or sensitive data</li>
                   <li>• Read-only interaction with the host page</li>
                   <li>• Scoped to a single application URL</li>
