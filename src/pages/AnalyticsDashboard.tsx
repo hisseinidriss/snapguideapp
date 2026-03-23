@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, Eye, CheckCircle2, LogOut, TrendingUp, BarChart3 } from "lucide-react";
+import { ArrowLeft, Eye, CheckCircle2, LogOut, TrendingUp, BarChart3, ThumbsUp, ThumbsDown, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { appsApi } from "@/api/apps";
 import { toursApi } from "@/api/tours";
 import { analyticsApi, type TourEvent } from "@/api/analytics";
+import { feedbackApi, type TourFeedback } from "@/api/feedback";
 import type { Tour } from "@/types/tour";
 
 interface TourStats {
