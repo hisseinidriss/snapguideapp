@@ -31,6 +31,7 @@ const AnalyticsDashboard = () => {
   const [appName, setAppName] = useState("");
   const [stats, setStats] = useState<TourStats[]>([]);
   const [dailyCounts, setDailyCounts] = useState<DailyCount[]>([]);
+  const [feedback, setFeedback] = useState<TourFeedback[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTourId, setSelectedTourId] = useState<string | null>(null);
 
