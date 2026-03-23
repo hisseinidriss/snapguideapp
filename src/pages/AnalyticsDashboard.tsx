@@ -313,8 +313,8 @@ const AnalyticsDashboard = () => {
                   </Card>
                   <Card className="p-4 text-center">
                     <div className="flex items-center justify-center gap-1">
-                      <ThumbsUp className="h-4 w-4 text-green-600" />
-                      <p className="text-2xl font-bold text-green-600">
+                      <ThumbsUp className="h-4 w-4 text-success" />
+                      <p className="text-2xl font-bold text-success">
                         {feedback.filter(f => f.rating === 'up').length}
                       </p>
                     </div>
