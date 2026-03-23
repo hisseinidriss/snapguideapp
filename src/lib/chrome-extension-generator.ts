@@ -901,9 +901,7 @@ export function getContentJS(): string {
       fetch(_bpgData.trackUrl, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'apikey': _bpgData.anonKey,
-          'Authorization': 'Bearer ' + _bpgData.anonKey
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({ events: batch })
       }).catch(function(){});
