@@ -910,6 +910,96 @@ export function getContentJS(): string {
 
   window.addEventListener('beforeunload', flushEvents);
 
+  function showFeedbackDialog(tourId, appId, sessionId, trackUrl) {
+    var overlay = document.createElement('div');
+    overlay.id = 'bpg-feedback-overlay';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.4);z-index:2147483647;display:flex;align-items:center;justify-content:center;font-family:-apple-system,BlinkMacSystemFont,sans-serif;';
+
+    var box = document.createElement('div');
+    box.style.cssText = 'background:#fff;border-radius:12px;padding:28px 32px;max-width:380px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.2);text-align:center;';
+
+    var title = document.createElement('div');
+    title.textContent = 'How was this walkthrough?';
+    title.style.cssText = 'font-size:16px;font-weight:600;color:#1a1a1a;margin-bottom:4px;';
+
+    var sub = document.createElement('div');
+    sub.textContent = 'Your feedback helps us improve.';
+    sub.style.cssText = 'font-size:13px;color:#6b7280;margin-bottom:20px;';
+
+    var btnRow = document.createElement('div');
+    btnRow.style.cssText = 'display:flex;gap:16px;justify-content:center;margin-bottom:16px;';
+
+    var selectedRating = null;
+
+    function makeBtn(emoji, label, value) {
+      var b = document.createElement('button');
+      b.innerHTML = '<span style="font-size:28px;display:block;margin-bottom:4px;">' + emoji + '</span><span style="font-size:11px;color:#6b7280;">' + label + '</span>';
+      b.style.cssText = 'border:2px solid #e5e7eb;border-radius:10px;padding:12px 24px;cursor:pointer;background:#fff;transition:all 0.15s;';
+      b.onmouseenter = function() { b.style.borderColor = '#4d8b6f'; b.style.background = '#f0fdf4'; };
+      b.onmouseleave = function() { if (selectedRating !== value) { b.style.borderColor = '#e5e7eb'; b.style.background = '#fff'; } };
+      b.onclick = function() {
+        selectedRating = value;
+        btnRow.querySelectorAll('button').forEach(function(btn) { btn.style.borderColor = '#e5e7eb'; btn.style.background = '#fff'; });
+        b.style.borderColor = '#4d8b6f';
+        b.style.background = '#f0fdf4';
+        commentArea.style.display = 'block';
+        submitRow.style.display = 'flex';
+      };
+      return b;
+    }
+
+    btnRow.appendChild(makeBtn(String.fromCodePoint(0x1F44D), 'Helpful', 'up'));
+    btnRow.appendChild(makeBtn(String.fromCodePoint(0x1F44E), 'Not helpful', 'down'));
+
+    var commentArea = document.createElement('textarea');
+    commentArea.placeholder = 'Any additional comments? (optional)';
+    commentArea.style.cssText = 'display:none;width:100%;min-height:60px;border:1px solid #d1d5db;border-radius:8px;padding:8px 12px;font-size:13px;resize:vertical;margin-bottom:12px;box-sizing:border-box;font-family:inherit;';
+
+    var submitRow = document.createElement('div');
+    submitRow.style.cssText = 'display:none;gap:8px;justify-content:center;';
+
+    var submitBtn = document.createElement('button');
+    submitBtn.textContent = 'Submit';
+    submitBtn.style.cssText = 'background:#4d8b6f;color:#fff;border:none;border-radius:8px;padding:8px 24px;font-size:13px;font-weight:500;cursor:pointer;';
+    submitBtn.onclick = function() {
+      if (!selectedRating) return;
+      var feedbackUrl = trackUrl.replace('/track-events', '/feedback');
+      try {
+        fetch(feedbackUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tour_id: tourId, app_id: appId, session_id: sessionId, rating: selectedRating, comment: commentArea.value || null })
+        }).catch(function(){});
+      } catch(e) {}
+      overlay.remove();
+    };
+
+    var skipBtn = document.createElement('button');
+    skipBtn.textContent = 'Skip';
+    skipBtn.style.cssText = 'background:transparent;color:#6b7280;border:1px solid #d1d5db;border-radius:8px;padding:8px 16px;font-size:13px;cursor:pointer;';
+    skipBtn.onclick = function() { overlay.remove(); };
+
+    submitRow.appendChild(submitBtn);
+    submitRow.appendChild(skipBtn);
+
+    // Also add a standalone skip at bottom for users who don't want to rate
+    var skipAlone = document.createElement('div');
+    skipAlone.innerHTML = '<button style="background:none;border:none;color:#9ca3af;font-size:12px;cursor:pointer;margin-top:8px;">Skip feedback</button>';
+    skipAlone.querySelector('button').onclick = function() { overlay.remove(); };
+
+    box.appendChild(title);
+    box.appendChild(sub);
+    box.appendChild(btnRow);
+    box.appendChild(commentArea);
+    box.appendChild(submitRow);
+    box.appendChild(skipAlone);
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+
+    // Auto-dismiss after 30 seconds
+    setTimeout(function() { if (document.getElementById('bpg-feedback-overlay')) overlay.remove(); }, 30000);
+  }
+
   // Listen for messages from popup - registered immediately, outside init()
   chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     if (msg.type === 'START_PROCESS') {
@@ -1056,12 +1146,15 @@ export function getContentJS(): string {
       // Process completed - mark as completed in storage and notify popup
       if (currentProcess) {
         var completedProcessId = currentProcess.id;
+        var completedSessionId = _sessionId;
         trackEvent('tour_completed', null);
         flushEvents();
         // Clear any stale resume/pending data
         sessionStorage.removeItem('bpg_resume');
         chrome.storage.local.remove('bpg_pending_process');
         cleanup();
+        var savedAppId = _bpgData.appId;
+        var savedTrackUrl = _bpgData.trackUrl;
         currentProcess = null;
         currentStepIndex = 0;
         chrome.storage.local.get(['bpg_completed'], function(result) {
@@ -1070,6 +1163,8 @@ export function getContentJS(): string {
           chrome.storage.local.set({ bpg_completed: completed });
           try { chrome.runtime.sendMessage({ type: 'PROCESS_COMPLETED', processId: completedProcessId }); } catch(e) {}
         });
+        // Show feedback dialog
+        showFeedbackDialog(completedProcessId, savedAppId, completedSessionId, savedTrackUrl);
       } else {
         cleanup();
         currentProcess = null;

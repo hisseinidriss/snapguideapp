@@ -336,6 +336,36 @@ export type Database = {
           },
         ]
       }
+      tour_feedback: {
+        Row: {
+          app_id: string
+          comment: string | null
+          created_at: string
+          id: string
+          rating: string
+          session_id: string
+          tour_id: string
+        }
+        Insert: {
+          app_id: string
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rating: string
+          session_id: string
+          tour_id: string
+        }
+        Update: {
+          app_id?: string
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rating?: string
+          session_id?: string
+          tour_id?: string
+        }
+        Relationships: []
+      }
       tour_steps: {
         Row: {
           click_selector: string | null
