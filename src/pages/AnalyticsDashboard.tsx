@@ -344,7 +344,7 @@ const AnalyticsDashboard = () => {
                         <span className="text-xs text-muted-foreground">{tourFb.length} responses · {pct}% positive</span>
                       </div>
                       <div className="h-2 bg-muted rounded-full overflow-hidden mb-3">
-                        <div className="h-full bg-green-500 rounded-full" style={{ width: `${pct}%` }} />
+                        <div className="h-full bg-primary rounded-full" style={{ width: `${pct}%` }} />
                       </div>
                       {/* Show comments */}
                       {tourFb.filter(f => f.comment).length > 0 && (
