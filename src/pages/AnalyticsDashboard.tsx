@@ -352,9 +352,9 @@ const AnalyticsDashboard = () => {
                           {tourFb.filter(f => f.comment).slice(0, 5).map(f => (
                             <div key={f.id} className="flex items-start gap-2 text-xs">
                               {f.rating === 'up' ? (
-                                <ThumbsUp className="h-3 w-3 text-green-600 mt-0.5 shrink-0" />
+                                <ThumbsUp className="h-3 w-3 text-success mt-0.5 shrink-0" />
                               ) : (
-                                <ThumbsDown className="h-3 w-3 text-red-500 mt-0.5 shrink-0" />
+                                <ThumbsDown className="h-3 w-3 text-destructive mt-0.5 shrink-0" />
                               )}
                               <div>
                                 <p className="text-foreground">{f.comment}</p>
