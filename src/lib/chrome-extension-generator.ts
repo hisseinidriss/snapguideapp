@@ -876,14 +876,14 @@ export function getContentJS(): string {
     });
   }
 
-  let _bpgData = { processes: [], launchers: [], appName: '', appId: '', trackUrl: '', anonKey: '' };
+  let _bpgData = { processes: [], launchers: [], appName: '', appId: '', trackUrl: '' };
   var _sessionId = 'bpg_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
   var _eventQueue = [];
   var _dataReady = false;
   var _pendingStartIndex = null;
 
   function trackEvent(eventType, stepIndex) {
-    if (!_bpgData.trackUrl || !_bpgData.anonKey || !_bpgData.appId || !currentProcess) return;
+    if (!_bpgData.trackUrl || !_bpgData.appId || !currentProcess) return;
     _eventQueue.push({
       tour_id: currentProcess.id,
       app_id: _bpgData.appId,
@@ -901,9 +901,7 @@ export function getContentJS(): string {
       fetch(_bpgData.trackUrl, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'apikey': _bpgData.anonKey,
-          'Authorization': 'Bearer ' + _bpgData.anonKey
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({ events: batch })
       }).catch(function(){});
@@ -1534,9 +1532,7 @@ export function getContentJS(): string {
       fetch(saveUrl, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'apikey': _bpgData.anonKey,
-          'Authorization': 'Bearer ' + _bpgData.anonKey
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           recording_id: _scribeRecordingId,
