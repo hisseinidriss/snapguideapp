@@ -1056,12 +1056,15 @@ export function getContentJS(): string {
       // Process completed - mark as completed in storage and notify popup
       if (currentProcess) {
         var completedProcessId = currentProcess.id;
+        var completedSessionId = _sessionId;
         trackEvent('tour_completed', null);
         flushEvents();
         // Clear any stale resume/pending data
         sessionStorage.removeItem('bpg_resume');
         chrome.storage.local.remove('bpg_pending_process');
         cleanup();
+        var savedAppId = _bpgData.appId;
+        var savedTrackUrl = _bpgData.trackUrl;
         currentProcess = null;
         currentStepIndex = 0;
         chrome.storage.local.get(['bpg_completed'], function(result) {
@@ -1070,6 +1073,8 @@ export function getContentJS(): string {
           chrome.storage.local.set({ bpg_completed: completed });
           try { chrome.runtime.sendMessage({ type: 'PROCESS_COMPLETED', processId: completedProcessId }); } catch(e) {}
         });
+        // Show feedback dialog
+        showFeedbackDialog(completedProcessId, savedAppId, completedSessionId, savedTrackUrl);
       } else {
         cleanup();
         currentProcess = null;
