@@ -53,7 +53,7 @@ export async function generateChromeExtension(
   const processes: Process[] = [];
   if (tours?.length) {
     const ids = tours.map((t: any) => t.id);
-    const { data: steps } = await apiGet<any[]>(`/api/tour-steps?tour_ids=${ids.join(",")}`);
+    const { data: steps } = await apiPost<any[]>("/api/tour-steps/by-tours", { tour_ids: ids });
 
     for (const tour of tours) {
       processes.push({
