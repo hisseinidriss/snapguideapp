@@ -291,6 +291,85 @@ const AnalyticsDashboard = () => {
               </div>
             )}
           </div>
+          {/* Feedback Section */}
+          <div>
+            <h2 className="text-sm font-semibold mb-4 flex items-center gap-2">
+              <MessageSquare className="h-4 w-4" />
+              User Feedback
+            </h2>
+            {feedback.length === 0 ? (
+              <Card className="p-8 text-center text-muted-foreground">
+                <ThumbsUp className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                <p className="text-sm font-medium">No feedback yet</p>
+                <p className="text-xs mt-1">Feedback will appear here after users complete walkthroughs.</p>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                {/* Feedback summary */}
+                <div className="grid grid-cols-3 gap-3">
+                  <Card className="p-4 text-center">
+                    <p className="text-2xl font-bold">{feedback.length}</p>
+                    <p className="text-xs text-muted-foreground">Total Responses</p>
+                  </Card>
+                  <Card className="p-4 text-center">
+                    <div className="flex items-center justify-center gap-1">
+                      <ThumbsUp className="h-4 w-4 text-green-600" />
+                      <p className="text-2xl font-bold text-green-600">
+                        {feedback.filter(f => f.rating === 'up').length}
+                      </p>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Helpful</p>
+                  </Card>
+                  <Card className="p-4 text-center">
+                    <div className="flex items-center justify-center gap-1">
+                      <ThumbsDown className="h-4 w-4 text-red-500" />
+                      <p className="text-2xl font-bold text-red-500">
+                        {feedback.filter(f => f.rating === 'down').length}
+                      </p>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Not Helpful</p>
+                  </Card>
+                </div>
+
+                {/* Per-tour feedback breakdown */}
+                {stats.map(s => {
+                  const tourFb = feedback.filter(f => f.tour_id === s.tourId);
+                  if (tourFb.length === 0) return null;
+                  const upCount = tourFb.filter(f => f.rating === 'up').length;
+                  const pct = Math.round((upCount / tourFb.length) * 100);
+                  return (
+                    <Card key={s.tourId} className="p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-sm font-medium">{s.tourName}</p>
+                        <span className="text-xs text-muted-foreground">{tourFb.length} responses · {pct}% positive</span>
+                      </div>
+                      <div className="h-2 bg-muted rounded-full overflow-hidden mb-3">
+                        <div className="h-full bg-green-500 rounded-full" style={{ width: `${pct}%` }} />
+                      </div>
+                      {/* Show comments */}
+                      {tourFb.filter(f => f.comment).length > 0 && (
+                        <div className="space-y-2 mt-2 border-t pt-2">
+                          {tourFb.filter(f => f.comment).slice(0, 5).map(f => (
+                            <div key={f.id} className="flex items-start gap-2 text-xs">
+                              {f.rating === 'up' ? (
+                                <ThumbsUp className="h-3 w-3 text-green-600 mt-0.5 shrink-0" />
+                              ) : (
+                                <ThumbsDown className="h-3 w-3 text-red-500 mt-0.5 shrink-0" />
+                              )}
+                              <div>
+                                <p className="text-foreground">{f.comment}</p>
+                                <p className="text-muted-foreground mt-0.5">{new Date(f.created_at).toLocaleDateString()}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
       </main>
     </div>
