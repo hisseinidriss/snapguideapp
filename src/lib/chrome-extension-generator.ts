@@ -1214,43 +1214,13 @@ export function getContentJS(): string {
     if (step_isVideo) {
       trackEvent('video_started', currentStepIndex);
       
-      // Detect iframe load failure and show fallback
-      var videoIframe = tooltipEl.querySelector('.bpg-video-container iframe');
-      var videoFallback = tooltipEl.querySelector('.bpg-video-fallback');
-      if (videoIframe && videoFallback) {
-        var iframeLoaded = false;
-        videoIframe.addEventListener('load', function() { iframeLoaded = true; });
-        videoIframe.addEventListener('error', function() {
-          videoIframe.style.display = 'none';
-          videoFallback.style.display = 'flex';
-        });
-        setTimeout(function() {
-          if (!iframeLoaded) {
-            // iframe never fired load - likely blocked
-            videoIframe.style.display = 'none';
-            videoFallback.style.display = 'flex';
-          }
-          // If iframeLoaded is true, the embed is working (cross-origin is fine)
-        }, 5000);
-      }
-      
-      // Fallback click opens video in new tab
+      // Click to open video in new tab
       tooltipEl.querySelector('[data-action="open-video"]')?.addEventListener('click', function() {
         var container = tooltipEl.querySelector('.bpg-video-container');
         var videoUrl = container?.getAttribute('data-video-url');
         if (videoUrl) window.open(videoUrl, '_blank');
       });
       
-      tooltipEl.querySelector('[data-action="fullscreen"]')?.addEventListener('click', () => {
-        var iframe = tooltipEl.querySelector('.bpg-video-container iframe');
-        if (iframe && iframe.style.display !== 'none') {
-          iframe.requestFullscreen();
-        } else {
-          var container = tooltipEl.querySelector('.bpg-video-container');
-          var videoUrl = container?.getAttribute('data-video-url');
-          if (videoUrl) window.open(videoUrl, '_blank');
-        }
-      });
       tooltipEl.querySelector('[data-action="skip-video"]')?.addEventListener('click', () => {
         trackEvent('video_skipped', currentStepIndex);
         currentStepIndex++;
