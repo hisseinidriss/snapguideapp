@@ -58,7 +58,7 @@ const EmbedCode = () => {
   const script = generateEmbedScript(steps, launchers, {
     tourId: tourId,
     appId: appId,
-    apiBaseUrl: import.meta.env.VITE_API_BASE_URL || "",
+    apiBaseUrl: API_BASE_URL,
   });
 
   const handleCopy = () => {

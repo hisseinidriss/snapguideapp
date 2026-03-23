@@ -1,5 +1,5 @@
 // Central API client for Azure backend
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://walkthru-api-hnhpfhg6e7erhvf0.uaenorth-01.azurewebsites.net";
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://walkthru-api-hnhpfhg6e7erhvf0.uaenorth-01.azurewebsites.net";
 
 function getToken(): string | null {
   return localStorage.getItem("auth_token");
