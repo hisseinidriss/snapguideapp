@@ -38,11 +38,14 @@ const AnalyticsDashboard = () => {
   useEffect(() => {
     if (!appId) return;
     const load = async () => {
-      const [appRes, toursRes, eventsRes] = await Promise.all([
+      const [appRes, toursRes, eventsRes, feedbackRes] = await Promise.all([
         appsApi.get(appId),
         toursApi.list(appId),
         analyticsApi.getEvents(appId),
+        feedbackApi.list(appId),
       ]);
+
+      setFeedback(feedbackRes.data || []);
 
       setAppName(appRes.data?.name || "");
       const tours: Tour[] = toursRes.data || [];
