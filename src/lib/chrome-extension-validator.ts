@@ -53,7 +53,7 @@ export async function validateChromeExtension(
 
   // 4. Check steps for each tour
   const tourIds = tours.map((t: any) => t.id);
-  const { data: steps, error: stepsError } = await apiGet<any[]>(`/api/tour-steps?tour_ids=${tourIds.join(",")}`);
+  const { data: steps, error: stepsError } = await apiPost<any[]>("/api/tour-steps/by-tours", { tour_ids: tourIds });
 
   if (stepsError) {
     results.push({ status: "error", message: "Failed to fetch steps: " + stepsError.message });
