@@ -7,4 +7,5 @@ export { launchersApi } from "./launchers";
 export { checklistsApi, checklistItemsApi } from "./checklists";
 export { recordingsApi, recordingStepsApi } from "./recordings";
 export { analyticsApi } from "./analytics";
+export { feedbackApi } from "./feedback";
 export { functionsApi } from "./functions";
