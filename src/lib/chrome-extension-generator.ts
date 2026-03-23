@@ -883,7 +883,7 @@ export function getContentJS(): string {
   var _pendingStartIndex = null;
 
   function trackEvent(eventType, stepIndex) {
-    if (!_bpgData.trackUrl || !_bpgData.anonKey || !_bpgData.appId || !currentProcess) return;
+    if (!_bpgData.trackUrl || !_bpgData.appId || !currentProcess) return;
     _eventQueue.push({
       tour_id: currentProcess.id,
       app_id: _bpgData.appId,
