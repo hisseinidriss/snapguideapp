@@ -1,4 +1,4 @@
-export { api, apiGet, apiPost, apiPut, apiPatch, apiDelete, apiUpload, setToken, clearToken, hasToken } from "./client";
+export { api, apiGet, apiPost, apiPut, apiPatch, apiDelete, apiUpload, setToken, clearToken, hasToken, API_BASE_URL } from "./client";
 export type { ApiError, ApiResult } from "./client";
 
 export { appsApi } from "./apps";
