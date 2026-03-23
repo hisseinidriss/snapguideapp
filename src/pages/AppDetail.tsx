@@ -19,6 +19,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { appsApi } from "@/api/apps";
+import { API_BASE_URL } from "@/api/client";
 import { toursApi, tourStepsApi } from "@/api/tours";
 import { launchersApi } from "@/api/launchers";
 import { checklistsApi } from "@/api/checklists";
@@ -376,7 +377,7 @@ const AppDetail = () => {
                     { browser: 'edge' as BrowserTarget, label: 'Edge Extension' },
                     { browser: 'firefox' as BrowserTarget, label: 'Firefox Extension' },
                   ]).map(({ browser, label }) => (
-                    <DropdownMenuItem key={browser} onClick={() => generateChromeExtension(appId!, appName, appUrl, { apiBaseUrl: import.meta.env.VITE_API_BASE_URL || "" }, browser)}>
+                    <DropdownMenuItem key={browser} onClick={() => generateChromeExtension(appId!, appName, appUrl, { apiBaseUrl: API_BASE_URL }, browser)}>
                       <Download className="mr-2 h-4 w-4" />{label}
                     </DropdownMenuItem>
                   ))}
@@ -418,7 +419,7 @@ const AppDetail = () => {
                     { browser: 'edge' as BrowserTarget, label: 'Edge Extension' },
                     { browser: 'firefox' as BrowserTarget, label: 'Firefox Extension' },
                   ]).map(({ browser, label }) => (
-                    <DropdownMenuItem key={browser} onClick={() => generateChromeExtension(appId!, appName, appUrl, { apiBaseUrl: import.meta.env.VITE_API_BASE_URL || "" }, browser)}>
+                    <DropdownMenuItem key={browser} onClick={() => generateChromeExtension(appId!, appName, appUrl, { apiBaseUrl: API_BASE_URL }, browser)}>
                       <Download className="mr-2 h-4 w-4" />{label}
                     </DropdownMenuItem>
                   ))}
