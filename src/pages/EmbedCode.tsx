@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { appsApi } from "@/api/apps";
+import { API_BASE_URL } from "@/api/client";
 import { toursApi, tourStepsApi } from "@/api/tours";
 import { launchersApi } from "@/api/launchers";
 import { generateEmbedScript } from "@/lib/tour-store";

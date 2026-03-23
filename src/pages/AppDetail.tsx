@@ -19,6 +19,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { appsApi } from "@/api/apps";
+import { API_BASE_URL } from "@/api/client";
 import { toursApi, tourStepsApi } from "@/api/tours";
 import { launchersApi } from "@/api/launchers";
 import { checklistsApi } from "@/api/checklists";
