@@ -876,7 +876,7 @@ export function getContentJS(): string {
     });
   }
 
-  let _bpgData = { processes: [], launchers: [], appName: '', appId: '', trackUrl: '', anonKey: '' };
+  let _bpgData = { processes: [], launchers: [], appName: '', appId: '', trackUrl: '' };
   var _sessionId = 'bpg_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
   var _eventQueue = [];
   var _dataReady = false;
