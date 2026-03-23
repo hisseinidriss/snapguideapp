@@ -1,4 +1,4 @@
-import { apiGet } from "@/api";
+import { apiGet, apiPost } from "@/api";
 
 interface ValidationResult {
   status: "pass" | "warning" | "error";
