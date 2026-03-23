@@ -1532,9 +1532,7 @@ export function getContentJS(): string {
       fetch(saveUrl, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'apikey': _bpgData.anonKey,
-          'Authorization': 'Bearer ' + _bpgData.anonKey
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           recording_id: _scribeRecordingId,
