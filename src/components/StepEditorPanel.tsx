@@ -101,6 +101,27 @@ const StepEditorPanel = ({ step, stepIndex, totalSteps, onUpdate, onRemove, onPi
     setSavingLang(null);
   }, [step.id, translations]);
 
+  const autoTranslate = useCallback(async (lang: string) => {
+    setTranslatingLang(lang);
+    try {
+      const { data } = await translationsApi.autoTranslate({
+        step_id: step.id,
+        source_title: step.title,
+        source_content: step.content,
+        target_language: lang,
+      });
+      if (data) {
+        setTranslations(prev => ({
+          ...prev,
+          [lang]: { title: data.title, content: data.content },
+        }));
+      }
+    } catch (err) {
+      console.error("Auto-translate failed:", err);
+    }
+    setTranslatingLang(null);
+  }, [step.id, step.title, step.content]);
+
   const handleMoveTo = () => {
     const pos = parseInt(moveToValue, 10);
     if (!isNaN(pos) && pos >= 1 && pos <= totalSteps && pos !== stepIndex + 1 && onMoveToPosition) {
