@@ -919,10 +919,30 @@ export function getContentJS(): string {
   }
 
   let _bpgData = { processes: [], launchers: [], appName: '', appId: '', trackUrl: '' };
+  var _currentLang = 'en';
   var _sessionId = 'bpg_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
   var _eventQueue = [];
   var _dataReady = false;
   var _pendingStartIndex = null;
+
+  // Load saved language preference
+  try {
+    chrome.storage.local.get(['bpg_language'], function(result) {
+      if (result.bpg_language) _currentLang = result.bpg_language;
+    });
+  } catch(e) {}
+
+  function getStepText(step, field) {
+    if (_currentLang !== 'en' && step.translations && step.translations[_currentLang]) {
+      var translated = step.translations[_currentLang][field];
+      if (translated) return translated;
+    }
+    return step[field] || '';
+  }
+
+  function isRTL() {
+    return _currentLang === 'ar';
+  }
 
   function trackEvent(eventType, stepIndex) {
     if (!_bpgData.trackUrl || !_bpgData.appId || !currentProcess) return;
