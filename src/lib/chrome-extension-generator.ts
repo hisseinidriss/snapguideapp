@@ -1049,7 +1049,7 @@ export function getContentJS(): string {
     };
 
     var skipBtn = document.createElement('button');
-    skipBtn.textContent = 'Skip';
+    skipBtn.textContent = fl.skip;
     skipBtn.style.cssText = 'background:transparent;color:#6b7280;border:1px solid #d1d5db;border-radius:8px;padding:8px 16px;font-size:13px;cursor:pointer;';
     skipBtn.onclick = function() { overlay.remove(); };
 
