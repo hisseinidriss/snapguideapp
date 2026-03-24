@@ -440,8 +440,26 @@ export function getContentCSS(): string {
   max-width: 480px;
   min-width: 380px;
 }
-`;
+
+/* RTL Support for Arabic */
+.bpg-tooltip[dir="rtl"] {
+  text-align: right;
+  direction: rtl;
 }
+.bpg-tooltip[dir="rtl"] .bpg-tooltip-footer {
+  flex-direction: row-reverse;
+}
+.bpg-tooltip[dir="rtl"] .bpg-tooltip-actions {
+  flex-direction: row-reverse;
+}
+.bpg-tooltip[dir="rtl"] .bpg-btn-close {
+  right: auto;
+  left: 10px;
+}
+.bpg-tooltip[dir="rtl"] .bpg-video-actions {
+  flex-direction: row-reverse;
+}
+`;
 
 export function getContentJS(): string {
   return `
