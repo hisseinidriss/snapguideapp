@@ -1124,7 +1124,7 @@ export function getContentJS(): string {
         chrome.storage.local.remove('bpg_pending_process');
         var processes = getProcesses();
         if (processes[pendingIndex]) {
-          setTimeout(function() { startProcess(pendingIndex); }, 800);
+          setTimeout(function() { startProcess(pendingIndex); }, 3000);
         }
       }
     });
