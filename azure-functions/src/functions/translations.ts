@@ -103,6 +103,75 @@ app.http("translations-bulk", {
   },
 });
 
+// AUTO-TRANSLATE: POST /api/translations/auto { step_id, source_title, source_content, target_language }
+app.http("translations-auto", {
+  methods: ["POST", "OPTIONS"],
+  authLevel: "anonymous",
+  route: "translations/auto",
+  handler: async (req: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> => {
+    if (req.method === "OPTIONS") return { status: 204, headers: corsHeaders() };
+
+    try {
+      const body = await req.json() as any;
+      const { step_id, source_title, source_content, target_language } = body;
+      if (!step_id || !target_language) return errorResponse("step_id and target_language required", 400);
+
+      const langNames: Record<string, string> = { ar: "Arabic", fr: "French", en: "English" };
+      const langName = langNames[target_language] || target_language;
+
+      const apiKey = process.env.OPENAI_API_KEY;
+      if (!apiKey) return errorResponse("OPENAI_API_KEY not configured", 500);
+
+      const prompt = `Translate the following tour step content to ${langName}. Return ONLY a JSON object with "title" and "content" keys. Do not add any explanation.\n\nTitle: ${source_title || "(empty)"}\nContent: ${source_content || "(empty)"}`;
+
+      const openaiRes = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "gpt-4o-mini",
+          messages: [
+            { role: "system", content: "You are a professional translator. Always respond with valid JSON only." },
+            { role: "user", content: prompt },
+          ],
+          temperature: 0.3,
+        }),
+      });
+
+      if (!openaiRes.ok) {
+        const errText = await openaiRes.text();
+        context.error("OpenAI error:", errText);
+        return errorResponse(`Translation API error: ${openaiRes.status}`, 500);
+      }
+
+      const openaiData = await openaiRes.json() as any;
+      const raw = openaiData.choices?.[0]?.message?.content || "{}";
+      // Strip markdown code fences if present
+      const cleaned = raw.replace(/```json\s*/g, "").replace(/```/g, "").trim();
+      const translated = JSON.parse(cleaned);
+
+      // Save translation to DB
+      const result = await query(
+        `INSERT INTO tour_step_translations (step_id, language, title, content)
+         VALUES ($1, $2, $3, $4)
+         ON CONFLICT (step_id, language) DO UPDATE SET
+           title = EXCLUDED.title,
+           content = EXCLUDED.content,
+           updated_at = NOW()
+         RETURNING *`,
+        [step_id, target_language, translated.title || "", translated.content || ""]
+      );
+
+      return jsonResponse(result.rows[0], 201);
+    } catch (err: any) {
+      context.error("Auto-translate error:", err);
+      return errorResponse(err.message);
+    }
+  },
+});
+
 // DELETE /api/translations/{id}
 app.http("translations-delete", {
   methods: ["DELETE", "OPTIONS"],

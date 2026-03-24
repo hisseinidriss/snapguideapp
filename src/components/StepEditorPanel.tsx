@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Trash2, MousePointer2, Video, ArrowUpDown, Languages } from "lucide-react";
+import { Trash2, MousePointer2, Video, ArrowUpDown, Languages, Wand2, Loader2 } from "lucide-react";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -63,6 +63,7 @@ const StepEditorPanel = ({ step, stepIndex, totalSteps, onUpdate, onRemove, onPi
   const [activeLang, setActiveLang] = useState("en");
   const [translationsExpanded, setTranslationsExpanded] = useState(false);
   const [savingLang, setSavingLang] = useState<string | null>(null);
+  const [translatingLang, setTranslatingLang] = useState<string | null>(null);
 
   // Load translations when step changes
   useEffect(() => {
@@ -99,6 +100,27 @@ const StepEditorPanel = ({ step, stepIndex, totalSteps, onUpdate, onRemove, onPi
     });
     setSavingLang(null);
   }, [step.id, translations]);
+
+  const autoTranslate = useCallback(async (lang: string) => {
+    setTranslatingLang(lang);
+    try {
+      const { data } = await translationsApi.autoTranslate({
+        step_id: step.id,
+        source_title: step.title,
+        source_content: step.content,
+        target_language: lang,
+      });
+      if (data) {
+        setTranslations(prev => ({
+          ...prev,
+          [lang]: { title: data.title, content: data.content },
+        }));
+      }
+    } catch (err) {
+      console.error("Auto-translate failed:", err);
+    }
+    setTranslatingLang(null);
+  }, [step.id, step.title, step.content]);
 
   const handleMoveTo = () => {
     const pos = parseInt(moveToValue, 10);
@@ -211,6 +233,19 @@ const StepEditorPanel = ({ step, stepIndex, totalSteps, onUpdate, onRemove, onPi
 
             {LANGUAGES.filter(l => l.code !== "en").map((lang) => (
               <TabsContent key={lang.code} value={lang.code} className="space-y-3 mt-3">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full text-xs gap-1.5"
+                  onClick={() => autoTranslate(lang.code)}
+                  disabled={translatingLang === lang.code || (!step.title && !step.content)}
+                >
+                  {translatingLang === lang.code ? (
+                    <><Loader2 className="h-3 w-3 animate-spin" />Translating...</>
+                  ) : (
+                    <><Wand2 className="h-3 w-3" />Auto-Translate to {lang.label}</>
+                  )}
+                </Button>
                 <div className="space-y-2">
                   <Label className="text-xs">
                     Title ({lang.label})
