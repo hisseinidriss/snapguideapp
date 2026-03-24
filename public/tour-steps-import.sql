@@ -1,6 +1,6 @@
 -- ============================================================
 -- WalkThru Tour Steps Import Script
--- Generated from Lovable Cloud database: 2026-03-18
+-- Generated from Azure Cloud database: 2026-03-18
 -- Run this on your Azure PostgreSQL database
 -- ============================================================
 

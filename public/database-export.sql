@@ -216,7 +216,7 @@ ON CONFLICT (id) DO NOTHING;
 -- ============================================================
 -- DATA: tour_events (analytics - partial, may be large)
 -- Note: tour_events data is large. Run this query on your
--- Lovable Cloud to get the full export if needed:
+-- Azure Cloud to get the full export if needed:
 --   SELECT * FROM tour_events;
 -- ============================================================
 

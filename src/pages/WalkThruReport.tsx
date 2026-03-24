@@ -127,16 +127,16 @@ const WalkThruReport = () => {
             </tbody>
           </table>
 
-          <h3 className="text-xl font-semibold">3.3 Backend & Data Layer (Lovable Cloud)</h3>
+          <h3 className="text-xl font-semibold">3.3 Backend & Data Layer (Azure Cloud)</h3>
           <table className="w-full">
             <thead>
               <tr><th className="text-left">Technology</th><th className="text-left">Purpose</th></tr>
             </thead>
             <tbody>
-              <tr><td><strong>Lovable Cloud Database (PostgreSQL)</strong></td><td>Relational database storing all application data. Tables include: <code>apps</code>, <code>tours</code> (processes), <code>tour_steps</code>, <code>launchers</code>, <code>checklists</code>, <code>checklist_items</code>, <code>process_recordings</code>, <code>process_recording_steps</code>, <code>tour_events</code>. All tables enforce Row-Level Security (RLS) policies for data isolation.</td></tr>
-              <tr><td><strong>Lovable Cloud Auth</strong></td><td>Email/password authentication with session management, password reset flows, and JWT-based authorization. Sessions persist via the Supabase client SDK.</td></tr>
-              <tr><td><strong>Lovable Cloud Edge Functions (Deno)</strong></td><td>Serverless TypeScript functions running on Deno for backend logic including: event tracking (<code>track-events</code>), screenshot URL generation (<code>screenshot-url</code>), tour step generation via AI (<code>generate-tour-steps</code>), selector validation (<code>validate-selectors</code>), recording step processing (<code>save-recording-step</code>), and manual-to-tour conversion (<code>generate-tour-from-manual</code>).</td></tr>
-              <tr><td><strong>Lovable Cloud Storage</strong></td><td>Object storage for user-uploaded files including application icons and SOP screenshots.</td></tr>
+              <tr><td><strong>Azure Database for PostgreSQL</strong></td><td>Relational database storing all application data. Tables include: <code>apps</code>, <code>tours</code> (processes), <code>tour_steps</code>, <code>launchers</code>, <code>checklists</code>, <code>checklist_items</code>, <code>process_recordings</code>, <code>process_recording_steps</code>, <code>tour_events</code>. All tables enforce Row-Level Security (RLS) policies for data isolation.</td></tr>
+              <tr><td><strong>Azure AD Authentication</strong></td><td>Email/password authentication with session management, password reset flows, and JWT-based authorization. Sessions persist via the Supabase client SDK.</td></tr>
+              <tr><td><strong>Azure Functions (Deno)</strong></td><td>Serverless TypeScript functions running on Deno for backend logic including: event tracking (<code>track-events</code>), screenshot URL generation (<code>screenshot-url</code>), tour step generation via AI (<code>generate-tour-steps</code>), selector validation (<code>validate-selectors</code>), recording step processing (<code>save-recording-step</code>), and manual-to-tour conversion (<code>generate-tour-from-manual</code>).</td></tr>
+              <tr><td><strong>Azure Blob Storage</strong></td><td>Object storage for user-uploaded files including application icons and SOP screenshots.</td></tr>
               <tr><td><strong>Supabase JS Client 2.98.x</strong></td><td>JavaScript SDK providing typed database queries, authentication hooks, real-time subscriptions, and storage operations from the frontend.</td></tr>
             </tbody>
           </table>
@@ -199,7 +199,7 @@ const WalkThruReport = () => {
           <ol>
             <li>From the Dashboard (<code>/</code>), the user clicks "New Application" to open a creation dialog.</li>
             <li>The user enters the application name, URL, description, and optionally uploads an icon image.</li>
-            <li>If an icon is uploaded, it is stored in Lovable Cloud Storage and its public URL is saved with the app record.</li>
+            <li>If an icon is uploaded, it is stored in Azure Blob Storage and its public URL is saved with the app record.</li>
             <li>A new row is inserted into the <code>apps</code> table with the user's data and auto-generated UUID.</li>
             <li>The dashboard refreshes to display the new application card with its icon, name, and description.</li>
           </ol>
@@ -377,7 +377,7 @@ const WalkThruReport = () => {
           <ol>
             <li>Each significant action (process started, step viewed, process completed, process abandoned, video started/skipped) generates a tracking event.</li>
             <li>Events are batched in a queue and flushed every 1000ms to minimize network requests.</li>
-            <li>Events are sent via <code>fetch()</code> POST to the Lovable Cloud Edge Function (<code>track-events</code>) with the anon API key for authentication.</li>
+            <li>Events are sent via <code>fetch()</code> POST to the Azure Functions endpoint (<code>track-events</code>) with the API key for authentication.</li>
             <li>On page unload, remaining events are flushed synchronously via <code>beforeunload</code> event listener.</li>
           </ol>
 
@@ -449,7 +449,7 @@ const WalkThruReport = () => {
         <section id="security">
           <h2 className="text-2xl font-bold border-b border-border pb-2">7. Security & Authentication</h2>
           <ul>
-            <li><strong>Authentication:</strong> Email/password authentication via Lovable Cloud Auth with JWT session tokens. No anonymous sign-ups permitted.</li>
+            <li><strong>Authentication:</strong> Email/password authentication via Azure AD Auth with JWT session tokens. No anonymous sign-ups permitted.</li>
             <li><strong>Row-Level Security (RLS):</strong> All database tables enforce RLS policies ensuring users can only access their own data. Policies are evaluated server-side by the PostgreSQL engine.</li>
             <li><strong>Edge Function Authorization:</strong> Backend functions use the service role key (never exposed to clients) for database operations. Client requests are validated against the anon key.</li>
             <li><strong>Content Security Policy:</strong> Browser extensions restrict script execution to <code>'self'</code> and iframe sources to whitelisted video platforms only.</li>
