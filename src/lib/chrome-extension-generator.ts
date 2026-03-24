@@ -1033,7 +1033,7 @@ export function getContentJS(): string {
     submitRow.style.cssText = 'display:none;gap:8px;justify-content:center;';
 
     var submitBtn = document.createElement('button');
-    submitBtn.textContent = 'Submit';
+    submitBtn.textContent = fl.submit;
     submitBtn.style.cssText = 'background:#4d8b6f;color:#fff;border:none;border-radius:8px;padding:8px 24px;font-size:13px;font-weight:500;cursor:pointer;';
     submitBtn.onclick = function() {
       if (!selectedRating) return;
