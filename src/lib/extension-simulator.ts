@@ -469,7 +469,7 @@ async function simulateStepNavigationInSandbox(
 ) {
   let feedbackSubmitted = false;
 
-  for (let i = 0; i < Math.min(tour.steps.length, 5); i++) {
+  for (let i = 0; i < tour.steps.length; i++) {
     // Find and click the Next/Finish button
     const nextBtn = doc.querySelector(".bpg-btn-primary") as HTMLElement | null;
     if (nextBtn) {
