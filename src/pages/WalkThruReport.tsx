@@ -199,7 +199,7 @@ const WalkThruReport = () => {
           <ol>
             <li>From the Dashboard (<code>/</code>), the user clicks "New Application" to open a creation dialog.</li>
             <li>The user enters the application name, URL, description, and optionally uploads an icon image.</li>
-            <li>If an icon is uploaded, it is stored in Lovable Cloud Storage and its public URL is saved with the app record.</li>
+            <li>If an icon is uploaded, it is stored in Azure Blob Storage and its public URL is saved with the app record.</li>
             <li>A new row is inserted into the <code>apps</code> table with the user's data and auto-generated UUID.</li>
             <li>The dashboard refreshes to display the new application card with its icon, name, and description.</li>
           </ol>
