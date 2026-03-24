@@ -449,7 +449,7 @@ const WalkThruReport = () => {
         <section id="security">
           <h2 className="text-2xl font-bold border-b border-border pb-2">7. Security & Authentication</h2>
           <ul>
-            <li><strong>Authentication:</strong> Email/password authentication via Lovable Cloud Auth with JWT session tokens. No anonymous sign-ups permitted.</li>
+            <li><strong>Authentication:</strong> Email/password authentication via Azure AD Auth with JWT session tokens. No anonymous sign-ups permitted.</li>
             <li><strong>Row-Level Security (RLS):</strong> All database tables enforce RLS policies ensuring users can only access their own data. Policies are evaluated server-side by the PostgreSQL engine.</li>
             <li><strong>Edge Function Authorization:</strong> Backend functions use the service role key (never exposed to clients) for database operations. Client requests are validated against the anon key.</li>
             <li><strong>Content Security Policy:</strong> Browser extensions restrict script execution to <code>'self'</code> and iframe sources to whitelisted video platforms only.</li>
