@@ -1022,8 +1022,8 @@ export function getContentJS(): string {
       return b;
     }
 
-    btnRow.appendChild(makeBtn(String.fromCodePoint(0x1F44D), 'Helpful', 'up'));
-    btnRow.appendChild(makeBtn(String.fromCodePoint(0x1F44E), 'Not helpful', 'down'));
+    btnRow.appendChild(makeBtn(String.fromCodePoint(0x1F44D), fl.helpful, 'up'));
+    btnRow.appendChild(makeBtn(String.fromCodePoint(0x1F44E), fl.notHelpful, 'down'));
 
     var commentArea = document.createElement('textarea');
     commentArea.placeholder = 'Any additional comments? (optional)';
