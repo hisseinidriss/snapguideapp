@@ -1111,7 +1111,7 @@ export function getContentJS(): string {
         if (processes[processIndex]) {
           currentProcess = processes[processIndex];
           currentStepIndex = stepIndex;
-          setTimeout(() => showStep(), 800);
+          setTimeout(() => showStep(), 2000);
           return;
         }
       } catch(e) {}
