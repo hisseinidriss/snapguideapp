@@ -1838,12 +1838,39 @@ function getPopupHTML(appName: string, processes: Process[]): string {
       font-size: 13px;
     }
     .no-results { text-align: center; padding: 20px 16px; color: #8a9b92; font-size: 12px; }
+    .lang-selector {
+      display: flex;
+      gap: 4px;
+      padding: 8px 10px;
+      background: #fff;
+      border-bottom: 1px solid #dfe6e2;
+    }
+    .lang-btn {
+      flex: 1;
+      padding: 5px 8px;
+      border: 1px solid #dfe6e2;
+      border-radius: 6px;
+      background: #fff;
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: 'DM Sans', sans-serif;
+      text-align: center;
+    }
+    .lang-btn:hover { border-color: #4d8b6f; }
+    .lang-btn.active { background: #4d8b6f; color: #fff; border-color: #4d8b6f; }
   </style>
 </head>
 <body>
   <div class="header">
     <h1>${appName}</h1>
     <p>Business Process Guide</p>
+  </div>
+  <div class="lang-selector" id="langSelector">
+    <button class="lang-btn active" data-lang="en">🇬🇧 English</button>
+    <button class="lang-btn" data-lang="ar">🇸🇦 العربية</button>
+    <button class="lang-btn" data-lang="fr">🇫🇷 Français</button>
   </div>
   <div class="search-box">
     <input class="search-input" id="searchInput" placeholder="Search processes..." type="text" />
