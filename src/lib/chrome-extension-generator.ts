@@ -761,8 +761,8 @@ export function getContentJS(): string {
       if (!step.selector) { resolve(null); return; }
 
       var selector = step.selector;
-      var retryInterval = 450;
-      var maxTimeout = 10000;
+      var retryInterval = 500;
+      var maxTimeout = 30000;
       var start = Date.now();
 
       function attempt() {
