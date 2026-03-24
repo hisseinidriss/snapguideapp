@@ -980,13 +980,25 @@ export function getContentJS(): string {
     var box = document.createElement('div');
     box.style.cssText = 'background:#fff;border-radius:12px;padding:28px 32px;max-width:380px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.2);text-align:center;';
 
+    var fbLabels = {
+      en: { title: 'How was this walkthrough?', sub: 'Your feedback helps us improve.', helpful: 'Helpful', notHelpful: 'Not helpful', comment: 'Any additional comments? (optional)', submit: 'Submit', skip: 'Skip', skipFeedback: 'Skip feedback' },
+      ar: { title: 'كيف كانت هذه الجولة؟', sub: 'ملاحظاتك تساعدنا على التحسين.', helpful: 'مفيد', notHelpful: 'غير مفيد', comment: 'أي تعليقات إضافية؟ (اختياري)', submit: 'إرسال', skip: 'تخطي', skipFeedback: 'تخطي الملاحظات' },
+      fr: { title: 'Comment était cette visite guidée ?', sub: 'Vos commentaires nous aident à nous améliorer.', helpful: 'Utile', notHelpful: 'Pas utile', comment: 'Des commentaires supplémentaires ? (facultatif)', submit: 'Soumettre', skip: 'Passer', skipFeedback: 'Passer les commentaires' },
+    };
+    var fl = fbLabels[_currentLang] || fbLabels.en;
+
     var title = document.createElement('div');
-    title.textContent = 'How was this walkthrough?';
+    title.textContent = fl.title;
     title.style.cssText = 'font-size:16px;font-weight:600;color:#1a1a1a;margin-bottom:4px;';
 
     var sub = document.createElement('div');
-    sub.textContent = 'Your feedback helps us improve.';
+    sub.textContent = fl.sub;
     sub.style.cssText = 'font-size:13px;color:#6b7280;margin-bottom:20px;';
+
+    if (_currentLang === 'ar') {
+      box.style.direction = 'rtl';
+      box.style.textAlign = 'right';
+    }
 
     var btnRow = document.createElement('div');
     btnRow.style.cssText = 'display:flex;gap:16px;justify-content:center;margin-bottom:16px;';
