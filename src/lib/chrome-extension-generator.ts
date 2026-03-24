@@ -1338,6 +1338,7 @@ export function getContentJS(): string {
     var step_isVideo = step.step_type === 'video' && step.video_url;
     tooltipEl = document.createElement('div');
     tooltipEl.className = 'bpg-tooltip' + (!targetEl ? ' bpg-center-modal' : '') + (step_isVideo ? ' bpg-video-tooltip' : '');
+    if (isRTL()) tooltipEl.setAttribute('dir', 'rtl');
     tooltipEl.innerHTML = buildTooltipHTML(
       step,
       currentStepIndex,
