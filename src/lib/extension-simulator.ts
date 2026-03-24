@@ -251,6 +251,10 @@ async function runSandboxExecution(
       if (typeof url === "string" && url.includes("track-events")) {
         return Promise.resolve(new Response(JSON.stringify({ success: true }), { status: 200 }));
       }
+      // For feedback, forward to real API
+      if (typeof url === "string" && url.includes("/feedback")) {
+        return origFetch.call(window, url, ...args);
+      }
       return origFetch.call(sandboxWin, url, ...args);
     };
 
