@@ -63,6 +63,7 @@ const StepEditorPanel = ({ step, stepIndex, totalSteps, onUpdate, onRemove, onPi
   const [activeLang, setActiveLang] = useState("en");
   const [translationsExpanded, setTranslationsExpanded] = useState(false);
   const [savingLang, setSavingLang] = useState<string | null>(null);
+  const [translatingLang, setTranslatingLang] = useState<string | null>(null);
 
   // Load translations when step changes
   useEffect(() => {
