@@ -377,7 +377,7 @@ const WalkThruReport = () => {
           <ol>
             <li>Each significant action (process started, step viewed, process completed, process abandoned, video started/skipped) generates a tracking event.</li>
             <li>Events are batched in a queue and flushed every 1000ms to minimize network requests.</li>
-            <li>Events are sent via <code>fetch()</code> POST to the Lovable Cloud Edge Function (<code>track-events</code>) with the anon API key for authentication.</li>
+            <li>Events are sent via <code>fetch()</code> POST to the Azure Functions endpoint (<code>track-events</code>) with the API key for authentication.</li>
             <li>On page unload, remaining events are flushed synchronously via <code>beforeunload</code> event listener.</li>
           </ol>
 
