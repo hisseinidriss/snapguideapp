@@ -1055,7 +1055,18 @@ async function loadTours(appId: string, results: TestResult[]): Promise<TourData
   results.push({ id: nextId(), category: "Data Loading", test: "Tours loaded", status: "pass", message: `${tours.length} tour(s) loaded.` });
 
   const ids = tours.map((t: any) => t.id);
-  const { data: steps } = await apiGet<any[]>(`/api/tour-steps?tour_ids=${ids.join(",")}`);
+  const { data: steps, error: stepsError } = await apiPost<any[]>("/api/tour-steps/by-tours", { tour_ids: ids });
+
+  if (stepsError) {
+    results.push({
+      id: nextId(),
+      category: "Data Loading",
+      test: "Tour steps loaded",
+      status: "error",
+      message: `Failed to load tour steps: ${stepsError.message}`,
+    });
+    return tours.map(t => ({ id: t.id, name: t.name, steps: [] }));
+  }
 
   return tours.map(t => ({
     id: t.id,
