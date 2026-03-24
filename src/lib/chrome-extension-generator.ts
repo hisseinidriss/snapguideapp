@@ -1026,7 +1026,7 @@ export function getContentJS(): string {
     btnRow.appendChild(makeBtn(String.fromCodePoint(0x1F44E), fl.notHelpful, 'down'));
 
     var commentArea = document.createElement('textarea');
-    commentArea.placeholder = 'Any additional comments? (optional)';
+    commentArea.placeholder = fl.comment;
     commentArea.style.cssText = 'display:none;width:100%;min-height:60px;border:1px solid #d1d5db;border-radius:8px;padding:8px 12px;font-size:13px;resize:vertical;margin-bottom:12px;box-sizing:border-box;font-family:inherit;';
 
     var submitRow = document.createElement('div');
