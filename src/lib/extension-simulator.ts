@@ -1,4 +1,4 @@
-import { apiGet, apiPut, apiPost } from "@/api";
+import { apiGet, apiPut, apiPost, API_BASE_URL } from "@/api";
 import { getContentJS, getPopupJS, getContentCSS } from "@/lib/chrome-extension-generator";
 
 // ==================== Types ====================
@@ -241,7 +241,7 @@ async function runSandboxExecution(
     const origFetch = sandboxWin.fetch;
     sandboxWin.fetch = function (url: string, ...args: any[]) {
       if (typeof url === "string" && url.includes("data.json")) {
-        const jsonData = { processes, launchers: [], appName, appId, appUrl: appUrl || "" };
+        const jsonData = { processes, launchers: [], appName, appId, appUrl: appUrl || "", trackUrl: `${API_BASE_URL}/api/track-events` };
         return Promise.resolve(new Response(JSON.stringify(jsonData), {
           status: 200,
           headers: { "Content-Type": "application/json" },
@@ -250,6 +250,10 @@ async function runSandboxExecution(
       // For tracking, return success silently
       if (typeof url === "string" && url.includes("track-events")) {
         return Promise.resolve(new Response(JSON.stringify({ success: true }), { status: 200 }));
+      }
+      // For feedback, forward to real API
+      if (typeof url === "string" && url.includes("/feedback")) {
+        return origFetch.call(window, url, ...args);
       }
       return origFetch.call(sandboxWin, url, ...args);
     };
