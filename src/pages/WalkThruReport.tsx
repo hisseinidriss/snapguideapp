@@ -127,7 +127,7 @@ const WalkThruReport = () => {
             </tbody>
           </table>
 
-          <h3 className="text-xl font-semibold">3.3 Backend & Data Layer (Lovable Cloud)</h3>
+          <h3 className="text-xl font-semibold">3.3 Backend & Data Layer (Azure Cloud)</h3>
           <table className="w-full">
             <thead>
               <tr><th className="text-left">Technology</th><th className="text-left">Purpose</th></tr>
