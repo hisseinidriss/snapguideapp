@@ -1058,7 +1058,7 @@ export function getContentJS(): string {
 
     // Also add a standalone skip at bottom for users who don't want to rate
     var skipAlone = document.createElement('div');
-    skipAlone.innerHTML = '<button style="background:none;border:none;color:#9ca3af;font-size:12px;cursor:pointer;margin-top:8px;">Skip feedback</button>';
+    skipAlone.innerHTML = '<button style="background:none;border:none;color:#9ca3af;font-size:12px;cursor:pointer;margin-top:8px;">' + fl.skipFeedback + '</button>';
     skipAlone.querySelector('button').onclick = function() { overlay.remove(); };
 
     box.appendChild(title);
