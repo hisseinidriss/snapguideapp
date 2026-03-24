@@ -2,6 +2,12 @@ import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import { apiGet, apiPost } from "@/api";
 
+interface StepTranslation {
+  language: string;
+  title: string;
+  content: string;
+}
+
 interface ProcessStep {
   title: string;
   content: string;
@@ -14,6 +20,7 @@ interface ProcessStep {
   video_url?: string | null;
   fallback_selectors?: string[] | null;
   element_metadata?: Record<string, any> | null;
+  translations?: Record<string, { title: string; content: string }>;
 }
 
 interface Process {
@@ -51,9 +58,15 @@ export async function generateChromeExtension(
   const { data: launchers } = await apiGet<any[]>(`/api/launchers?app_id=${appId}`);
 
   const processes: Process[] = [];
+  let allTranslations: any[] = [];
   if (tours?.length) {
     const ids = tours.map((t: any) => t.id);
-    const { data: steps } = await apiPost<any[]>("/api/tour-steps/by-tours", { tour_ids: ids });
+    const [stepsRes, transRes] = await Promise.all([
+      apiPost<any[]>("/api/tour-steps/by-tours", { tour_ids: ids }),
+      Promise.all(ids.map((id: string) => apiGet<any[]>(`/api/translations?tour_id=${id}`).then(r => r.data || []))),
+    ]);
+    const steps = stepsRes.data || [];
+    allTranslations = transRes.flat();
 
     for (const tour of tours) {
       processes.push({
@@ -61,19 +74,30 @@ export async function generateChromeExtension(
         name: tour.name,
         steps: (steps || [])
           .filter((s) => s.tour_id === tour.id)
-          .map((s) => ({
-            title: s.title,
-            content: s.content,
-            selector: s.selector,
-            placement: s.placement,
-            sort_order: s.sort_order,
-            target_url: (s as any).target_url || null,
-            click_selector: (s as any).click_selector || null,
-            step_type: (s as any).step_type || 'standard',
-            video_url: (s as any).video_url || null,
-            fallback_selectors: (s as any).fallback_selectors || null,
-            element_metadata: (s as any).element_metadata || null,
-          })),
+          .map((s) => {
+            // Group translations by language for this step
+            const stepTrans: Record<string, { title: string; content: string }> = {};
+            allTranslations
+              .filter((t: any) => t.step_id === s.id)
+              .forEach((t: any) => {
+                stepTrans[t.language] = { title: t.title, content: t.content };
+              });
+
+            return {
+              title: s.title,
+              content: s.content,
+              selector: s.selector,
+              placement: s.placement,
+              sort_order: s.sort_order,
+              target_url: (s as any).target_url || null,
+              click_selector: (s as any).click_selector || null,
+              step_type: (s as any).step_type || 'standard',
+              video_url: (s as any).video_url || null,
+              fallback_selectors: (s as any).fallback_selectors || null,
+              element_metadata: (s as any).element_metadata || null,
+              translations: Object.keys(stepTrans).length > 0 ? stepTrans : undefined,
+            };
+          }),
       });
     }
   }
@@ -416,9 +440,27 @@ export function getContentCSS(): string {
   max-width: 480px;
   min-width: 380px;
 }
+
+/* RTL Support for Arabic */
+.bpg-tooltip[dir="rtl"] {
+  text-align: right;
+  direction: rtl;
+}
+.bpg-tooltip[dir="rtl"] .bpg-tooltip-footer {
+  flex-direction: row-reverse;
+}
+.bpg-tooltip[dir="rtl"] .bpg-tooltip-actions {
+  flex-direction: row-reverse;
+}
+.bpg-tooltip[dir="rtl"] .bpg-btn-close {
+  right: auto;
+  left: 10px;
+}
+.bpg-tooltip[dir="rtl"] .bpg-video-actions {
+  flex-direction: row-reverse;
+}
 `;
 }
-
 export function getContentJS(): string {
   return `
 // Business Process Guide - Content Script
@@ -877,10 +919,30 @@ export function getContentJS(): string {
   }
 
   let _bpgData = { processes: [], launchers: [], appName: '', appId: '', trackUrl: '' };
+  var _currentLang = 'en';
   var _sessionId = 'bpg_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
   var _eventQueue = [];
   var _dataReady = false;
   var _pendingStartIndex = null;
+
+  // Load saved language preference
+  try {
+    chrome.storage.local.get(['bpg_language'], function(result) {
+      if (result.bpg_language) _currentLang = result.bpg_language;
+    });
+  } catch(e) {}
+
+  function getStepText(step, field) {
+    if (_currentLang !== 'en' && step.translations && step.translations[_currentLang]) {
+      var translated = step.translations[_currentLang][field];
+      if (translated) return translated;
+    }
+    return step[field] || '';
+  }
+
+  function isRTL() {
+    return _currentLang === 'ar';
+  }
 
   function trackEvent(eventType, stepIndex) {
     if (!_bpgData.trackUrl || !_bpgData.appId || !currentProcess) return;
@@ -918,13 +980,25 @@ export function getContentJS(): string {
     var box = document.createElement('div');
     box.style.cssText = 'background:#fff;border-radius:12px;padding:28px 32px;max-width:380px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.2);text-align:center;';
 
+    var fbLabels = {
+      en: { title: 'How was this walkthrough?', sub: 'Your feedback helps us improve.', helpful: 'Helpful', notHelpful: 'Not helpful', comment: 'Any additional comments? (optional)', submit: 'Submit', skip: 'Skip', skipFeedback: 'Skip feedback' },
+      ar: { title: 'كيف كانت هذه الجولة؟', sub: 'ملاحظاتك تساعدنا على التحسين.', helpful: 'مفيد', notHelpful: 'غير مفيد', comment: 'أي تعليقات إضافية؟ (اختياري)', submit: 'إرسال', skip: 'تخطي', skipFeedback: 'تخطي الملاحظات' },
+      fr: { title: 'Comment était cette visite guidée ?', sub: 'Vos commentaires nous aident à nous améliorer.', helpful: 'Utile', notHelpful: 'Pas utile', comment: 'Des commentaires supplémentaires ? (facultatif)', submit: 'Soumettre', skip: 'Passer', skipFeedback: 'Passer les commentaires' },
+    };
+    var fl = fbLabels[_currentLang] || fbLabels.en;
+
     var title = document.createElement('div');
-    title.textContent = 'How was this walkthrough?';
+    title.textContent = fl.title;
     title.style.cssText = 'font-size:16px;font-weight:600;color:#1a1a1a;margin-bottom:4px;';
 
     var sub = document.createElement('div');
-    sub.textContent = 'Your feedback helps us improve.';
+    sub.textContent = fl.sub;
     sub.style.cssText = 'font-size:13px;color:#6b7280;margin-bottom:20px;';
+
+    if (_currentLang === 'ar') {
+      box.style.direction = 'rtl';
+      box.style.textAlign = 'right';
+    }
 
     var btnRow = document.createElement('div');
     btnRow.style.cssText = 'display:flex;gap:16px;justify-content:center;margin-bottom:16px;';
@@ -948,18 +1022,18 @@ export function getContentJS(): string {
       return b;
     }
 
-    btnRow.appendChild(makeBtn(String.fromCodePoint(0x1F44D), 'Helpful', 'up'));
-    btnRow.appendChild(makeBtn(String.fromCodePoint(0x1F44E), 'Not helpful', 'down'));
+    btnRow.appendChild(makeBtn(String.fromCodePoint(0x1F44D), fl.helpful, 'up'));
+    btnRow.appendChild(makeBtn(String.fromCodePoint(0x1F44E), fl.notHelpful, 'down'));
 
     var commentArea = document.createElement('textarea');
-    commentArea.placeholder = 'Any additional comments? (optional)';
+    commentArea.placeholder = fl.comment;
     commentArea.style.cssText = 'display:none;width:100%;min-height:60px;border:1px solid #d1d5db;border-radius:8px;padding:8px 12px;font-size:13px;resize:vertical;margin-bottom:12px;box-sizing:border-box;font-family:inherit;';
 
     var submitRow = document.createElement('div');
     submitRow.style.cssText = 'display:none;gap:8px;justify-content:center;';
 
     var submitBtn = document.createElement('button');
-    submitBtn.textContent = 'Submit';
+    submitBtn.textContent = fl.submit;
     submitBtn.style.cssText = 'background:#4d8b6f;color:#fff;border:none;border-radius:8px;padding:8px 24px;font-size:13px;font-weight:500;cursor:pointer;';
     submitBtn.onclick = function() {
       if (!selectedRating) return;
@@ -975,7 +1049,7 @@ export function getContentJS(): string {
     };
 
     var skipBtn = document.createElement('button');
-    skipBtn.textContent = 'Skip';
+    skipBtn.textContent = fl.skip;
     skipBtn.style.cssText = 'background:transparent;color:#6b7280;border:1px solid #d1d5db;border-radius:8px;padding:8px 16px;font-size:13px;cursor:pointer;';
     skipBtn.onclick = function() { overlay.remove(); };
 
@@ -984,7 +1058,7 @@ export function getContentJS(): string {
 
     // Also add a standalone skip at bottom for users who don't want to rate
     var skipAlone = document.createElement('div');
-    skipAlone.innerHTML = '<button style="background:none;border:none;color:#9ca3af;font-size:12px;cursor:pointer;margin-top:8px;">Skip feedback</button>';
+    skipAlone.innerHTML = '<button style="background:none;border:none;color:#9ca3af;font-size:12px;cursor:pointer;margin-top:8px;">' + fl.skipFeedback + '</button>';
     skipAlone.querySelector('button').onclick = function() { overlay.remove(); };
 
     box.appendChild(title);
@@ -1012,6 +1086,12 @@ export function getContentJS(): string {
     if (msg.type === 'GET_DATA') {
       sendResponse(_bpgData);
       return true;
+    }
+    if (msg.type === 'SET_LANGUAGE') {
+      _currentLang = msg.language || 'en';
+      chrome.storage.local.set({ bpg_language: _currentLang });
+      // Re-render current step if active
+      if (currentProcess) showStep();
     }
   });
 
@@ -1276,6 +1356,7 @@ export function getContentJS(): string {
     var step_isVideo = step.step_type === 'video' && step.video_url;
     tooltipEl = document.createElement('div');
     tooltipEl.className = 'bpg-tooltip' + (!targetEl ? ' bpg-center-modal' : '') + (step_isVideo ? ' bpg-video-tooltip' : '');
+    if (isRTL()) tooltipEl.setAttribute('dir', 'rtl');
     tooltipEl.innerHTML = buildTooltipHTML(
       step,
       currentStepIndex,
@@ -1340,33 +1421,43 @@ export function getContentJS(): string {
     var isLast = index === total - 1;
     var isVideo = step.step_type === 'video' && step.video_url;
     var embedUrl = isVideo ? getVideoEmbedUrl(step.video_url) : null;
+    var title = getStepText(step, 'title');
+    var content = getStepText(step, 'content');
+
+    // Localized button labels
+    var labels = {
+      en: { back: 'Back', next: 'Next', finish: 'Finish', restart: '↻ Restart', step: 'Step', of: 'of', watchVideo: 'Watch Video', opensNewTab: 'Opens in a new tab', skipVideo: 'Skip Video ⏭', targetMissing: 'Target element not found. Check if the selector is correct and visible on this page.' },
+      ar: { back: 'رجوع', next: 'التالي', finish: 'إنهاء', restart: '↻ إعادة', step: 'خطوة', of: 'من', watchVideo: 'مشاهدة الفيديو', opensNewTab: 'يفتح في علامة تبويب جديدة', skipVideo: '⏭ تخطي الفيديو', targetMissing: 'العنصر المستهدف غير موجود. تأكد من صحة المحدد وظهوره في هذه الصفحة.' },
+      fr: { back: 'Retour', next: 'Suivant', finish: 'Terminer', restart: '↻ Recommencer', step: 'Étape', of: 'sur', watchVideo: 'Regarder la vidéo', opensNewTab: 'Ouvre dans un nouvel onglet', skipVideo: 'Passer la vidéo ⏭', targetMissing: 'Élément cible introuvable. Vérifiez que le sélecteur est correct et visible sur cette page.' },
+    };
+    var l = labels[_currentLang] || labels.en;
     
     var videoHtml = '';
     if (isVideo) {
       videoHtml = '<div class="bpg-video-container" data-video-url="' + step.video_url + '" style="display:flex;flex-direction:column;align-items:center;justify-content:center;background:#f1f5f1;border-radius:8px;padding:24px;font-family:DM Sans,sans-serif;min-height:120px;margin:8px 0;cursor:pointer" data-action="open-video">'
         + '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#4d8b6f" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>'
-        + '<span style="margin-top:10px;color:#4d8b6f;font-size:14px;font-weight:600">Watch Video</span>'
-        + '<span style="margin-top:4px;color:#6b7280;font-size:11px">Opens in a new tab</span>'
+        + '<span style="margin-top:10px;color:#4d8b6f;font-size:14px;font-weight:600">' + l.watchVideo + '</span>'
+        + '<span style="margin-top:4px;color:#6b7280;font-size:11px">' + l.opensNewTab + '</span>'
         + '</div>'
         + '<div class="bpg-video-actions">'
-        + '<button class="bpg-btn-skip" data-action="skip-video">Skip Video ⏭</button>'
+        + '<button class="bpg-btn-skip" data-action="skip-video">' + l.skipVideo + '</button>'
         + '</div>';
     }
 
     return '<button class="bpg-btn-close">&times;</button>'
       + '<div style="font-size:11px;color:#4d8b6f;font-weight:600;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;font-family:DM Sans,sans-serif">' + processName + '</div>'
-      + '<h3 class="bpg-tooltip-title">' + step.title + '</h3>'
-      + '<p class="bpg-tooltip-content">' + step.content + '</p>'
+      + '<h3 class="bpg-tooltip-title">' + title + '</h3>'
+      + '<p class="bpg-tooltip-content">' + content + '</p>'
       + videoHtml
       + (targetMissing
-        ? '<p style="font-size:12px;color:#b45309;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:8px 10px;margin:0 0 12px;font-family:DM Sans,sans-serif">Target element not found. Check if the selector is correct and visible on this page.</p>'
+        ? '<p style="font-size:12px;color:#b45309;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:8px 10px;margin:0 0 12px;font-family:DM Sans,sans-serif">' + l.targetMissing + '</p>'
         : '')
       + '<div class="bpg-tooltip-footer">'
-      + '<span class="bpg-tooltip-progress">Step ' + (index + 1) + ' of ' + total + '</span>'
+      + '<span class="bpg-tooltip-progress">' + l.step + ' ' + (index + 1) + ' ' + l.of + ' ' + total + '</span>'
       + '<div class="bpg-tooltip-actions">'
-      + (!isFirst ? '<button class="bpg-btn bpg-btn-secondary" data-action="prev">Back</button>' : '')
-      + (isLast ? '<button class="bpg-btn bpg-btn-secondary" data-action="restart" title="Restart from step 1">↻ Restart</button>' : '')
-      + '<button class="bpg-btn bpg-btn-primary" data-action="next">' + (isLast ? 'Finish' : 'Next') + '</button>'
+      + (!isFirst ? '<button class="bpg-btn bpg-btn-secondary" data-action="prev">' + l.back + '</button>' : '')
+      + (isLast ? '<button class="bpg-btn bpg-btn-secondary" data-action="restart" title="Restart">' + l.restart + '</button>' : '')
+      + '<button class="bpg-btn bpg-btn-primary" data-action="next">' + (isLast ? l.finish : l.next) + '</button>'
       + '</div></div>';
   }
 
@@ -1759,12 +1850,39 @@ function getPopupHTML(appName: string, processes: Process[]): string {
       font-size: 13px;
     }
     .no-results { text-align: center; padding: 20px 16px; color: #8a9b92; font-size: 12px; }
+    .lang-selector {
+      display: flex;
+      gap: 4px;
+      padding: 8px 10px;
+      background: #fff;
+      border-bottom: 1px solid #dfe6e2;
+    }
+    .lang-btn {
+      flex: 1;
+      padding: 5px 8px;
+      border: 1px solid #dfe6e2;
+      border-radius: 6px;
+      background: #fff;
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-family: 'DM Sans', sans-serif;
+      text-align: center;
+    }
+    .lang-btn:hover { border-color: #4d8b6f; }
+    .lang-btn.active { background: #4d8b6f; color: #fff; border-color: #4d8b6f; }
   </style>
 </head>
 <body>
   <div class="header">
     <h1>${appName}</h1>
     <p>Business Process Guide</p>
+  </div>
+  <div class="lang-selector" id="langSelector">
+    <button class="lang-btn active" data-lang="en">🇬🇧 English</button>
+    <button class="lang-btn" data-lang="ar">🇸🇦 العربية</button>
+    <button class="lang-btn" data-lang="fr">🇫🇷 Français</button>
   </div>
   <div class="search-box">
     <input class="search-input" id="searchInput" placeholder="Search processes..." type="text" />
@@ -1780,12 +1898,40 @@ export function getPopupJS(): string {
 document.addEventListener('DOMContentLoaded', () => {
   const list = document.getElementById('processList');
   const searchInput = document.getElementById('searchInput');
+  const langSelector = document.getElementById('langSelector');
   var completedProcesses = {};
+  var _currentLang = 'en';
 
-  // Load completed processes from storage
-  chrome.storage.local.get(['bpg_completed'], function(result) {
+  // Load saved language preference
+  chrome.storage.local.get(['bpg_language', 'bpg_completed'], function(result) {
     completedProcesses = result.bpg_completed || {};
+    if (result.bpg_language) {
+      _currentLang = result.bpg_language;
+      // Update active lang button
+      langSelector.querySelectorAll('.lang-btn').forEach(function(btn) {
+        btn.classList.toggle('active', btn.getAttribute('data-lang') === _currentLang);
+      });
+      // Update body dir for RTL
+      document.body.dir = _currentLang === 'ar' ? 'rtl' : 'ltr';
+    }
     renderProcesses();
+  });
+
+  // Language switcher
+  langSelector.addEventListener('click', function(e) {
+    var btn = e.target.closest('.lang-btn');
+    if (!btn) return;
+    var lang = btn.getAttribute('data-lang');
+    _currentLang = lang;
+    chrome.storage.local.set({ bpg_language: lang });
+    langSelector.querySelectorAll('.lang-btn').forEach(function(b) {
+      b.classList.toggle('active', b.getAttribute('data-lang') === lang);
+    });
+    document.body.dir = lang === 'ar' ? 'rtl' : 'ltr';
+    // Notify content script to switch language
+    chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+      if (tabs[0]) chrome.tabs.sendMessage(tabs[0].id, { type: 'SET_LANGUAGE', language: lang });
+    });
   });
 
   // Listen for completion events from content script

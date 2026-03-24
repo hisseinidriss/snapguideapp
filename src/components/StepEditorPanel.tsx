@@ -1,16 +1,18 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Trash2, MousePointer2, Video, ArrowUpDown } from "lucide-react";
+import { Trash2, MousePointer2, Video, ArrowUpDown, Languages } from "lucide-react";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
   Popover, PopoverContent, PopoverTrigger,
 } from "@/components/ui/popover";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { TourStep, Placement } from "@/types/tour";
+import { translationsApi, type Translation } from "@/api/translations";
 
 const PLACEMENTS: { value: Placement; label: string }[] = [
   { value: "top", label: "Top" },
@@ -23,6 +25,12 @@ const PLACEMENTS: { value: Placement; label: string }[] = [
 const STEP_TYPES = [
   { value: "standard", label: "Standard" },
   { value: "video", label: "Video Step" },
+];
+
+const LANGUAGES = [
+  { code: "en", label: "English", flag: "🇬🇧" },
+  { code: "ar", label: "العربية", flag: "🇸🇦", rtl: true },
+  { code: "fr", label: "Français", flag: "🇫🇷" },
 ];
 
 interface StepEditorPanelProps {
@@ -51,6 +59,46 @@ const StepEditorPanel = ({ step, stepIndex, totalSteps, onUpdate, onRemove, onPi
   const videoUrl = (step as any).video_url || "";
   const [moveToValue, setMoveToValue] = useState("");
   const [movePopoverOpen, setMovePopoverOpen] = useState(false);
+  const [translations, setTranslations] = useState<Record<string, { title: string; content: string }>>({});
+  const [activeLang, setActiveLang] = useState("en");
+  const [translationsExpanded, setTranslationsExpanded] = useState(false);
+  const [savingLang, setSavingLang] = useState<string | null>(null);
+
+  // Load translations when step changes
+  useEffect(() => {
+    let cancelled = false;
+    const loadTranslations = async () => {
+      const { data } = await translationsApi.listByStep(step.id);
+      if (cancelled) return;
+      const map: Record<string, { title: string; content: string }> = {};
+      (data || []).forEach((t: Translation) => {
+        map[t.language] = { title: t.title, content: t.content };
+      });
+      setTranslations(map);
+    };
+    loadTranslations();
+    return () => { cancelled = true; };
+  }, [step.id]);
+
+  const handleTranslationChange = useCallback((lang: string, field: "title" | "content", value: string) => {
+    setTranslations(prev => ({
+      ...prev,
+      [lang]: { ...prev[lang] || { title: "", content: "" }, [field]: value },
+    }));
+  }, []);
+
+  const saveTranslation = useCallback(async (lang: string) => {
+    const t = translations[lang];
+    if (!t) return;
+    setSavingLang(lang);
+    await translationsApi.upsert({
+      step_id: step.id,
+      language: lang,
+      title: t.title,
+      content: t.content,
+    });
+    setSavingLang(null);
+  }, [step.id, translations]);
 
   const handleMoveTo = () => {
     const pos = parseInt(moveToValue, 10);
@@ -133,6 +181,70 @@ const StepEditorPanel = ({ step, stepIndex, totalSteps, onUpdate, onRemove, onPi
       <div className="space-y-2">
         <Label>Content</Label>
         <Textarea value={step.content} onChange={(e) => onUpdate(step.id, { content: e.target.value })} placeholder="Step description" rows={3} />
+      </div>
+
+      {/* Multi-Language Translations */}
+      <div className="space-y-2 border rounded-lg p-3 bg-muted/30">
+        <button
+          onClick={() => setTranslationsExpanded(!translationsExpanded)}
+          className="flex items-center gap-2 w-full text-left"
+        >
+          <Languages className="h-4 w-4 text-primary" />
+          <span className="text-sm font-medium flex-1">Translations</span>
+          <span className="text-xs text-muted-foreground">
+            {Object.keys(translations).length > 0
+              ? `${Object.keys(translations).length} language(s)`
+              : "Add translations"}
+          </span>
+          <span className="text-xs">{translationsExpanded ? "▾" : "▸"}</span>
+        </button>
+
+        {translationsExpanded && (
+          <Tabs value={activeLang} onValueChange={setActiveLang} className="mt-3">
+            <TabsList className="w-full grid grid-cols-3">
+              {LANGUAGES.filter(l => l.code !== "en").map((lang) => (
+                <TabsTrigger key={lang.code} value={lang.code} className="text-xs gap-1">
+                  <span>{lang.flag}</span> {lang.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+
+            {LANGUAGES.filter(l => l.code !== "en").map((lang) => (
+              <TabsContent key={lang.code} value={lang.code} className="space-y-3 mt-3">
+                <div className="space-y-2">
+                  <Label className="text-xs">
+                    Title ({lang.label})
+                  </Label>
+                  <Input
+                    value={translations[lang.code]?.title || ""}
+                    onChange={(e) => handleTranslationChange(lang.code, "title", e.target.value)}
+                    onBlur={() => saveTranslation(lang.code)}
+                    placeholder={step.title || "Translated title"}
+                    className="text-sm"
+                    dir={lang.rtl ? "rtl" : "ltr"}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs">
+                    Content ({lang.label})
+                  </Label>
+                  <Textarea
+                    value={translations[lang.code]?.content || ""}
+                    onChange={(e) => handleTranslationChange(lang.code, "content", e.target.value)}
+                    onBlur={() => saveTranslation(lang.code)}
+                    placeholder={step.content || "Translated content"}
+                    rows={3}
+                    className="text-sm"
+                    dir={lang.rtl ? "rtl" : "ltr"}
+                  />
+                </div>
+                <p className="text-[10px] text-muted-foreground">
+                  {savingLang === lang.code ? "Saving..." : "Auto-saves on blur"}
+                </p>
+              </TabsContent>
+            ))}
+          </Tabs>
+        )}
       </div>
 
       {stepType === "video" && (
