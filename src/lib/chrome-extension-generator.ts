@@ -2,6 +2,12 @@ import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import { apiGet, apiPost } from "@/api";
 
+interface StepTranslation {
+  language: string;
+  title: string;
+  content: string;
+}
+
 interface ProcessStep {
   title: string;
   content: string;
@@ -14,6 +20,7 @@ interface ProcessStep {
   video_url?: string | null;
   fallback_selectors?: string[] | null;
   element_metadata?: Record<string, any> | null;
+  translations?: Record<string, { title: string; content: string }>;
 }
 
 interface Process {
