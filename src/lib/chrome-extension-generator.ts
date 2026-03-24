@@ -761,8 +761,8 @@ export function getContentJS(): string {
       if (!step.selector) { resolve(null); return; }
 
       var selector = step.selector;
-      var retryInterval = 450;
-      var maxTimeout = 10000;
+      var retryInterval = 500;
+      var maxTimeout = 30000;
       var start = Date.now();
 
       function attempt() {
@@ -1111,7 +1111,7 @@ export function getContentJS(): string {
         if (processes[processIndex]) {
           currentProcess = processes[processIndex];
           currentStepIndex = stepIndex;
-          setTimeout(() => showStep(), 800);
+          setTimeout(() => showStep(), 2000);
           return;
         }
       } catch(e) {}
@@ -1124,7 +1124,7 @@ export function getContentJS(): string {
         chrome.storage.local.remove('bpg_pending_process');
         var processes = getProcesses();
         if (processes[pendingIndex]) {
-          setTimeout(function() { startProcess(pendingIndex); }, 800);
+          setTimeout(function() { startProcess(pendingIndex); }, 3000);
         }
       }
     });
@@ -1867,7 +1867,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }, () => {
           setTimeout(() => {
             chrome.tabs.sendMessage(tabId, message);
-          }, 300);
+          }, 1500);
         });
       }
     });
