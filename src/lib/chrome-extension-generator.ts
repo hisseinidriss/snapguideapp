@@ -1886,12 +1886,40 @@ export function getPopupJS(): string {
 document.addEventListener('DOMContentLoaded', () => {
   const list = document.getElementById('processList');
   const searchInput = document.getElementById('searchInput');
+  const langSelector = document.getElementById('langSelector');
   var completedProcesses = {};
+  var _currentLang = 'en';
 
-  // Load completed processes from storage
-  chrome.storage.local.get(['bpg_completed'], function(result) {
+  // Load saved language preference
+  chrome.storage.local.get(['bpg_language', 'bpg_completed'], function(result) {
     completedProcesses = result.bpg_completed || {};
+    if (result.bpg_language) {
+      _currentLang = result.bpg_language;
+      // Update active lang button
+      langSelector.querySelectorAll('.lang-btn').forEach(function(btn) {
+        btn.classList.toggle('active', btn.getAttribute('data-lang') === _currentLang);
+      });
+      // Update body dir for RTL
+      document.body.dir = _currentLang === 'ar' ? 'rtl' : 'ltr';
+    }
     renderProcesses();
+  });
+
+  // Language switcher
+  langSelector.addEventListener('click', function(e) {
+    var btn = e.target.closest('.lang-btn');
+    if (!btn) return;
+    var lang = btn.getAttribute('data-lang');
+    _currentLang = lang;
+    chrome.storage.local.set({ bpg_language: lang });
+    langSelector.querySelectorAll('.lang-btn').forEach(function(b) {
+      b.classList.toggle('active', b.getAttribute('data-lang') === lang);
+    });
+    document.body.dir = lang === 'ar' ? 'rtl' : 'ltr';
+    // Notify content script to switch language
+    chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+      if (tabs[0]) chrome.tabs.sendMessage(tabs[0].id, { type: 'SET_LANGUAGE', language: lang });
+    });
   });
 
   // Listen for completion events from content script
