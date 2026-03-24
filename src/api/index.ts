@@ -9,3 +9,5 @@ export { recordingsApi, recordingStepsApi } from "./recordings";
 export { analyticsApi } from "./analytics";
 export { feedbackApi } from "./feedback";
 export { functionsApi } from "./functions";
+export { translationsApi } from "./translations";
+export type { Translation } from "./translations";
