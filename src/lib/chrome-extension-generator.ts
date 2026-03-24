@@ -58,9 +58,15 @@ export async function generateChromeExtension(
   const { data: launchers } = await apiGet<any[]>(`/api/launchers?app_id=${appId}`);
 
   const processes: Process[] = [];
+  let allTranslations: any[] = [];
   if (tours?.length) {
     const ids = tours.map((t: any) => t.id);
-    const { data: steps } = await apiPost<any[]>("/api/tour-steps/by-tours", { tour_ids: ids });
+    const [stepsRes, transRes] = await Promise.all([
+      apiPost<any[]>("/api/tour-steps/by-tours", { tour_ids: ids }),
+      Promise.all(ids.map((id: string) => apiGet<any[]>(`/api/translations?tour_id=${id}`).then(r => r.data || []))),
+    ]);
+    const steps = stepsRes.data || [];
+    allTranslations = transRes.flat();
 
     for (const tour of tours) {
       processes.push({
@@ -68,19 +74,30 @@ export async function generateChromeExtension(
         name: tour.name,
         steps: (steps || [])
           .filter((s) => s.tour_id === tour.id)
-          .map((s) => ({
-            title: s.title,
-            content: s.content,
-            selector: s.selector,
-            placement: s.placement,
-            sort_order: s.sort_order,
-            target_url: (s as any).target_url || null,
-            click_selector: (s as any).click_selector || null,
-            step_type: (s as any).step_type || 'standard',
-            video_url: (s as any).video_url || null,
-            fallback_selectors: (s as any).fallback_selectors || null,
-            element_metadata: (s as any).element_metadata || null,
-          })),
+          .map((s) => {
+            // Group translations by language for this step
+            const stepTrans: Record<string, { title: string; content: string }> = {};
+            allTranslations
+              .filter((t: any) => t.step_id === s.id)
+              .forEach((t: any) => {
+                stepTrans[t.language] = { title: t.title, content: t.content };
+              });
+
+            return {
+              title: s.title,
+              content: s.content,
+              selector: s.selector,
+              placement: s.placement,
+              sort_order: s.sort_order,
+              target_url: (s as any).target_url || null,
+              click_selector: (s as any).click_selector || null,
+              step_type: (s as any).step_type || 'standard',
+              video_url: (s as any).video_url || null,
+              fallback_selectors: (s as any).fallback_selectors || null,
+              element_metadata: (s as any).element_metadata || null,
+              translations: Object.keys(stepTrans).length > 0 ? stepTrans : undefined,
+            };
+          }),
       });
     }
   }
