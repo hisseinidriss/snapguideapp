@@ -1402,33 +1402,43 @@ export function getContentJS(): string {
     var isLast = index === total - 1;
     var isVideo = step.step_type === 'video' && step.video_url;
     var embedUrl = isVideo ? getVideoEmbedUrl(step.video_url) : null;
+    var title = getStepText(step, 'title');
+    var content = getStepText(step, 'content');
+
+    // Localized button labels
+    var labels = {
+      en: { back: 'Back', next: 'Next', finish: 'Finish', restart: '↻ Restart', step: 'Step', of: 'of', watchVideo: 'Watch Video', opensNewTab: 'Opens in a new tab', skipVideo: 'Skip Video ⏭', targetMissing: 'Target element not found. Check if the selector is correct and visible on this page.' },
+      ar: { back: 'رجوع', next: 'التالي', finish: 'إنهاء', restart: '↻ إعادة', step: 'خطوة', of: 'من', watchVideo: 'مشاهدة الفيديو', opensNewTab: 'يفتح في علامة تبويب جديدة', skipVideo: '⏭ تخطي الفيديو', targetMissing: 'العنصر المستهدف غير موجود. تأكد من صحة المحدد وظهوره في هذه الصفحة.' },
+      fr: { back: 'Retour', next: 'Suivant', finish: 'Terminer', restart: '↻ Recommencer', step: 'Étape', of: 'sur', watchVideo: 'Regarder la vidéo', opensNewTab: 'Ouvre dans un nouvel onglet', skipVideo: 'Passer la vidéo ⏭', targetMissing: 'Élément cible introuvable. Vérifiez que le sélecteur est correct et visible sur cette page.' },
+    };
+    var l = labels[_currentLang] || labels.en;
     
     var videoHtml = '';
     if (isVideo) {
       videoHtml = '<div class="bpg-video-container" data-video-url="' + step.video_url + '" style="display:flex;flex-direction:column;align-items:center;justify-content:center;background:#f1f5f1;border-radius:8px;padding:24px;font-family:DM Sans,sans-serif;min-height:120px;margin:8px 0;cursor:pointer" data-action="open-video">'
         + '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#4d8b6f" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>'
-        + '<span style="margin-top:10px;color:#4d8b6f;font-size:14px;font-weight:600">Watch Video</span>'
-        + '<span style="margin-top:4px;color:#6b7280;font-size:11px">Opens in a new tab</span>'
+        + '<span style="margin-top:10px;color:#4d8b6f;font-size:14px;font-weight:600">' + l.watchVideo + '</span>'
+        + '<span style="margin-top:4px;color:#6b7280;font-size:11px">' + l.opensNewTab + '</span>'
         + '</div>'
         + '<div class="bpg-video-actions">'
-        + '<button class="bpg-btn-skip" data-action="skip-video">Skip Video ⏭</button>'
+        + '<button class="bpg-btn-skip" data-action="skip-video">' + l.skipVideo + '</button>'
         + '</div>';
     }
 
     return '<button class="bpg-btn-close">&times;</button>'
       + '<div style="font-size:11px;color:#4d8b6f;font-weight:600;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;font-family:DM Sans,sans-serif">' + processName + '</div>'
-      + '<h3 class="bpg-tooltip-title">' + step.title + '</h3>'
-      + '<p class="bpg-tooltip-content">' + step.content + '</p>'
+      + '<h3 class="bpg-tooltip-title">' + title + '</h3>'
+      + '<p class="bpg-tooltip-content">' + content + '</p>'
       + videoHtml
       + (targetMissing
-        ? '<p style="font-size:12px;color:#b45309;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:8px 10px;margin:0 0 12px;font-family:DM Sans,sans-serif">Target element not found. Check if the selector is correct and visible on this page.</p>'
+        ? '<p style="font-size:12px;color:#b45309;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:8px 10px;margin:0 0 12px;font-family:DM Sans,sans-serif">' + l.targetMissing + '</p>'
         : '')
       + '<div class="bpg-tooltip-footer">'
-      + '<span class="bpg-tooltip-progress">Step ' + (index + 1) + ' of ' + total + '</span>'
+      + '<span class="bpg-tooltip-progress">' + l.step + ' ' + (index + 1) + ' ' + l.of + ' ' + total + '</span>'
       + '<div class="bpg-tooltip-actions">'
-      + (!isFirst ? '<button class="bpg-btn bpg-btn-secondary" data-action="prev">Back</button>' : '')
-      + (isLast ? '<button class="bpg-btn bpg-btn-secondary" data-action="restart" title="Restart from step 1">↻ Restart</button>' : '')
-      + '<button class="bpg-btn bpg-btn-primary" data-action="next">' + (isLast ? 'Finish' : 'Next') + '</button>'
+      + (!isFirst ? '<button class="bpg-btn bpg-btn-secondary" data-action="prev">' + l.back + '</button>' : '')
+      + (isLast ? '<button class="bpg-btn bpg-btn-secondary" data-action="restart" title="Restart">' + l.restart + '</button>' : '')
+      + '<button class="bpg-btn bpg-btn-primary" data-action="next">' + (isLast ? l.finish : l.next) + '</button>'
       + '</div></div>';
   }
 
