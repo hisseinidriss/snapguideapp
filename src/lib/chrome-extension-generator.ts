@@ -1075,6 +1075,12 @@ export function getContentJS(): string {
       sendResponse(_bpgData);
       return true;
     }
+    if (msg.type === 'SET_LANGUAGE') {
+      _currentLang = msg.language || 'en';
+      chrome.storage.local.set({ bpg_language: _currentLang });
+      // Re-render current step if active
+      if (currentProcess) showStep();
+    }
   });
 
   var _initialized = false;
