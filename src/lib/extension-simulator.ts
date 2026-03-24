@@ -467,13 +467,34 @@ async function simulateStepNavigationInSandbox(
   result: SandboxResult,
   tour: TourData
 ) {
-  for (let i = 0; i < Math.min(tour.steps.length, 5); i++) {
+  let feedbackSubmitted = false;
+
+  for (let i = 0; i < tour.steps.length; i++) {
     // Find and click the Next/Finish button
     const nextBtn = doc.querySelector(".bpg-btn-primary") as HTMLElement | null;
     if (nextBtn) {
       try {
         nextBtn.click();
         await new Promise(r => setTimeout(r, 500));
+
+        const feedbackOverlay = doc.getElementById("bpg-feedback-overlay");
+        if (feedbackOverlay) {
+          const buttons = Array.from(feedbackOverlay.querySelectorAll("button")) as HTMLButtonElement[];
+          const helpfulBtn = buttons.find(btn => btn.textContent?.includes("Helpful"));
+          const submitBtn = buttons.find(btn => btn.textContent?.trim() === "Submit");
+
+          if (helpfulBtn && submitBtn) {
+            helpfulBtn.click();
+            await new Promise(r => setTimeout(r, 150));
+            submitBtn.click();
+            await new Promise(r => setTimeout(r, 800));
+            feedbackSubmitted = true;
+          } else {
+            result.timingIssues.push("Feedback dialog appeared, but simulator could not find rating or submit buttons.");
+          }
+
+          break;
+        }
       } catch (err: any) {
         result.jsErrors.push({
           message: `Step ${i + 1} navigation click error: ${err.message}`,
@@ -491,36 +512,38 @@ async function simulateStepNavigationInSandbox(
     }
   }
 
-  // Test Back button
-  const backBtn = doc.querySelector(".bpg-btn-secondary") as HTMLElement | null;
-  if (backBtn && backBtn.textContent?.includes("Back")) {
-    try {
-      backBtn.click();
-      await new Promise(r => setTimeout(r, 300));
-    } catch (err: any) {
-      result.jsErrors.push({
-        message: `Back button click error: ${err.message}`,
-        source: "step-navigation",
-      });
-    }
-  }
-
-  // Test Close button
-  const closeBtn = doc.querySelector(".bpg-btn-close") as HTMLElement | null;
-  if (closeBtn) {
-    try {
-      closeBtn.click();
-      await new Promise(r => setTimeout(r, 300));
-      // After close, overlay should be removed
-      const remainingOverlay = doc.querySelector(".bpg-overlay-box");
-      if (remainingOverlay) {
-        result.timingIssues.push("Overlay boxes not cleaned up after closing tour.");
+  if (!feedbackSubmitted) {
+    // Test Back button
+    const backBtn = doc.querySelector(".bpg-btn-secondary") as HTMLElement | null;
+    if (backBtn && backBtn.textContent?.includes("Back")) {
+      try {
+        backBtn.click();
+        await new Promise(r => setTimeout(r, 300));
+      } catch (err: any) {
+        result.jsErrors.push({
+          message: `Back button click error: ${err.message}`,
+          source: "step-navigation",
+        });
       }
-    } catch (err: any) {
-      result.jsErrors.push({
-        message: `Close button click error: ${err.message}`,
-        source: "step-navigation",
-      });
+    }
+
+    // Test Close button
+    const closeBtn = doc.querySelector(".bpg-btn-close") as HTMLElement | null;
+    if (closeBtn) {
+      try {
+        closeBtn.click();
+        await new Promise(r => setTimeout(r, 300));
+        // After close, overlay should be removed
+        const remainingOverlay = doc.querySelector(".bpg-overlay-box");
+        if (remainingOverlay) {
+          result.timingIssues.push("Overlay boxes not cleaned up after closing tour.");
+        }
+      } catch (err: any) {
+        result.jsErrors.push({
+          message: `Close button click error: ${err.message}`,
+          source: "step-navigation",
+        });
+      }
     }
   }
 }
@@ -1055,7 +1078,18 @@ async function loadTours(appId: string, results: TestResult[]): Promise<TourData
   results.push({ id: nextId(), category: "Data Loading", test: "Tours loaded", status: "pass", message: `${tours.length} tour(s) loaded.` });
 
   const ids = tours.map((t: any) => t.id);
-  const { data: steps } = await apiGet<any[]>(`/api/tour-steps?tour_ids=${ids.join(",")}`);
+  const { data: steps, error: stepsError } = await apiPost<any[]>("/api/tour-steps/by-tours", { tour_ids: ids });
+
+  if (stepsError) {
+    results.push({
+      id: nextId(),
+      category: "Data Loading",
+      test: "Tour steps loaded",
+      status: "error",
+      message: `Failed to load tour steps: ${stepsError.message}`,
+    });
+    return tours.map(t => ({ id: t.id, name: t.name, steps: [] }));
+  }
 
   return tours.map(t => ({
     id: t.id,
