@@ -16,12 +16,18 @@ export function generatePickerScript(sessionId: string): string {
 if(window.__wt_picker){window.__wt_picker.destroy();delete window.__wt_picker;return;}
 var s=document.createElement('style');
 s.id='__wt_picker_style';
-s.textContent='.__wt_picker_highlight{outline:2px solid #1e6b45 !important;outline-offset:2px !important;cursor:crosshair !important;}.__wt_picker_bar{position:fixed;bottom:0;left:0;right:0;z-index:2147483647;background:#1e6b45;color:#fff;font:14px/1.4 system-ui;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 -4px 20px rgba(0,0,0,.2);}.__wt_picker_bar button{background:#fff;color:#1e6b45;border:none;padding:6px 14px;border-radius:6px;font-weight:600;cursor:pointer;font-size:13px;}.__wt_picker_bar .wt-sel{font-family:monospace;font-size:12px;background:rgba(255,255,255,.15);padding:4px 8px;border-radius:4px;max-width:400px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}.__wt_picker_bar .wt-badge{display:inline-flex;align-items:center;gap:3px;font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600;margin-left:6px;}.__wt_picker_bar .wt-badge-ok{background:rgba(34,197,94,.25);color:#bbf7d0;}.__wt_picker_bar .wt-badge-warn{background:rgba(234,179,8,.25);color:#fef08a;}';
+s.textContent='.__wt_picker_highlight{outline:2px solid #1e6b45 !important;outline-offset:2px !important;cursor:crosshair !important;}.__wt_picker_bar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);z-index:2147483647;background:#1e6b45;color:#fff;font:14px/1.4 system-ui;padding:8px 16px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 -4px 20px rgba(0,0,0,.2);border-radius:10px 10px 0 0;min-width:500px;max-width:90vw;user-select:none;}.__wt_picker_bar.wt-floating{border-radius:10px;bottom:auto;}.__wt_picker_bar .wt-drag{cursor:grab;padding:0 8px;margin-right:6px;display:flex;align-items:center;opacity:.7;}.__wt_picker_bar .wt-drag:hover{opacity:1;}.__wt_picker_bar .wt-drag:active{cursor:grabbing;}.__wt_picker_bar button{background:#fff;color:#1e6b45;border:none;padding:6px 14px;border-radius:6px;font-weight:600;cursor:pointer;font-size:13px;}.__wt_picker_bar .wt-sel{font-family:monospace;font-size:12px;background:rgba(255,255,255,.15);padding:4px 8px;border-radius:4px;max-width:400px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}.__wt_picker_bar .wt-badge{display:inline-flex;align-items:center;gap:3px;font-size:11px;padding:2px 8px;border-radius:10px;font-weight:600;margin-left:6px;}.__wt_picker_bar .wt-badge-ok{background:rgba(34,197,94,.25);color:#bbf7d0;}.__wt_picker_bar .wt-badge-warn{background:rgba(234,179,8,.25);color:#fef08a;}';
 document.head.appendChild(s);
 var bar=document.createElement('div');
 bar.className='__wt_picker_bar';
-bar.innerHTML='<div><strong>WalkThru Picker</strong> \\u2014 Hover & click an element</div><div style="display:flex;gap:8px;align-items:center"><span class="wt-sel">\\u2014</span><span class="wt-badge" id="__wt_badge"></span><button id="__wt_cancel">Cancel</button></div>';
+bar.innerHTML='<span class="wt-drag" title="Drag to move">\\u2630</span><div><strong>WalkThru Picker</strong> \\u2014 Hover & click an element</div><div style="display:flex;gap:8px;align-items:center"><span class="wt-sel">\\u2014</span><span class="wt-badge" id="__wt_badge"></span><button id="__wt_cancel">Cancel</button></div>';
 document.body.appendChild(bar);
+/* Drag logic */
+var dragHandle=bar.querySelector('.wt-drag');
+var isDragging=false,dragOffX=0,dragOffY=0;
+dragHandle.addEventListener('mousedown',function(e){e.preventDefault();e.stopPropagation();isDragging=true;var r=bar.getBoundingClientRect();dragOffX=e.clientX-r.left;dragOffY=e.clientY-r.top;});
+document.addEventListener('mousemove',function(e){if(!isDragging)return;e.preventDefault();e.stopPropagation();bar.style.left=(e.clientX-dragOffX)+'px';bar.style.top=(e.clientY-dragOffY)+'px';bar.style.bottom='auto';bar.style.transform='none';bar.classList.add('wt-floating');},true);
+document.addEventListener('mouseup',function(){isDragging=false;},true);
 var selSpan=bar.querySelector('.wt-sel');
 var badgeSpan=document.getElementById('__wt_badge');
 var lastEl=null;
@@ -290,7 +296,7 @@ function updateBadge(sel){
   else{badgeSpan.textContent='\\u26a0\\ufe0f '+n+' matches';badgeSpan.className='wt-badge wt-badge-warn';}
 }
 function onMove(e){
-  if(e.target===bar||bar.contains(e.target))return;
+  if(isDragging||e.target===bar||bar.contains(e.target))return;
   if(lastEl)lastEl.classList.remove('__wt_picker_highlight');
   /* Smart target: prefer interactive child over wrapper */
   var target=smartTarget(e.target);
