@@ -460,7 +460,7 @@ export function getContentCSS(): string {
   flex-direction: row-reverse;
 }
 `;
-
+}
 export function getContentJS(): string {
   return `
 // Business Process Guide - Content Script
