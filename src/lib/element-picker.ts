@@ -296,7 +296,7 @@ function updateBadge(sel){
   else{badgeSpan.textContent='\\u26a0\\ufe0f '+n+' matches';badgeSpan.className='wt-badge wt-badge-warn';}
 }
 function onMove(e){
-  if(e.target===bar||bar.contains(e.target))return;
+  if(isDragging||e.target===bar||bar.contains(e.target))return;
   if(lastEl)lastEl.classList.remove('__wt_picker_highlight');
   /* Smart target: prefer interactive child over wrapper */
   var target=smartTarget(e.target);
