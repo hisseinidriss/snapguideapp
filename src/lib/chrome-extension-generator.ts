@@ -1867,7 +1867,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }, () => {
           setTimeout(() => {
             chrome.tabs.sendMessage(tabId, message);
-          }, 300);
+          }, 1500);
         });
       }
     });
