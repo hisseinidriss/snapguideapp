@@ -241,7 +241,7 @@ async function runSandboxExecution(
     const origFetch = sandboxWin.fetch;
     sandboxWin.fetch = function (url: string, ...args: any[]) {
       if (typeof url === "string" && url.includes("data.json")) {
-        const jsonData = { processes, launchers: [], appName, appId, appUrl: appUrl || "" };
+        const jsonData = { processes, launchers: [], appName, appId, appUrl: appUrl || "", trackUrl: `${API_BASE_URL}/api/track-events` };
         return Promise.resolve(new Response(JSON.stringify(jsonData), {
           status: 200,
           headers: { "Content-Type": "application/json" },
