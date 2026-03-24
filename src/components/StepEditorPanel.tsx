@@ -233,6 +233,19 @@ const StepEditorPanel = ({ step, stepIndex, totalSteps, onUpdate, onRemove, onPi
 
             {LANGUAGES.filter(l => l.code !== "en").map((lang) => (
               <TabsContent key={lang.code} value={lang.code} className="space-y-3 mt-3">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full text-xs gap-1.5"
+                  onClick={() => autoTranslate(lang.code)}
+                  disabled={translatingLang === lang.code || (!step.title && !step.content)}
+                >
+                  {translatingLang === lang.code ? (
+                    <><Loader2 className="h-3 w-3 animate-spin" />Translating...</>
+                  ) : (
+                    <><Wand2 className="h-3 w-3" />Auto-Translate to {lang.label}</>
+                  )}
+                </Button>
                 <div className="space-y-2">
                   <Label className="text-xs">
                     Title ({lang.label})
