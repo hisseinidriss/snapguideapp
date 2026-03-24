@@ -1181,12 +1181,14 @@ export function getContentJS(): string {
       try {
         var curU = new URL(window.location.href);
         var tarU = new URL(step.target_url, window.location.origin);
-        // Compare origin + pathname only (strip trailing slashes without regex)
+        // Compare origin + pathname + hash (supports hash-based routing like SAP/Neptune)
         var curPath = curU.pathname;
         var tarPath = tarU.pathname;
         while (curPath.length > 1 && curPath.charAt(curPath.length - 1) === '/') curPath = curPath.slice(0, -1);
         while (tarPath.length > 1 && tarPath.charAt(tarPath.length - 1) === '/') tarPath = tarPath.slice(0, -1);
-        if (curU.origin + curPath !== tarU.origin + tarPath) {
+        var curFull = curU.origin + curPath + (curU.hash || '');
+        var tarFull = tarU.origin + tarPath + (tarU.hash || '');
+        if (curFull !== tarFull) {
           sessionStorage.setItem('bpg_resume', JSON.stringify({
             processIndex: _bpgData.processes.indexOf(currentProcess),
             stepIndex: currentStepIndex
