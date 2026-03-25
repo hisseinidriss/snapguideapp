@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, Trash2, Code, Pencil, Crosshair, Sparkles, Loader2, Upload, Circle, Square, Zap, Download, HelpCircle, CheckCircle2, ClipboardList, BarChart3, Menu, ShieldCheck, AlertTriangle, XCircle, CheckCircle, FileText, Video as VideoIcon, GripVertical, MoreVertical, Play } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Code, Pencil, Crosshair, Sparkles, Loader2, Upload, Circle, Square, Zap, Download, HelpCircle, CheckCircle2, ClipboardList, BarChart3, Menu, ShieldCheck, AlertTriangle, XCircle, CheckCircle, FileText, Video as VideoIcon, GripVertical, MoreVertical, Play, Languages } from "lucide-react";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -124,6 +124,7 @@ const AppDetail = () => {
   const { toast } = useToast();
   const [appName, setAppName] = useState("");
   const [appUrl, setAppUrl] = useState("");
+  const [enabledLanguages, setEnabledLanguages] = useState<string[]>([]);
   const [tours, setTours] = useState<Tour[]>([]);
   const [launchers, setLaunchers] = useState<Launcher[]>([]);
   const [checklists, setChecklists] = useState<Checklist[]>([]);
@@ -152,7 +153,7 @@ const AppDetail = () => {
         checklistsApi.list(appId),
         recordingsApi.list(appId),
       ]);
-      if (appRes.data) { setAppName(appRes.data.name); setAppUrl(appRes.data.url || ""); }
+      if (appRes.data) { setAppName(appRes.data.name); setAppUrl(appRes.data.url || ""); setEnabledLanguages(appRes.data.enabled_languages || []); }
       setTours(toursRes.data || []);
       setLaunchers(launchersRes.data || []);
       setChecklists(checklistsRes.data || []);
