@@ -16,8 +16,8 @@ app.http("generate-tour-steps", {
       const perplexityKey = process.env.PERPLEXITY_API_KEY;
       const firecrawlKey = process.env.FIRECRAWL_API_KEY;
 
-      if (!openaiKey || !firecrawlKey) {
-        return errorResponse("AI services not configured", 500);
+      if (!perplexityKey || !firecrawlKey) {
+        return errorResponse("AI services not configured (PERPLEXITY_API_KEY or FIRECRAWL_API_KEY missing)", 500);
       }
 
       // Scrape the page
@@ -57,17 +57,16 @@ Generate 4-8 tour steps. Each step should have:
 
 Return ONLY a JSON array of steps.`;
 
-      const aiRes = await fetch("https://api.openai.com/v1/chat/completions", {
+      const aiRes = await fetch("https://api.perplexity.ai/chat/completions", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${openaiKey}`,
+          Authorization: `Bearer ${perplexityKey}`,
         },
         body: JSON.stringify({
-          model: "gpt-4o-mini",
+          model: "sonar",
           messages: [{ role: "user", content: prompt }],
           temperature: 0.7,
-          response_format: { type: "json_object" },
         }),
       });
 
