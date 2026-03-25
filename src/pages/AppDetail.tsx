@@ -460,6 +460,37 @@ const AppDetail = () => {
       </Dialog>
 
       <main className="container py-8 px-4">
+        {/* Language Settings */}
+        <div className="mb-6 border rounded-lg p-4 bg-card">
+          <div className="flex items-center gap-2 mb-3">
+            <Languages className="h-4 w-4 text-primary" />
+            <h3 className="text-sm font-semibold">Translation Languages</h3>
+            <span className="text-xs text-muted-foreground">Enable languages to allow translations in your tour steps</span>
+          </div>
+          <div className="flex flex-wrap gap-4">
+            {[
+              { code: "ar", label: "العربية (Arabic)", flag: "🇸🇦" },
+              { code: "fr", label: "Français (French)", flag: "🇫🇷" },
+            ].map((lang) => (
+              <label key={lang.code} className="flex items-center gap-2 cursor-pointer">
+                <Switch
+                  checked={enabledLanguages.includes(lang.code)}
+                  onCheckedChange={async (checked) => {
+                    const updated = checked
+                      ? [...enabledLanguages, lang.code]
+                      : enabledLanguages.filter((l) => l !== lang.code);
+                    setEnabledLanguages(updated);
+                    await appsApi.update(appId!, { enabled_languages: updated } as any);
+                  }}
+                />
+                <span className="text-sm">{lang.flag} {lang.label}</span>
+              </label>
+            ))}
+          </div>
+          {enabledLanguages.length === 0 && (
+            <p className="text-xs text-muted-foreground mt-2">No languages enabled — the extension will only use English.</p>
+          )}
+        </div>
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 mb-6">
           <input
             type="file"
