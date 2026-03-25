@@ -1,0 +1,1 @@
+ALTER TABLE apps ADD COLUMN IF NOT EXISTS enabled_languages jsonb NOT NULL DEFAULT '[]'::jsonb;
