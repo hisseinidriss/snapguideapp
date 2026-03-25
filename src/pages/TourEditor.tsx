@@ -108,6 +108,7 @@ const TourEditor = () => {
   const [mobileStepListOpen, setMobileStepListOpen] = useState(false);
   const [editorVisible, setEditorVisible] = useState(true);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [enabledLanguages, setEnabledLanguages] = useState<string[]>([]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -124,6 +125,7 @@ const TourEditor = () => {
       ]);
       setAppName(appRes.data?.name || "");
       setAppUrl(appRes.data?.url || "");
+      setEnabledLanguages(appRes.data?.enabled_languages || []);
       setTourName(tourRes.data?.name || "");
       setSteps(stepsRes.data || []);
       if (stepsRes.data?.length) setSelectedStepId(stepsRes.data[0].id);
@@ -339,6 +341,7 @@ const TourEditor = () => {
           {selectedStep ? (
             <StepEditorPanel step={selectedStep} stepIndex={steps.indexOf(selectedStep)} totalSteps={steps.length}
               onUpdate={updateStep} onRemove={removeStep} onPickElement={() => setPickerOpen(true)} onMoveToPosition={moveStepToPosition}
+              enabledLanguages={enabledLanguages}
             />
           ) : (
             <div className="flex items-center justify-center h-full text-muted-foreground text-sm"><p>Select a step to edit.</p></div>
