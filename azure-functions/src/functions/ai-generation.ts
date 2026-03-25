@@ -13,7 +13,7 @@ app.http("generate-tour-steps", {
       const { url, tourName } = body;
       if (!url) return errorResponse("URL is required", 400);
 
-      const openaiKey = process.env.OPENAI_API_KEY;
+      const perplexityKey = process.env.PERPLEXITY_API_KEY;
       const firecrawlKey = process.env.FIRECRAWL_API_KEY;
 
       if (!openaiKey || !firecrawlKey) {
