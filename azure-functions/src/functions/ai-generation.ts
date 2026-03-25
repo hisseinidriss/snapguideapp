@@ -99,8 +99,8 @@ app.http("generate-tour-from-manual", {
       const body = await req.json() as any;
       const { textContent, fileBase64, fileName, mimeType } = body;
 
-      const openaiKey = process.env.OPENAI_API_KEY;
-      if (!openaiKey) return errorResponse("AI services not configured", 500);
+      const perplexityKey = process.env.PERPLEXITY_API_KEY;
+      if (!perplexityKey) return errorResponse("PERPLEXITY_API_KEY not configured", 500);
 
       const content = textContent || (fileBase64 ? Buffer.from(fileBase64, "base64").toString("utf-8") : "");
       if (!content) return errorResponse("No content provided", 400);
@@ -118,17 +118,16 @@ Generate tour steps. Each step should have:
 
 Return ONLY a JSON object with a "steps" array.`;
 
-      const aiRes = await fetch("https://api.openai.com/v1/chat/completions", {
+      const aiRes = await fetch("https://api.perplexity.ai/chat/completions", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${openaiKey}`,
+          Authorization: `Bearer ${perplexityKey}`,
         },
         body: JSON.stringify({
-          model: "gpt-4o-mini",
+          model: "sonar",
           messages: [{ role: "user", content: prompt }],
           temperature: 0.7,
-          response_format: { type: "json_object" },
         }),
       });
 
