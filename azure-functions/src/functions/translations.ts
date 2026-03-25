@@ -119,19 +119,19 @@ app.http("translations-auto", {
       const langNames: Record<string, string> = { ar: "Arabic", fr: "French", en: "English" };
       const langName = langNames[target_language] || target_language;
 
-      const apiKey = process.env.OPENAI_API_KEY;
-      if (!apiKey) return errorResponse("OPENAI_API_KEY not configured", 500);
+      const apiKey = process.env.PERPLEXITY_API_KEY;
+      if (!apiKey) return errorResponse("PERPLEXITY_API_KEY not configured", 500);
 
       const prompt = `Translate the following tour step content to ${langName}. Return ONLY a JSON object with "title" and "content" keys. Do not add any explanation.\n\nTitle: ${source_title || "(empty)"}\nContent: ${source_content || "(empty)"}`;
 
-      const openaiRes = await fetch("https://api.openai.com/v1/chat/completions", {
+      const openaiRes = await fetch("https://api.perplexity.ai/chat/completions", {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${apiKey}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "gpt-4o-mini",
+          model: "sonar",
           messages: [
             { role: "system", content: "You are a professional translator. Always respond with valid JSON only." },
             { role: "user", content: prompt },
