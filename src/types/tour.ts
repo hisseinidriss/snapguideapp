@@ -6,6 +6,7 @@ export interface App {
   description: string | null;
   url: string | null;
   icon_url: string | null;
+  enabled_languages: string[];
   created_at: string;
   updated_at: string;
 }
