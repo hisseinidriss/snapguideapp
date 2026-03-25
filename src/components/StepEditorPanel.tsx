@@ -41,6 +41,7 @@ interface StepEditorPanelProps {
   onRemove: (id: string) => void;
   onPickElement?: () => void;
   onMoveToPosition?: (fromIndex: number, toPosition: number) => void;
+  enabledLanguages?: string[];
 }
 
 function getVideoEmbedUrl(url: string): string | null {
@@ -54,7 +55,7 @@ function getVideoEmbedUrl(url: string): string | null {
   return url;
 }
 
-const StepEditorPanel = ({ step, stepIndex, totalSteps, onUpdate, onRemove, onPickElement, onMoveToPosition }: StepEditorPanelProps) => {
+const StepEditorPanel = ({ step, stepIndex, totalSteps, onUpdate, onRemove, onPickElement, onMoveToPosition, enabledLanguages = [] }: StepEditorPanelProps) => {
   const stepType = (step as any).step_type || "standard";
   const videoUrl = (step as any).video_url || "";
   const [moveToValue, setMoveToValue] = useState("");
