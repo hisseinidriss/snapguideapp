@@ -497,6 +497,8 @@ export function getContentJS(): string {
   let currentProcess = null;
   let currentStepIndex = 0;
   let _bpgNavDone = false;
+  let _bpgStepLock = false; // Execution lock: prevents duplicate/backward step execution
+  let _bpgLastExecutedStep = -1; // Tracks highest executed step to prevent backward loops
   let overlayEls = [];
   let spotlightRing = null;
   let tooltipEl = null;
