@@ -186,7 +186,7 @@ export async function generateChromeExtension(
   zip.file("content.js", getContentJS());
 
   // popup.html
-  zip.file("popup.html", getPopupHTML(appName, processes));
+  zip.file("popup.html", getPopupHTML(appName, processes, enabledLanguages));
 
   // popup.js
   zip.file("popup.js", getPopupJS());
@@ -1757,7 +1757,7 @@ export function getContentJS(): string {
 `;
 }
 
-function getPopupHTML(appName: string, processes: Process[]): string {
+function getPopupHTML(appName: string, processes: Process[], enabledLanguages: string[] = []): string {
   return `<!DOCTYPE html>
 <html>
 <head>
