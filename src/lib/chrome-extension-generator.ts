@@ -2209,6 +2209,106 @@ document.addEventListener('DOMContentLoaded', () => {
     .catch(() => {
       list.innerHTML = '<div class="empty">Failed to load business processes.</div>';
     });
+
+  // ==================== TAB SWITCHING ====================
+  document.querySelectorAll('.tab-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var tab = btn.getAttribute('data-tab');
+      document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+      document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
+      btn.classList.add('active');
+      document.getElementById(tab + 'Tab').classList.add('active');
+      if (tab === 'diagnostics') loadDiagnostics();
+    });
+  });
+
+  // ==================== DIAGNOSTICS ====================
+  function loadDiagnostics() {
+    chrome.storage.local.get(['bpg_diagnostics'], function(result) {
+      var log = result.bpg_diagnostics || [];
+      renderDiagnostics(log);
+    });
+  }
+
+  function renderDiagnostics(log) {
+    if (!diagLog) return;
+    if (log.length === 0) {
+      diagLog.innerHTML = '<div class="diag-empty">No diagnostic events yet. Run a process to see logs.</div>';
+      if (diagSummary) diagSummary.innerHTML = '';
+      return;
+    }
+
+    // Summary
+    var initEvents = log.filter(function(e) { return e.cat === 'init'; });
+    var stepEvents = log.filter(function(e) { return e.cat === 'step'; });
+    var processEvents = log.filter(function(e) { return e.cat === 'process'; });
+    var slowSteps = stepEvents.filter(function(e) { return e.msg === 'Element resolved' && e.detail && parseInt(e.detail.resolveTime) > 2000; });
+
+    if (diagSummary) {
+      diagSummary.innerHTML = '<strong>Summary:</strong> '
+        + log.length + ' events | '
+        + initEvents.length + ' init | '
+        + processEvents.length + ' process | '
+        + stepEvents.length + ' step'
+        + (slowSteps.length > 0 ? ' | <span style="color:#b45309">' + slowSteps.length + ' slow (>2s)</span>' : '');
+    }
+
+    // Render log entries (newest first)
+    var html = '';
+    for (var i = log.length - 1; i >= 0; i--) {
+      var e = log[i];
+      var catClass = 'diag-cat';
+      if (e.cat === 'step') catClass += ' diag-cat-step';
+      else if (e.cat === 'process') catClass += ' diag-cat-process';
+      else if (e.cat === 'message') catClass += ' diag-cat-message';
+      else if (e.cat === 'resume') catClass += ' diag-cat-resume';
+
+      var timeStr = e.ts ? e.ts.split('T')[1].split('.')[0] : '';
+      var elapsedStr = e.elapsed != null ? '+' + e.elapsed + 'ms' : '';
+
+      html += '<div class="diag-entry">'
+        + '<span class="diag-ts">' + timeStr + ' (' + elapsedStr + ')</span> '
+        + '<span class="' + catClass + '">[' + e.cat + ']</span> '
+        + e.msg;
+      if (e.detail) {
+        var detailStr = typeof e.detail === 'string' ? e.detail : JSON.stringify(e.detail);
+        html += '<span class="diag-detail">' + detailStr + '</span>';
+      }
+      html += '</div>';
+    }
+    diagLog.innerHTML = html;
+  }
+
+  // Diagnostics buttons
+  var diagRefreshBtn = document.getElementById('diagRefresh');
+  var diagClearBtn = document.getElementById('diagClear');
+  var diagCopyBtn = document.getElementById('diagCopy');
+
+  if (diagRefreshBtn) diagRefreshBtn.addEventListener('click', loadDiagnostics);
+
+  if (diagClearBtn) diagClearBtn.addEventListener('click', function() {
+    chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+      if (tabs[0]) {
+        chrome.tabs.sendMessage(tabs[0].id, { type: 'CLEAR_DIAGNOSTICS' }, function() {
+          chrome.storage.local.set({ bpg_diagnostics: [] });
+          renderDiagnostics([]);
+        });
+      }
+    });
+  });
+
+  if (diagCopyBtn) diagCopyBtn.addEventListener('click', function() {
+    chrome.storage.local.get(['bpg_diagnostics'], function(result) {
+      var log = result.bpg_diagnostics || [];
+      var text = log.map(function(e) {
+        return e.ts + ' [' + e.cat + '] ' + e.msg + (e.detail ? ' ' + JSON.stringify(e.detail) : '');
+      }).join('\\n');
+      navigator.clipboard.writeText(text).then(function() {
+        diagCopyBtn.textContent = '✓ Copied';
+        setTimeout(function() { diagCopyBtn.textContent = '📋 Copy'; }, 1500);
+      });
+    });
+  });
 });
 `;
 }
