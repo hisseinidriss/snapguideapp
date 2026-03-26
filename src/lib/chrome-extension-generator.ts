@@ -1150,6 +1150,13 @@ export function getContentJS(): string {
         setupLaunchers();
         resumeIfNeeded();
 
+        // Listen for hash changes (SAP/Neptune hash-based navigation)
+        window.addEventListener('hashchange', function() {
+          diag('nav', 'hashchange detected', { url: window.location.href });
+          // Short delay to let SAP render the new view
+          setTimeout(function() { resumeIfNeeded(); }, 1500);
+        });
+
         if (_pendingStartIndex != null) {
           var idx = _pendingStartIndex;
           _pendingStartIndex = null;
