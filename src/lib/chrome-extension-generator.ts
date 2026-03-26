@@ -2030,6 +2030,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const list = document.getElementById('processList');
   const searchInput = document.getElementById('searchInput');
   const langSelector = document.getElementById('langSelector');
+  const diagLog = document.getElementById('diagLog');
+  const diagSummary = document.getElementById('diagSummary');
   var completedProcesses = {};
   var _currentLang = 'en';
 
