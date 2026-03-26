@@ -1251,6 +1251,8 @@ export function getContentJS(): string {
           currentProcess = processes[processIndex];
           currentStepIndex = stepIndex;
           diag('resume', 'Resuming after 2s delay', { processName: currentProcess.name });
+          _bpgStepLock = false;
+          _bpgLastExecutedStep = stepIndex - 1; // Allow this step to execute
           setTimeout(() => showStep(), 2000);
           return;
         }
