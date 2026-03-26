@@ -1232,10 +1232,12 @@ export function getContentJS(): string {
       sessionStorage.removeItem('bpg_resume');
       try {
         const { processIndex, stepIndex } = JSON.parse(saved);
+        diag('resume', 'Found sessionStorage resume data', { processIndex: processIndex, stepIndex: stepIndex });
         const processes = getProcesses();
         if (processes[processIndex]) {
           currentProcess = processes[processIndex];
           currentStepIndex = stepIndex;
+          diag('resume', 'Resuming after 2s delay', { processName: currentProcess.name });
           setTimeout(() => showStep(), 2000);
           return;
         }
@@ -1248,7 +1250,9 @@ export function getContentJS(): string {
         var pendingIndex = result.bpg_pending_process;
         chrome.storage.local.remove('bpg_pending_process');
         var processes = getProcesses();
+        diag('resume', 'Found pending process in storage', { pendingIndex: pendingIndex, processExists: !!processes[pendingIndex] });
         if (processes[pendingIndex]) {
+          diag('resume', 'Starting pending process after 3s delay');
           setTimeout(function() { startProcess(pendingIndex); }, 3000);
         }
       }
@@ -1257,10 +1261,14 @@ export function getContentJS(): string {
 
   function startProcess(index) {
     const processes = getProcesses();
-    if (!processes[index] || !processes[index].steps.length) return;
+    if (!processes[index] || !processes[index].steps.length) {
+      diag('process', 'startProcess failed - invalid index or no steps', { index: index });
+      return;
+    }
     currentProcess = processes[index];
     currentStepIndex = 0;
     _sessionId = 'bpg_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
+    diag('process', 'Process started', { processName: currentProcess.name, processId: currentProcess.id, totalSteps: currentProcess.steps.length, sessionId: _sessionId });
     trackEvent('tour_started', null);
     showStep();
   }
