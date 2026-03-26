@@ -1238,8 +1238,11 @@ export function getContentJS(): string {
     if (saved) {
       sessionStorage.removeItem('bpg_resume');
       try {
-        const { processIndex, stepIndex } = JSON.parse(saved);
-        diag('resume', 'Found sessionStorage resume data', { processIndex: processIndex, stepIndex: stepIndex });
+        const parsed = JSON.parse(saved);
+        const processIndex = parsed.processIndex;
+        const stepIndex = parsed.stepIndex;
+        _bpgNavDone = !!parsed.navDone;
+        diag('resume', 'Found sessionStorage resume data', { processIndex: processIndex, stepIndex: stepIndex, navDone: _bpgNavDone });
         const processes = getProcesses();
         if (processes[processIndex]) {
           currentProcess = processes[processIndex];
@@ -1348,6 +1351,10 @@ export function getContentJS(): string {
             cleanup();
             window.location.hash = tarU.hash;
           } else {
+            sessionStorage.setItem('bpg_resume', JSON.stringify({
+              processIndex: _bpgData.processes.indexOf(currentProcess),
+              stepIndex: currentStepIndex + 1
+            }));
             window.location.href = tarU.href;
           }
           return;
