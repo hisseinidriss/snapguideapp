@@ -1322,6 +1322,18 @@ export function getContentJS(): string {
       return;
     }
 
+    // Execution lock: prevent duplicate or backward step execution from race conditions
+    if (_bpgStepLock) {
+      diag('step', 'BLOCKED by execution lock, step already running', { stepIndex: currentStepIndex });
+      return;
+    }
+    if (currentStepIndex <= _bpgLastExecutedStep && currentStepIndex > 0) {
+      diag('step', 'BLOCKED backward step execution', { stepIndex: currentStepIndex, lastExecuted: _bpgLastExecutedStep });
+      return;
+    }
+    _bpgStepLock = true;
+    _bpgLastExecutedStep = currentStepIndex;
+
     var stepStartTime = Date.now();
     diag('step', 'showStep called', { stepIndex: currentStepIndex, stepTitle: currentProcess.steps[currentStepIndex].title, selector: currentProcess.steps[currentStepIndex].selector });
     trackEvent('step_viewed', currentStepIndex);
