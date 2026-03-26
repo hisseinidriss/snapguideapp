@@ -1586,6 +1586,7 @@ export function getContentJS(): string {
 
   function endProcess() {
     if (currentProcess) {
+      diag('process', 'Process abandoned', { processName: currentProcess.name, stepIndex: currentStepIndex });
       trackEvent('tour_abandoned', currentStepIndex);
       flushEvents();
     }
@@ -1596,8 +1597,10 @@ export function getContentJS(): string {
 
   // Initialize when DOM is ready
   if (document.readyState === 'loading') {
+    diag('init', 'DOM still loading, waiting for DOMContentLoaded');
     document.addEventListener('DOMContentLoaded', init);
   } else {
+    diag('init', 'DOM already ready, calling init immediately');
     init();
   }
 
