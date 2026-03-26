@@ -1498,14 +1498,19 @@ export function getContentJS(): string {
     // Button events
     tooltipEl.querySelector('.bpg-btn-close')?.addEventListener('click', endProcess);
     tooltipEl.querySelector('[data-action="prev"]')?.addEventListener('click', () => {
+      _bpgStepLock = false;
+      _bpgLastExecutedStep = currentStepIndex - 2; // Allow backward navigation
       currentStepIndex--;
       showStep();
     });
     tooltipEl.querySelector('[data-action="next"]')?.addEventListener('click', () => {
+      _bpgStepLock = false;
       currentStepIndex++;
       showStep();
     });
     tooltipEl.querySelector('[data-action="restart"]')?.addEventListener('click', () => {
+      _bpgStepLock = false;
+      _bpgLastExecutedStep = -1;
       currentStepIndex = 0;
       showStep();
     });
@@ -1523,6 +1528,7 @@ export function getContentJS(): string {
       
       tooltipEl.querySelector('[data-action="skip-video"]')?.addEventListener('click', () => {
         trackEvent('video_skipped', currentStepIndex);
+        _bpgStepLock = false;
         currentStepIndex++;
         showStep();
       });
