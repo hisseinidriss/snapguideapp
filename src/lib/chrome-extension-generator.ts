@@ -470,6 +470,30 @@ export function getContentJS(): string {
   if (window.__bpg_guard) return;
   window.__bpg_guard = true;
 
+  // ==================== DIAGNOSTIC LOGGER ====================
+  var _diagLog = [];
+  var _diagStartTime = Date.now();
+
+  function diag(category, message, detail) {
+    var elapsed = Date.now() - _diagStartTime;
+    var entry = {
+      ts: new Date().toISOString(),
+      elapsed: elapsed,
+      cat: category,
+      msg: message,
+      detail: detail || null
+    };
+    _diagLog.push(entry);
+    // Keep max 500 entries
+    if (_diagLog.length > 500) _diagLog.shift();
+    // Persist to chrome.storage for popup access
+    try {
+      chrome.storage.local.set({ bpg_diagnostics: _diagLog });
+    } catch(e) {}
+  }
+
+  diag('init', 'Content script loaded', { url: window.location.href, readyState: document.readyState });
+
   let currentProcess = null;
   let currentStepIndex = 0;
   let overlayEls = [];
