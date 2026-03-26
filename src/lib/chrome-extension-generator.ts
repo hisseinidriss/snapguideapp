@@ -1280,6 +1280,8 @@ export function getContentJS(): string {
     }
     currentProcess = processes[index];
     currentStepIndex = 0;
+    _bpgStepLock = false;
+    _bpgLastExecutedStep = -1;
     _sessionId = 'bpg_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
     diag('process', 'Process started', { processName: currentProcess.name, processId: currentProcess.id, totalSteps: currentProcess.steps.length, sessionId: _sessionId });
     trackEvent('tour_started', null);
