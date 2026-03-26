@@ -136,7 +136,7 @@ const Dashboard = () => {
           <div className="hidden sm:flex gap-3 items-center">
             <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger asChild>
-                <Button size="sm" className="rounded-full px-4 shadow-sm">
+                <Button size="sm" className="px-4 shadow-sm">
                   <Plus className="mr-1.5 h-4 w-4" />
                   New App
                 </Button>
