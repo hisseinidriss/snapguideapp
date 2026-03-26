@@ -1937,22 +1937,88 @@ function getPopupHTML(appName: string, processes: Process[], enabledLanguages: s
     }
     .lang-btn:hover { border-color: #4d8b6f; }
     .lang-btn.active { background: #4d8b6f; color: #fff; border-color: #4d8b6f; }
+    .tab-bar {
+      display: flex;
+      border-bottom: 1px solid #dfe6e2;
+      background: #fff;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 8px;
+      border: none;
+      background: none;
+      font-size: 11px;
+      font-weight: 500;
+      color: #8a9b92;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      font-family: 'DM Sans', sans-serif;
+      transition: all 0.15s;
+    }
+    .tab-btn:hover { color: #2d3b34; }
+    .tab-btn.active { color: #4d8b6f; border-bottom-color: #4d8b6f; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .diag-panel { padding: 8px; max-height: 350px; overflow-y: auto; }
+    .diag-actions { display: flex; gap: 6px; padding: 8px; border-bottom: 1px solid #dfe6e2; }
+    .diag-btn {
+      padding: 4px 10px;
+      border: 1px solid #dfe6e2;
+      border-radius: 6px;
+      background: #fff;
+      font-size: 10px;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .diag-btn:hover { border-color: #4d8b6f; }
+    .diag-entry {
+      padding: 4px 6px;
+      border-bottom: 1px solid #f0f0f0;
+      font-size: 10px;
+      font-family: monospace;
+      line-height: 1.4;
+    }
+    .diag-entry:hover { background: #f4f7f5; }
+    .diag-ts { color: #8a9b92; }
+    .diag-cat { font-weight: 600; color: #4d8b6f; }
+    .diag-cat-step { color: #b45309; }
+    .diag-cat-process { color: #7c3aed; }
+    .diag-cat-message { color: #2563eb; }
+    .diag-cat-resume { color: #dc2626; }
+    .diag-detail { color: #6b7280; margin-left: 8px; }
+    .diag-empty { text-align: center; padding: 20px; color: #8a9b92; font-size: 11px; }
+    .diag-summary { padding: 8px; background: #f4f7f5; border-bottom: 1px solid #dfe6e2; font-size: 10px; color: #5a6b62; }
   </style>
 </head>
 <body>
   <div class="header">
-    <h1>${appName}</h1>
+    <h1>\${appName}</h1>
     <p>Business Process Guide</p>
   </div>
-  ${enabledLanguages.length > 0 ? `<div class="lang-selector" id="langSelector">
+  \${enabledLanguages.length > 0 ? \`<div class="lang-selector" id="langSelector">
     <button class="lang-btn active" data-lang="en">🇬🇧 English</button>
-    ${enabledLanguages.includes('ar') ? '<button class="lang-btn" data-lang="ar">🇸🇦 العربية</button>' : ''}
-    ${enabledLanguages.includes('fr') ? '<button class="lang-btn" data-lang="fr">🇫🇷 Français</button>' : ''}
-  </div>` : ''}
-  <div class="search-box">
-    <input class="search-input" id="searchInput" placeholder="Search processes..." type="text" />
+    \${enabledLanguages.includes('ar') ? '<button class="lang-btn" data-lang="ar">🇸🇦 العربية</button>' : ''}
+    \${enabledLanguages.includes('fr') ? '<button class="lang-btn" data-lang="fr">🇫🇷 Français</button>' : ''}
+  </div>\` : ''}
+  <div class="tab-bar">
+    <button class="tab-btn active" data-tab="processes">Processes</button>
+    <button class="tab-btn" data-tab="diagnostics">Diagnostics</button>
   </div>
-  <div class="process-list" id="processList"></div>
+  <div id="processesTab" class="tab-content active">
+    <div class="search-box">
+      <input class="search-input" id="searchInput" placeholder="Search processes..." type="text" />
+    </div>
+    <div class="process-list" id="processList"></div>
+  </div>
+  <div id="diagnosticsTab" class="tab-content">
+    <div class="diag-actions">
+      <button class="diag-btn" id="diagRefresh">↻ Refresh</button>
+      <button class="diag-btn" id="diagClear">✕ Clear</button>
+      <button class="diag-btn" id="diagCopy">📋 Copy</button>
+    </div>
+    <div id="diagSummary" class="diag-summary"></div>
+    <div id="diagLog" class="diag-panel"></div>
+  </div>
   <script src="popup.js"></script>
 </body>
 </html>`;
