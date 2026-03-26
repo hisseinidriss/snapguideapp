@@ -496,6 +496,7 @@ export function getContentJS(): string {
 
   let currentProcess = null;
   let currentStepIndex = 0;
+  let _bpgNavDone = false;
   let overlayEls = [];
   let spotlightRing = null;
   let tooltipEl = null;
