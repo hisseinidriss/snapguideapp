@@ -497,6 +497,8 @@ export function getContentJS(): string {
   let currentProcess = null;
   let currentStepIndex = 0;
   let _bpgNavDone = false;
+  let _bpgStepLock = false; // Execution lock: prevents duplicate/backward step execution
+  let _bpgLastExecutedStep = -1; // Tracks highest executed step to prevent backward loops
   let overlayEls = [];
   let spotlightRing = null;
   let tooltipEl = null;
@@ -1249,6 +1251,8 @@ export function getContentJS(): string {
           currentProcess = processes[processIndex];
           currentStepIndex = stepIndex;
           diag('resume', 'Resuming after 2s delay', { processName: currentProcess.name });
+          _bpgStepLock = false;
+          _bpgLastExecutedStep = stepIndex - 1; // Allow this step to execute
           setTimeout(() => showStep(), 2000);
           return;
         }
@@ -1278,6 +1282,8 @@ export function getContentJS(): string {
     }
     currentProcess = processes[index];
     currentStepIndex = 0;
+    _bpgStepLock = false;
+    _bpgLastExecutedStep = -1;
     _sessionId = 'bpg_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
     diag('process', 'Process started', { processName: currentProcess.name, processId: currentProcess.id, totalSteps: currentProcess.steps.length, sessionId: _sessionId });
     trackEvent('tour_started', null);
@@ -1317,6 +1323,18 @@ export function getContentJS(): string {
       }
       return;
     }
+
+    // Execution lock: prevent duplicate or backward step execution from race conditions
+    if (_bpgStepLock) {
+      diag('step', 'BLOCKED by execution lock, step already running', { stepIndex: currentStepIndex });
+      return;
+    }
+    if (currentStepIndex <= _bpgLastExecutedStep && currentStepIndex > 0) {
+      diag('step', 'BLOCKED backward step execution', { stepIndex: currentStepIndex, lastExecuted: _bpgLastExecutedStep });
+      return;
+    }
+    _bpgStepLock = true;
+    _bpgLastExecutedStep = currentStepIndex;
 
     var stepStartTime = Date.now();
     diag('step', 'showStep called', { stepIndex: currentStepIndex, stepTitle: currentProcess.steps[currentStepIndex].title, selector: currentProcess.steps[currentStepIndex].selector });
@@ -1482,14 +1500,19 @@ export function getContentJS(): string {
     // Button events
     tooltipEl.querySelector('.bpg-btn-close')?.addEventListener('click', endProcess);
     tooltipEl.querySelector('[data-action="prev"]')?.addEventListener('click', () => {
+      _bpgStepLock = false;
+      _bpgLastExecutedStep = currentStepIndex - 2; // Allow backward navigation
       currentStepIndex--;
       showStep();
     });
     tooltipEl.querySelector('[data-action="next"]')?.addEventListener('click', () => {
+      _bpgStepLock = false;
       currentStepIndex++;
       showStep();
     });
     tooltipEl.querySelector('[data-action="restart"]')?.addEventListener('click', () => {
+      _bpgStepLock = false;
+      _bpgLastExecutedStep = -1;
       currentStepIndex = 0;
       showStep();
     });
@@ -1507,6 +1530,7 @@ export function getContentJS(): string {
       
       tooltipEl.querySelector('[data-action="skip-video"]')?.addEventListener('click', () => {
         trackEvent('video_skipped', currentStepIndex);
+        _bpgStepLock = false;
         currentStepIndex++;
         showStep();
       });
