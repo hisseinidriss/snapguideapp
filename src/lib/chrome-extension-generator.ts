@@ -48,7 +48,8 @@ export async function generateChromeExtension(
   appName: string,
   appUrl: string,
   trackingConfig?: { apiBaseUrl: string },
-  browser: BrowserTarget = 'chrome'
+  browser: BrowserTarget = 'chrome',
+  enabledLanguages: string[] = []
 ) {
   // Trim whitespace from appUrl to prevent invalid match patterns
   appUrl = (appUrl || '').trim();
@@ -185,7 +186,7 @@ export async function generateChromeExtension(
   zip.file("content.js", getContentJS());
 
   // popup.html
-  zip.file("popup.html", getPopupHTML(appName, processes));
+  zip.file("popup.html", getPopupHTML(appName, processes, enabledLanguages));
 
   // popup.js
   zip.file("popup.js", getPopupJS());
@@ -1756,7 +1757,7 @@ export function getContentJS(): string {
 `;
 }
 
-function getPopupHTML(appName: string, processes: Process[]): string {
+function getPopupHTML(appName: string, processes: Process[], enabledLanguages: string[] = []): string {
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -1879,11 +1880,11 @@ function getPopupHTML(appName: string, processes: Process[]): string {
     <h1>${appName}</h1>
     <p>Business Process Guide</p>
   </div>
-  <div class="lang-selector" id="langSelector">
+  ${enabledLanguages.length > 0 ? `<div class="lang-selector" id="langSelector">
     <button class="lang-btn active" data-lang="en">🇬🇧 English</button>
-    <button class="lang-btn" data-lang="ar">🇸🇦 العربية</button>
-    <button class="lang-btn" data-lang="fr">🇫🇷 Français</button>
-  </div>
+    ${enabledLanguages.includes('ar') ? '<button class="lang-btn" data-lang="ar">🇸🇦 العربية</button>' : ''}
+    ${enabledLanguages.includes('fr') ? '<button class="lang-btn" data-lang="fr">🇫🇷 Français</button>' : ''}
+  </div>` : ''}
   <div class="search-box">
     <input class="search-input" id="searchInput" placeholder="Search processes..." type="text" />
   </div>
@@ -1907,10 +1908,11 @@ document.addEventListener('DOMContentLoaded', () => {
     completedProcesses = result.bpg_completed || {};
     if (result.bpg_language) {
       _currentLang = result.bpg_language;
-      // Update active lang button
-      langSelector.querySelectorAll('.lang-btn').forEach(function(btn) {
-        btn.classList.toggle('active', btn.getAttribute('data-lang') === _currentLang);
-      });
+      if (langSelector) {
+        langSelector.querySelectorAll('.lang-btn').forEach(function(btn) {
+          btn.classList.toggle('active', btn.getAttribute('data-lang') === _currentLang);
+        });
+      }
       // Update body dir for RTL
       document.body.dir = _currentLang === 'ar' ? 'rtl' : 'ltr';
     }
@@ -1918,7 +1920,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Language switcher
-  langSelector.addEventListener('click', function(e) {
+  if (langSelector) langSelector.addEventListener('click', function(e) {
     var btn = e.target.closest('.lang-btn');
     if (!btn) return;
     var lang = btn.getAttribute('data-lang');
