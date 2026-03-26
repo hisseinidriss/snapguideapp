@@ -1102,14 +1102,27 @@ export function getContentJS(): string {
   // Listen for messages from popup - registered immediately, outside init()
   chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     if (msg.type === 'START_PROCESS') {
+      diag('message', 'Received START_PROCESS', { processIndex: msg.processIndex, dataReady: _dataReady });
       if (!_dataReady) {
         _pendingStartIndex = msg.processIndex;
+        diag('message', 'Data not ready, queued as pending', { processIndex: msg.processIndex });
         return;
       }
       startProcess(msg.processIndex);
     }
     if (msg.type === 'GET_DATA') {
       sendResponse(_bpgData);
+      return true;
+    }
+    if (msg.type === 'GET_DIAGNOSTICS') {
+      sendResponse({ log: _diagLog });
+      return true;
+    }
+    if (msg.type === 'CLEAR_DIAGNOSTICS') {
+      _diagLog = [];
+      _diagStartTime = Date.now();
+      chrome.storage.local.set({ bpg_diagnostics: [] });
+      sendResponse({ cleared: true });
       return true;
     }
     if (msg.type === 'SET_LANGUAGE') {
