@@ -1335,7 +1335,7 @@ export function getContentJS(): string {
           diag('step', 'Navigating to target URL', { from: curFull, to: tarFull, stepIndex: currentStepIndex });
           sessionStorage.setItem('bpg_resume', JSON.stringify({
             processIndex: _bpgData.processes.indexOf(currentProcess),
-            stepIndex: currentStepIndex
+            stepIndex: currentStepIndex + 1
           }));
           // Hash-only navigation (SAP/Neptune): no page reload occurs,
           // so hashchange listener will pick up resume. For full-page
