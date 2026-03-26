@@ -1337,7 +1337,17 @@ export function getContentJS(): string {
             processIndex: _bpgData.processes.indexOf(currentProcess),
             stepIndex: currentStepIndex
           }));
-          window.location.href = tarU.href;
+          // Hash-only navigation (SAP/Neptune): no page reload occurs,
+          // so hashchange listener will pick up resume. For full-page
+          // navigations the content script re-inits and calls resumeIfNeeded.
+          var isHashOnly = curU.origin === tarU.origin && curPath === tarPath && curU.hash !== tarU.hash;
+          if (isHashOnly) {
+            diag('step', 'Hash-only navigation detected, using hashchange resume', { from: curU.hash, to: tarU.hash });
+            cleanup();
+            window.location.hash = tarU.hash;
+          } else {
+            window.location.href = tarU.href;
+          }
           return;
         }
       } catch(e) {}
