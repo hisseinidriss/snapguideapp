@@ -1137,23 +1137,30 @@ export function getContentJS(): string {
   function init() {
     if (_initialized) return;
     _initialized = true;
+    diag('init', 'init() called', { readyState: document.readyState });
 
     // Load data from JSON file bundled with extension
+    var fetchStart = Date.now();
     fetch(chrome.runtime.getURL('data.json'))
       .then(r => r.json())
       .then(data => {
         _bpgData = data;
         _dataReady = true;
+        diag('init', 'data.json loaded', { loadTime: (Date.now() - fetchStart) + 'ms', processes: (data.processes || []).length, launchers: (data.launchers || []).length });
         setupLaunchers();
         resumeIfNeeded();
 
         if (_pendingStartIndex != null) {
           var idx = _pendingStartIndex;
           _pendingStartIndex = null;
+          diag('init', 'Processing pending start', { processIndex: idx });
           startProcess(idx);
         }
       })
-      .catch(err => console.error('BPG: Failed to load data', err));
+      .catch(err => {
+        diag('init', 'data.json load FAILED', { error: err.message });
+        console.error('BPG: Failed to load data', err);
+      });
   }
 
   function getProcesses() {
