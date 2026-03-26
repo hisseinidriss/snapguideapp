@@ -1992,14 +1992,14 @@ function getPopupHTML(appName: string, processes: Process[], enabledLanguages: s
 </head>
 <body>
   <div class="header">
-    <h1>\${appName}</h1>
+    <h1>${appName}</h1>
     <p>Business Process Guide</p>
   </div>
-  \${enabledLanguages.length > 0 ? \`<div class="lang-selector" id="langSelector">
+  ${enabledLanguages.length > 0 ? `<div class="lang-selector" id="langSelector">
     <button class="lang-btn active" data-lang="en">🇬🇧 English</button>
-    \${enabledLanguages.includes('ar') ? '<button class="lang-btn" data-lang="ar">🇸🇦 العربية</button>' : ''}
-    \${enabledLanguages.includes('fr') ? '<button class="lang-btn" data-lang="fr">🇫🇷 Français</button>' : ''}
-  </div>\` : ''}
+    ${enabledLanguages.includes('ar') ? '<button class="lang-btn" data-lang="ar">🇸🇦 العربية</button>' : ''}
+    ${enabledLanguages.includes('fr') ? '<button class="lang-btn" data-lang="fr">🇫🇷 Français</button>' : ''}
+  </div>` : ''}
   <div class="tab-bar">
     <button class="tab-btn active" data-tab="processes">Processes</button>
     <button class="tab-btn" data-tab="diagnostics">Diagnostics</button>
