@@ -1333,15 +1333,17 @@ export function getContentJS(): string {
         var tarFull = tarU.origin + tarPath + (tarU.hash || '');
         if (curFull !== tarFull) {
           diag('step', 'Navigating to target URL', { from: curFull, to: tarFull, stepIndex: currentStepIndex });
-          sessionStorage.setItem('bpg_resume', JSON.stringify({
-            processIndex: _bpgData.processes.indexOf(currentProcess),
-            stepIndex: currentStepIndex + 1
-          }));
           // Hash-only navigation (SAP/Neptune): no page reload occurs,
           // so hashchange listener will pick up resume. For full-page
           // navigations the content script re-inits and calls resumeIfNeeded.
           var isHashOnly = curU.origin === tarU.origin && curPath === tarPath && curU.hash !== tarU.hash;
           if (isHashOnly) {
+            // Store SAME stepIndex but mark navigation done so we don't re-navigate
+            sessionStorage.setItem('bpg_resume', JSON.stringify({
+              processIndex: _bpgData.processes.indexOf(currentProcess),
+              stepIndex: currentStepIndex,
+              navDone: true
+            }));
             diag('step', 'Hash-only navigation detected, using hashchange resume', { from: curU.hash, to: tarU.hash });
             cleanup();
             window.location.hash = tarU.hash;
