@@ -1325,7 +1325,8 @@ export function getContentJS(): string {
     const step = currentProcess.steps[currentStepIndex];
 
     // Multi-page: navigate if step has a target_url on a DIFFERENT page
-    if (step.target_url) {
+    // Skip navigation if we already navigated (navDone flag from hash resume)
+    if (step.target_url && !_bpgNavDone) {
       try {
         var curU = new URL(window.location.href);
         var tarU = new URL(step.target_url, window.location.origin);
