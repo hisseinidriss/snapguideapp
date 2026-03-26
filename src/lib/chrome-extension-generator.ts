@@ -1326,7 +1326,9 @@ export function getContentJS(): string {
 
     // Multi-page: navigate if step has a target_url on a DIFFERENT page
     // Skip navigation if we already navigated (navDone flag from hash resume)
-    if (step.target_url && !_bpgNavDone) {
+    var skipNav = _bpgNavDone;
+    _bpgNavDone = false;
+    if (step.target_url && !skipNav) {
       try {
         var curU = new URL(window.location.href);
         var tarU = new URL(step.target_url, window.location.origin);
