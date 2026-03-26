@@ -1367,7 +1367,8 @@ export function getContentJS(): string {
     }
 
     // Click action: click a button to open a modal/popup before looking for target
-    if (step.click_selector) {
+    // Skip click_selector if we just navigated (the click was on the previous page)
+    if (step.click_selector && !skipNav) {
       diag('step', 'Resolving click_selector', { click_selector: step.click_selector, stepIndex: currentStepIndex });
       var clickResolveStart = Date.now();
       const clickTarget = await resolveStepElement({ selector: step.click_selector, title: '', content: '' });
@@ -1376,6 +1377,8 @@ export function getContentJS(): string {
         clickTarget.click();
         await new Promise(r => setTimeout(r, 600));
       }
+    } else if (step.click_selector && skipNav) {
+      diag('step', 'Skipping click_selector (already navigated)', { click_selector: step.click_selector, stepIndex: currentStepIndex });
     }
 
     var resolveStart = Date.now();
