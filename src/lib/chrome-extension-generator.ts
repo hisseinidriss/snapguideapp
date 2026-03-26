@@ -1367,18 +1367,16 @@ export function getContentJS(): string {
     }
 
     // Click action: click a button to open a modal/popup before looking for target
-    // Skip click_selector if we just navigated (the click was on the previous page)
-    if (step.click_selector && !skipNav) {
-      diag('step', 'Resolving click_selector', { click_selector: step.click_selector, stepIndex: currentStepIndex });
-      var clickResolveStart = Date.now();
-      const clickTarget = await resolveStepElement({ selector: step.click_selector, title: '', content: '' });
-      diag('step', 'click_selector resolved', { found: !!clickTarget, resolveTime: (Date.now() - clickResolveStart) + 'ms' });
-      if (clickTarget) {
-        clickTarget.click();
+    // Use instant DOM check instead of 30s resolver — if element isn't in current DOM, skip it
+    if (step.click_selector) {
+      var clickEl = document.querySelector(step.click_selector);
+      if (clickEl) {
+        diag('step', 'click_selector found in DOM, clicking', { click_selector: step.click_selector, stepIndex: currentStepIndex });
+        clickEl.click();
         await new Promise(r => setTimeout(r, 600));
+      } else {
+        diag('step', 'click_selector not in current DOM, skipping', { click_selector: step.click_selector, stepIndex: currentStepIndex });
       }
-    } else if (step.click_selector && skipNav) {
-      diag('step', 'Skipping click_selector (already navigated)', { click_selector: step.click_selector, stepIndex: currentStepIndex });
     }
 
     var resolveStart = Date.now();
