@@ -1908,10 +1908,11 @@ document.addEventListener('DOMContentLoaded', () => {
     completedProcesses = result.bpg_completed || {};
     if (result.bpg_language) {
       _currentLang = result.bpg_language;
-      // Update active lang button
-      langSelector.querySelectorAll('.lang-btn').forEach(function(btn) {
-        btn.classList.toggle('active', btn.getAttribute('data-lang') === _currentLang);
-      });
+      if (langSelector) {
+        langSelector.querySelectorAll('.lang-btn').forEach(function(btn) {
+          btn.classList.toggle('active', btn.getAttribute('data-lang') === _currentLang);
+        });
+      }
       // Update body dir for RTL
       document.body.dir = _currentLang === 'ar' ? 'rtl' : 'ltr';
     }
@@ -1919,7 +1920,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Language switcher
-  langSelector.addEventListener('click', function(e) {
+  if (langSelector) langSelector.addEventListener('click', function(e) {
     var btn = e.target.closest('.lang-btn');
     if (!btn) return;
     var lang = btn.getAttribute('data-lang');
