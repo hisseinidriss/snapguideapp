@@ -470,6 +470,30 @@ export function getContentJS(): string {
   if (window.__bpg_guard) return;
   window.__bpg_guard = true;
 
+  // ==================== DIAGNOSTIC LOGGER ====================
+  var _diagLog = [];
+  var _diagStartTime = Date.now();
+
+  function diag(category, message, detail) {
+    var elapsed = Date.now() - _diagStartTime;
+    var entry = {
+      ts: new Date().toISOString(),
+      elapsed: elapsed,
+      cat: category,
+      msg: message,
+      detail: detail || null
+    };
+    _diagLog.push(entry);
+    // Keep max 500 entries
+    if (_diagLog.length > 500) _diagLog.shift();
+    // Persist to chrome.storage for popup access
+    try {
+      chrome.storage.local.set({ bpg_diagnostics: _diagLog });
+    } catch(e) {}
+  }
+
+  diag('init', 'Content script loaded', { url: window.location.href, readyState: document.readyState });
+
   let currentProcess = null;
   let currentStepIndex = 0;
   let overlayEls = [];
@@ -1078,14 +1102,27 @@ export function getContentJS(): string {
   // Listen for messages from popup - registered immediately, outside init()
   chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     if (msg.type === 'START_PROCESS') {
+      diag('message', 'Received START_PROCESS', { processIndex: msg.processIndex, dataReady: _dataReady });
       if (!_dataReady) {
         _pendingStartIndex = msg.processIndex;
+        diag('message', 'Data not ready, queued as pending', { processIndex: msg.processIndex });
         return;
       }
       startProcess(msg.processIndex);
     }
     if (msg.type === 'GET_DATA') {
       sendResponse(_bpgData);
+      return true;
+    }
+    if (msg.type === 'GET_DIAGNOSTICS') {
+      sendResponse({ log: _diagLog });
+      return true;
+    }
+    if (msg.type === 'CLEAR_DIAGNOSTICS') {
+      _diagLog = [];
+      _diagStartTime = Date.now();
+      chrome.storage.local.set({ bpg_diagnostics: [] });
+      sendResponse({ cleared: true });
       return true;
     }
     if (msg.type === 'SET_LANGUAGE') {
@@ -1100,23 +1137,30 @@ export function getContentJS(): string {
   function init() {
     if (_initialized) return;
     _initialized = true;
+    diag('init', 'init() called', { readyState: document.readyState });
 
     // Load data from JSON file bundled with extension
+    var fetchStart = Date.now();
     fetch(chrome.runtime.getURL('data.json'))
       .then(r => r.json())
       .then(data => {
         _bpgData = data;
         _dataReady = true;
+        diag('init', 'data.json loaded', { loadTime: (Date.now() - fetchStart) + 'ms', processes: (data.processes || []).length, launchers: (data.launchers || []).length });
         setupLaunchers();
         resumeIfNeeded();
 
         if (_pendingStartIndex != null) {
           var idx = _pendingStartIndex;
           _pendingStartIndex = null;
+          diag('init', 'Processing pending start', { processIndex: idx });
           startProcess(idx);
         }
       })
-      .catch(err => console.error('BPG: Failed to load data', err));
+      .catch(err => {
+        diag('init', 'data.json load FAILED', { error: err.message });
+        console.error('BPG: Failed to load data', err);
+      });
   }
 
   function getProcesses() {
@@ -1188,10 +1232,12 @@ export function getContentJS(): string {
       sessionStorage.removeItem('bpg_resume');
       try {
         const { processIndex, stepIndex } = JSON.parse(saved);
+        diag('resume', 'Found sessionStorage resume data', { processIndex: processIndex, stepIndex: stepIndex });
         const processes = getProcesses();
         if (processes[processIndex]) {
           currentProcess = processes[processIndex];
           currentStepIndex = stepIndex;
+          diag('resume', 'Resuming after 2s delay', { processName: currentProcess.name });
           setTimeout(() => showStep(), 2000);
           return;
         }
@@ -1204,7 +1250,9 @@ export function getContentJS(): string {
         var pendingIndex = result.bpg_pending_process;
         chrome.storage.local.remove('bpg_pending_process');
         var processes = getProcesses();
+        diag('resume', 'Found pending process in storage', { pendingIndex: pendingIndex, processExists: !!processes[pendingIndex] });
         if (processes[pendingIndex]) {
+          diag('resume', 'Starting pending process after 3s delay');
           setTimeout(function() { startProcess(pendingIndex); }, 3000);
         }
       }
@@ -1213,10 +1261,14 @@ export function getContentJS(): string {
 
   function startProcess(index) {
     const processes = getProcesses();
-    if (!processes[index] || !processes[index].steps.length) return;
+    if (!processes[index] || !processes[index].steps.length) {
+      diag('process', 'startProcess failed - invalid index or no steps', { index: index });
+      return;
+    }
     currentProcess = processes[index];
     currentStepIndex = 0;
     _sessionId = 'bpg_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
+    diag('process', 'Process started', { processName: currentProcess.name, processId: currentProcess.id, totalSteps: currentProcess.steps.length, sessionId: _sessionId });
     trackEvent('tour_started', null);
     showStep();
   }
@@ -1226,6 +1278,7 @@ export function getContentJS(): string {
     if (!currentProcess || currentStepIndex >= currentProcess.steps.length) {
       // Process completed - mark as completed in storage and notify popup
       if (currentProcess) {
+        diag('process', 'Process completed', { processName: currentProcess.name, processId: currentProcess.id });
         var completedProcessId = currentProcess.id;
         var completedSessionId = _sessionId;
         trackEvent('tour_completed', null);
@@ -1253,6 +1306,9 @@ export function getContentJS(): string {
       }
       return;
     }
+
+    var stepStartTime = Date.now();
+    diag('step', 'showStep called', { stepIndex: currentStepIndex, stepTitle: currentProcess.steps[currentStepIndex].title, selector: currentProcess.steps[currentStepIndex].selector });
     trackEvent('step_viewed', currentStepIndex);
 
     const step = currentProcess.steps[currentStepIndex];
@@ -1262,7 +1318,6 @@ export function getContentJS(): string {
       try {
         var curU = new URL(window.location.href);
         var tarU = new URL(step.target_url, window.location.origin);
-        // Compare origin + pathname + hash (supports hash-based routing like SAP/Neptune)
         var curPath = curU.pathname;
         var tarPath = tarU.pathname;
         while (curPath.length > 1 && curPath.charAt(curPath.length - 1) === '/') curPath = curPath.slice(0, -1);
@@ -1270,6 +1325,7 @@ export function getContentJS(): string {
         var curFull = curU.origin + curPath + (curU.hash || '');
         var tarFull = tarU.origin + tarPath + (tarU.hash || '');
         if (curFull !== tarFull) {
+          diag('step', 'Navigating to target URL', { from: curFull, to: tarFull, stepIndex: currentStepIndex });
           sessionStorage.setItem('bpg_resume', JSON.stringify({
             processIndex: _bpgData.processes.indexOf(currentProcess),
             stepIndex: currentStepIndex
@@ -1282,15 +1338,20 @@ export function getContentJS(): string {
 
     // Click action: click a button to open a modal/popup before looking for target
     if (step.click_selector) {
+      diag('step', 'Resolving click_selector', { click_selector: step.click_selector, stepIndex: currentStepIndex });
+      var clickResolveStart = Date.now();
       const clickTarget = await resolveStepElement({ selector: step.click_selector, title: '', content: '' });
+      diag('step', 'click_selector resolved', { found: !!clickTarget, resolveTime: (Date.now() - clickResolveStart) + 'ms' });
       if (clickTarget) {
         clickTarget.click();
-        // Wait a moment for the popup/modal to appear
         await new Promise(r => setTimeout(r, 600));
       }
     }
 
+    var resolveStart = Date.now();
     const targetEl = await resolveStepElement(step);
+    var resolveTime = Date.now() - resolveStart;
+    diag('step', 'Element resolved', { stepIndex: currentStepIndex, found: !!targetEl, resolveTime: resolveTime + 'ms', selector: step.selector, totalStepTime: (Date.now() - stepStartTime) + 'ms' });
 
     if (targetEl) {
       targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -1525,6 +1586,7 @@ export function getContentJS(): string {
 
   function endProcess() {
     if (currentProcess) {
+      diag('process', 'Process abandoned', { processName: currentProcess.name, stepIndex: currentStepIndex });
       trackEvent('tour_abandoned', currentStepIndex);
       flushEvents();
     }
@@ -1535,8 +1597,10 @@ export function getContentJS(): string {
 
   // Initialize when DOM is ready
   if (document.readyState === 'loading') {
+    diag('init', 'DOM still loading, waiting for DOMContentLoaded');
     document.addEventListener('DOMContentLoaded', init);
   } else {
+    diag('init', 'DOM already ready, calling init immediately');
     init();
   }
 
@@ -1873,6 +1937,57 @@ function getPopupHTML(appName: string, processes: Process[], enabledLanguages: s
     }
     .lang-btn:hover { border-color: #4d8b6f; }
     .lang-btn.active { background: #4d8b6f; color: #fff; border-color: #4d8b6f; }
+    .tab-bar {
+      display: flex;
+      border-bottom: 1px solid #dfe6e2;
+      background: #fff;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 8px;
+      border: none;
+      background: none;
+      font-size: 11px;
+      font-weight: 500;
+      color: #8a9b92;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      font-family: 'DM Sans', sans-serif;
+      transition: all 0.15s;
+    }
+    .tab-btn:hover { color: #2d3b34; }
+    .tab-btn.active { color: #4d8b6f; border-bottom-color: #4d8b6f; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .diag-panel { padding: 8px; max-height: 350px; overflow-y: auto; }
+    .diag-actions { display: flex; gap: 6px; padding: 8px; border-bottom: 1px solid #dfe6e2; }
+    .diag-btn {
+      padding: 4px 10px;
+      border: 1px solid #dfe6e2;
+      border-radius: 6px;
+      background: #fff;
+      font-size: 10px;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .diag-btn:hover { border-color: #4d8b6f; }
+    .diag-entry {
+      padding: 4px 6px;
+      border-bottom: 1px solid #f0f0f0;
+      font-size: 10px;
+      font-family: monospace;
+      line-height: 1.4;
+    }
+    .diag-entry:hover { background: #f4f7f5; }
+    .diag-ts { color: #8a9b92; }
+    .diag-cat { font-weight: 600; color: #4d8b6f; }
+    .diag-cat-step { color: #b45309; }
+    .diag-cat-process { color: #7c3aed; }
+    .diag-cat-message { color: #2563eb; }
+    .diag-cat-resume { color: #dc2626; }
+    .diag-detail { color: #6b7280; margin-left: 8px; }
+    .diag-empty { text-align: center; padding: 20px; color: #8a9b92; font-size: 11px; }
+    .diag-summary { padding: 8px; background: #f4f7f5; border-bottom: 1px solid #dfe6e2; font-size: 10px; color: #5a6b62; }
   </style>
 </head>
 <body>
@@ -1885,10 +2000,25 @@ function getPopupHTML(appName: string, processes: Process[], enabledLanguages: s
     ${enabledLanguages.includes('ar') ? '<button class="lang-btn" data-lang="ar">🇸🇦 العربية</button>' : ''}
     ${enabledLanguages.includes('fr') ? '<button class="lang-btn" data-lang="fr">🇫🇷 Français</button>' : ''}
   </div>` : ''}
-  <div class="search-box">
-    <input class="search-input" id="searchInput" placeholder="Search processes..." type="text" />
+  <div class="tab-bar">
+    <button class="tab-btn active" data-tab="processes">Processes</button>
+    <button class="tab-btn" data-tab="diagnostics">Diagnostics</button>
   </div>
-  <div class="process-list" id="processList"></div>
+  <div id="processesTab" class="tab-content active">
+    <div class="search-box">
+      <input class="search-input" id="searchInput" placeholder="Search processes..." type="text" />
+    </div>
+    <div class="process-list" id="processList"></div>
+  </div>
+  <div id="diagnosticsTab" class="tab-content">
+    <div class="diag-actions">
+      <button class="diag-btn" id="diagRefresh">↻ Refresh</button>
+      <button class="diag-btn" id="diagClear">✕ Clear</button>
+      <button class="diag-btn" id="diagCopy">📋 Copy</button>
+    </div>
+    <div id="diagSummary" class="diag-summary"></div>
+    <div id="diagLog" class="diag-panel"></div>
+  </div>
   <script src="popup.js"></script>
 </body>
 </html>`;
@@ -1900,6 +2030,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const list = document.getElementById('processList');
   const searchInput = document.getElementById('searchInput');
   const langSelector = document.getElementById('langSelector');
+  const diagLog = document.getElementById('diagLog');
+  const diagSummary = document.getElementById('diagSummary');
   var completedProcesses = {};
   var _currentLang = 'en';
 
@@ -2077,6 +2209,106 @@ document.addEventListener('DOMContentLoaded', () => {
     .catch(() => {
       list.innerHTML = '<div class="empty">Failed to load business processes.</div>';
     });
+
+  // ==================== TAB SWITCHING ====================
+  document.querySelectorAll('.tab-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var tab = btn.getAttribute('data-tab');
+      document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+      document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
+      btn.classList.add('active');
+      document.getElementById(tab + 'Tab').classList.add('active');
+      if (tab === 'diagnostics') loadDiagnostics();
+    });
+  });
+
+  // ==================== DIAGNOSTICS ====================
+  function loadDiagnostics() {
+    chrome.storage.local.get(['bpg_diagnostics'], function(result) {
+      var log = result.bpg_diagnostics || [];
+      renderDiagnostics(log);
+    });
+  }
+
+  function renderDiagnostics(log) {
+    if (!diagLog) return;
+    if (log.length === 0) {
+      diagLog.innerHTML = '<div class="diag-empty">No diagnostic events yet. Run a process to see logs.</div>';
+      if (diagSummary) diagSummary.innerHTML = '';
+      return;
+    }
+
+    // Summary
+    var initEvents = log.filter(function(e) { return e.cat === 'init'; });
+    var stepEvents = log.filter(function(e) { return e.cat === 'step'; });
+    var processEvents = log.filter(function(e) { return e.cat === 'process'; });
+    var slowSteps = stepEvents.filter(function(e) { return e.msg === 'Element resolved' && e.detail && parseInt(e.detail.resolveTime) > 2000; });
+
+    if (diagSummary) {
+      diagSummary.innerHTML = '<strong>Summary:</strong> '
+        + log.length + ' events | '
+        + initEvents.length + ' init | '
+        + processEvents.length + ' process | '
+        + stepEvents.length + ' step'
+        + (slowSteps.length > 0 ? ' | <span style="color:#b45309">' + slowSteps.length + ' slow (>2s)</span>' : '');
+    }
+
+    // Render log entries (newest first)
+    var html = '';
+    for (var i = log.length - 1; i >= 0; i--) {
+      var e = log[i];
+      var catClass = 'diag-cat';
+      if (e.cat === 'step') catClass += ' diag-cat-step';
+      else if (e.cat === 'process') catClass += ' diag-cat-process';
+      else if (e.cat === 'message') catClass += ' diag-cat-message';
+      else if (e.cat === 'resume') catClass += ' diag-cat-resume';
+
+      var timeStr = e.ts ? e.ts.split('T')[1].split('.')[0] : '';
+      var elapsedStr = e.elapsed != null ? '+' + e.elapsed + 'ms' : '';
+
+      html += '<div class="diag-entry">'
+        + '<span class="diag-ts">' + timeStr + ' (' + elapsedStr + ')</span> '
+        + '<span class="' + catClass + '">[' + e.cat + ']</span> '
+        + e.msg;
+      if (e.detail) {
+        var detailStr = typeof e.detail === 'string' ? e.detail : JSON.stringify(e.detail);
+        html += '<span class="diag-detail">' + detailStr + '</span>';
+      }
+      html += '</div>';
+    }
+    diagLog.innerHTML = html;
+  }
+
+  // Diagnostics buttons
+  var diagRefreshBtn = document.getElementById('diagRefresh');
+  var diagClearBtn = document.getElementById('diagClear');
+  var diagCopyBtn = document.getElementById('diagCopy');
+
+  if (diagRefreshBtn) diagRefreshBtn.addEventListener('click', loadDiagnostics);
+
+  if (diagClearBtn) diagClearBtn.addEventListener('click', function() {
+    chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+      if (tabs[0]) {
+        chrome.tabs.sendMessage(tabs[0].id, { type: 'CLEAR_DIAGNOSTICS' }, function() {
+          chrome.storage.local.set({ bpg_diagnostics: [] });
+          renderDiagnostics([]);
+        });
+      }
+    });
+  });
+
+  if (diagCopyBtn) diagCopyBtn.addEventListener('click', function() {
+    chrome.storage.local.get(['bpg_diagnostics'], function(result) {
+      var log = result.bpg_diagnostics || [];
+      var text = log.map(function(e) {
+        return e.ts + ' [' + e.cat + '] ' + e.msg + (e.detail ? ' ' + JSON.stringify(e.detail) : '');
+      }).join('\\n');
+      navigator.clipboard.writeText(text).then(function() {
+        diagCopyBtn.textContent = '✓ Copied';
+        setTimeout(function() { diagCopyBtn.textContent = '📋 Copy'; }, 1500);
+      });
+    });
+  });
 });
 `;
 }
