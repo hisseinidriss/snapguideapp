@@ -1278,6 +1278,7 @@ export function getContentJS(): string {
     if (!currentProcess || currentStepIndex >= currentProcess.steps.length) {
       // Process completed - mark as completed in storage and notify popup
       if (currentProcess) {
+        diag('process', 'Process completed', { processName: currentProcess.name, processId: currentProcess.id });
         var completedProcessId = currentProcess.id;
         var completedSessionId = _sessionId;
         trackEvent('tour_completed', null);
@@ -1305,6 +1306,9 @@ export function getContentJS(): string {
       }
       return;
     }
+
+    var stepStartTime = Date.now();
+    diag('step', 'showStep called', { stepIndex: currentStepIndex, stepTitle: currentProcess.steps[currentStepIndex].title, selector: currentProcess.steps[currentStepIndex].selector });
     trackEvent('step_viewed', currentStepIndex);
 
     const step = currentProcess.steps[currentStepIndex];
@@ -1314,7 +1318,6 @@ export function getContentJS(): string {
       try {
         var curU = new URL(window.location.href);
         var tarU = new URL(step.target_url, window.location.origin);
-        // Compare origin + pathname + hash (supports hash-based routing like SAP/Neptune)
         var curPath = curU.pathname;
         var tarPath = tarU.pathname;
         while (curPath.length > 1 && curPath.charAt(curPath.length - 1) === '/') curPath = curPath.slice(0, -1);
@@ -1322,6 +1325,7 @@ export function getContentJS(): string {
         var curFull = curU.origin + curPath + (curU.hash || '');
         var tarFull = tarU.origin + tarPath + (tarU.hash || '');
         if (curFull !== tarFull) {
+          diag('step', 'Navigating to target URL', { from: curFull, to: tarFull, stepIndex: currentStepIndex });
           sessionStorage.setItem('bpg_resume', JSON.stringify({
             processIndex: _bpgData.processes.indexOf(currentProcess),
             stepIndex: currentStepIndex
@@ -1334,15 +1338,20 @@ export function getContentJS(): string {
 
     // Click action: click a button to open a modal/popup before looking for target
     if (step.click_selector) {
+      diag('step', 'Resolving click_selector', { click_selector: step.click_selector, stepIndex: currentStepIndex });
+      var clickResolveStart = Date.now();
       const clickTarget = await resolveStepElement({ selector: step.click_selector, title: '', content: '' });
+      diag('step', 'click_selector resolved', { found: !!clickTarget, resolveTime: (Date.now() - clickResolveStart) + 'ms' });
       if (clickTarget) {
         clickTarget.click();
-        // Wait a moment for the popup/modal to appear
         await new Promise(r => setTimeout(r, 600));
       }
     }
 
+    var resolveStart = Date.now();
     const targetEl = await resolveStepElement(step);
+    var resolveTime = Date.now() - resolveStart;
+    diag('step', 'Element resolved', { stepIndex: currentStepIndex, found: !!targetEl, resolveTime: resolveTime + 'ms', selector: step.selector, totalStepTime: (Date.now() - stepStartTime) + 'ms' });
 
     if (targetEl) {
       targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
