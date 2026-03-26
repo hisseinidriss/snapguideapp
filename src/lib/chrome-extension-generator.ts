@@ -1367,15 +1367,30 @@ export function getContentJS(): string {
     }
 
     // Click action: click a button to open a modal/popup before looking for target
-    // Use instant DOM check instead of 30s resolver — if element isn't in current DOM, skip it
+    // Uses stability-aware DOM check: waits up to 2s for element to become visible/interactable
     if (step.click_selector) {
-      var clickEl = document.querySelector(step.click_selector);
+      var clickStart = Date.now();
+      var clickEl = null;
+      // Wait up to 2s for element to appear and be interactable (handles SAP re-renders)
+      while (Date.now() - clickStart < 2000) {
+        var candidate = document.querySelector(step.click_selector);
+        if (candidate && candidate.offsetParent !== null && !candidate.disabled) {
+          // Small stability delay to survive SAP skeleton re-renders
+          await new Promise(r => setTimeout(r, 100));
+          var recheck = document.querySelector(step.click_selector);
+          if (recheck && recheck.offsetParent !== null && !recheck.disabled) {
+            clickEl = recheck;
+            break;
+          }
+        }
+        await new Promise(r => setTimeout(r, 100));
+      }
       if (clickEl) {
-        diag('step', 'click_selector found in DOM, clicking', { click_selector: step.click_selector, stepIndex: currentStepIndex });
+        diag('step', 'click_selector interactable, clicking', { click_selector: step.click_selector, stepIndex: currentStepIndex, waitTime: (Date.now() - clickStart) + 'ms' });
         clickEl.click();
         await new Promise(r => setTimeout(r, 600));
       } else {
-        diag('step', 'click_selector not in current DOM, skipping', { click_selector: step.click_selector, stepIndex: currentStepIndex });
+        diag('step', 'click_selector not interactable or not in DOM, skipping', { click_selector: step.click_selector, stepIndex: currentStepIndex, waitTime: (Date.now() - clickStart) + 'ms' });
       }
     }
 
