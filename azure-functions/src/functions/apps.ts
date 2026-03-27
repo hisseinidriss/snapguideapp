@@ -54,7 +54,7 @@ app.http("apps-get-update-delete", {
         const values: any[] = [];
         let i = 1;
         for (const [key, value] of Object.entries(body)) {
-          if (["name", "url", "description", "icon_url", "enabled_languages"].includes(key)) {
+          if (["name", "url", "description", "icon_url", "enabled_languages", "diagnostics_enabled"].includes(key)) {
             fields.push(`${key} = $${i++}`);
             values.push(value);
           }

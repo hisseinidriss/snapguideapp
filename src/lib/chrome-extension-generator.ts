@@ -186,7 +186,7 @@ export async function generateChromeExtension(
   zip.file("content.js", getContentJS());
 
   // popup.html
-  zip.file("popup.html", getPopupHTML(appName, processes, enabledLanguages));
+  zip.file("popup.html", getPopupHTML(appName, processes, enabledLanguages, diagnosticsEnabled));
 
   // popup.js
   zip.file("popup.js", getPopupJS());
@@ -1891,7 +1891,7 @@ export function getContentJS(): string {
 `;
 }
 
-function getPopupHTML(appName: string, processes: Process[], enabledLanguages: string[] = []): string {
+function getPopupHTML(appName: string, processes: Process[], enabledLanguages: string[] = [], diagnosticsEnabled: boolean = false): string {
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -2070,17 +2070,17 @@ function getPopupHTML(appName: string, processes: Process[], enabledLanguages: s
     ${enabledLanguages.includes('ar') ? '<button class="lang-btn" data-lang="ar">🇸🇦 العربية</button>' : ''}
     ${enabledLanguages.includes('fr') ? '<button class="lang-btn" data-lang="fr">🇫🇷 Français</button>' : ''}
   </div>` : ''}
-  <div class="tab-bar">
+  ${diagnosticsEnabled ? `<div class="tab-bar">
     <button class="tab-btn active" data-tab="processes">Processes</button>
     <button class="tab-btn" data-tab="diagnostics">Diagnostics</button>
-  </div>
+  </div>` : ''}
   <div id="processesTab" class="tab-content active">
     <div class="search-box">
       <input class="search-input" id="searchInput" placeholder="Search processes..." type="text" />
     </div>
     <div class="process-list" id="processList"></div>
   </div>
-  <div id="diagnosticsTab" class="tab-content">
+  ${diagnosticsEnabled ? `<div id="diagnosticsTab" class="tab-content">
     <div class="diag-actions">
       <button class="diag-btn" id="diagRefresh">↻ Refresh</button>
       <button class="diag-btn" id="diagClear">✕ Clear</button>
@@ -2088,7 +2088,7 @@ function getPopupHTML(appName: string, processes: Process[], enabledLanguages: s
     </div>
     <div id="diagSummary" class="diag-summary"></div>
     <div id="diagLog" class="diag-panel"></div>
-  </div>
+  </div>` : ''}
   <script src="popup.js"></script>
 </body>
 </html>`;
