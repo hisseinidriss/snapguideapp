@@ -49,7 +49,8 @@ export async function generateChromeExtension(
   appUrl: string,
   trackingConfig?: { apiBaseUrl: string },
   browser: BrowserTarget = 'chrome',
-  enabledLanguages: string[] = []
+  enabledLanguages: string[] = [],
+  diagnosticsEnabled: boolean = false
 ) {
   // Trim whitespace from appUrl to prevent invalid match patterns
   appUrl = (appUrl || '').trim();
