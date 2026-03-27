@@ -492,6 +492,26 @@ const AppDetail = () => {
             <p className="text-xs text-muted-foreground mt-2">No languages enabled — the extension will only use English.</p>
           )}
         </div>
+
+        {/* Diagnostics Settings */}
+        <div className="mb-6 border rounded-lg p-4 bg-card">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <FileText className="h-4 w-4 text-primary" />
+              <div>
+                <h3 className="text-sm font-semibold">Extension Diagnostics</h3>
+                <p className="text-xs text-muted-foreground">Show a Diagnostics tab in the browser extension for troubleshooting</p>
+              </div>
+            </div>
+            <Switch
+              checked={diagnosticsEnabled}
+              onCheckedChange={async (checked) => {
+                setDiagnosticsEnabled(checked);
+                await appsApi.update(appId!, { diagnostics_enabled: checked } as any);
+              }}
+            />
+          </div>
+        </div>
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 mb-6">
           <input
             type="file"
