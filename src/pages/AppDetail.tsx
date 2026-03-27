@@ -125,6 +125,7 @@ const AppDetail = () => {
   const [appName, setAppName] = useState("");
   const [appUrl, setAppUrl] = useState("");
   const [enabledLanguages, setEnabledLanguages] = useState<string[]>([]);
+  const [diagnosticsEnabled, setDiagnosticsEnabled] = useState(false);
   const [tours, setTours] = useState<Tour[]>([]);
   const [launchers, setLaunchers] = useState<Launcher[]>([]);
   const [checklists, setChecklists] = useState<Checklist[]>([]);
@@ -153,7 +154,7 @@ const AppDetail = () => {
         checklistsApi.list(appId),
         recordingsApi.list(appId),
       ]);
-      if (appRes.data) { setAppName(appRes.data.name); setAppUrl(appRes.data.url || ""); setEnabledLanguages(appRes.data.enabled_languages || []); }
+      if (appRes.data) { setAppName(appRes.data.name); setAppUrl(appRes.data.url || ""); setEnabledLanguages(appRes.data.enabled_languages || []); setDiagnosticsEnabled(appRes.data.diagnostics_enabled ?? false); }
       setTours(toursRes.data || []);
       setLaunchers(launchersRes.data || []);
       setChecklists(checklistsRes.data || []);
@@ -378,7 +379,7 @@ const AppDetail = () => {
                     { browser: 'edge' as BrowserTarget, label: 'Edge Extension' },
                     { browser: 'firefox' as BrowserTarget, label: 'Firefox Extension' },
                   ]).map(({ browser, label }) => (
-                    <DropdownMenuItem key={browser} onClick={() => generateChromeExtension(appId!, appName, appUrl, { apiBaseUrl: API_BASE_URL }, browser, enabledLanguages)}>
+                     <DropdownMenuItem key={browser} onClick={() => generateChromeExtension(appId!, appName, appUrl, { apiBaseUrl: API_BASE_URL }, browser, enabledLanguages, diagnosticsEnabled)}>
                       <Download className="mr-2 h-4 w-4" />{label}
                     </DropdownMenuItem>
                   ))}
@@ -420,7 +421,7 @@ const AppDetail = () => {
                     { browser: 'edge' as BrowserTarget, label: 'Edge Extension' },
                     { browser: 'firefox' as BrowserTarget, label: 'Firefox Extension' },
                   ]).map(({ browser, label }) => (
-                    <DropdownMenuItem key={browser} onClick={() => generateChromeExtension(appId!, appName, appUrl, { apiBaseUrl: API_BASE_URL }, browser, enabledLanguages)}>
+                    <DropdownMenuItem key={browser} onClick={() => generateChromeExtension(appId!, appName, appUrl, { apiBaseUrl: API_BASE_URL }, browser, enabledLanguages, diagnosticsEnabled)}>
                       <Download className="mr-2 h-4 w-4" />{label}
                     </DropdownMenuItem>
                   ))}
@@ -490,6 +491,26 @@ const AppDetail = () => {
           {enabledLanguages.length === 0 && (
             <p className="text-xs text-muted-foreground mt-2">No languages enabled — the extension will only use English.</p>
           )}
+        </div>
+
+        {/* Diagnostics Settings */}
+        <div className="mb-6 border rounded-lg p-4 bg-card">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <FileText className="h-4 w-4 text-primary" />
+              <div>
+                <h3 className="text-sm font-semibold">Extension Diagnostics</h3>
+                <p className="text-xs text-muted-foreground">Show a Diagnostics tab in the browser extension for troubleshooting</p>
+              </div>
+            </div>
+            <Switch
+              checked={diagnosticsEnabled}
+              onCheckedChange={async (checked) => {
+                setDiagnosticsEnabled(checked);
+                await appsApi.update(appId!, { diagnostics_enabled: checked } as any);
+              }}
+            />
+          </div>
         </div>
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 mb-6">
           <input

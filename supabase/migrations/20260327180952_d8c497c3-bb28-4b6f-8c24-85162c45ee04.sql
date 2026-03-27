@@ -1,0 +1,1 @@
+ALTER TABLE public.apps ADD COLUMN diagnostics_enabled boolean NOT NULL DEFAULT false;

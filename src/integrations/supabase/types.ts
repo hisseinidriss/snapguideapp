@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           created_at: string
           description: string | null
+          diagnostics_enabled: boolean
           enabled_languages: Json
           icon_url: string | null
           id: string
@@ -28,6 +29,7 @@ export type Database = {
         Insert: {
           created_at?: string
           description?: string | null
+          diagnostics_enabled?: boolean
           enabled_languages?: Json
           icon_url?: string | null
           id?: string
@@ -38,6 +40,7 @@ export type Database = {
         Update: {
           created_at?: string
           description?: string | null
+          diagnostics_enabled?: boolean
           enabled_languages?: Json
           icon_url?: string | null
           id?: string
