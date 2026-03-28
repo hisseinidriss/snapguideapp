@@ -466,12 +466,11 @@ const AppDetail = () => {
           <div className="flex items-center gap-2 mb-3">
             <Languages className="h-4 w-4 text-primary" />
             <h3 className="text-sm font-semibold">Translation Languages</h3>
-            <span className="text-xs text-muted-foreground">Enable languages to allow translations in your tour steps</span>
           </div>
           <div className="flex flex-wrap gap-4">
             {[
-              { code: "ar", label: "العربية (Arabic)", flag: "🇸🇦" },
-              { code: "fr", label: "Français (French)", flag: "🇫🇷" },
+              { code: "ar", label: "العربية", flag: "🇸🇦" },
+              { code: "fr", label: "Français", flag: "🇫🇷" },
             ].map((lang) => (
               <label key={lang.code} className="flex items-center gap-2 cursor-pointer">
                 <Switch
@@ -488,9 +487,6 @@ const AppDetail = () => {
               </label>
             ))}
           </div>
-          {enabledLanguages.length === 0 && (
-            <p className="text-xs text-muted-foreground mt-2">No languages enabled — the extension will only use English.</p>
-          )}
         </div>
 
         {/* Diagnostics Settings */}
