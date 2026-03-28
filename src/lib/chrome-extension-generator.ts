@@ -1344,6 +1344,7 @@ export function getContentJS(): string {
     const step = currentProcess.steps[currentStepIndex];
 
     // URL-match gate: if step has a target_url, wait until current page matches before executing
+    // Uses startsWith for loose matching to tolerate query params, locale suffixes, etc.
     if (step.target_url) {
       try {
         var gCurU = new URL(window.location.href);
@@ -1352,10 +1353,14 @@ export function getContentJS(): string {
         var gTarPath = gTarU.pathname;
         while (gCurPath.length > 1 && gCurPath.charAt(gCurPath.length - 1) === '/') gCurPath = gCurPath.slice(0, -1);
         while (gTarPath.length > 1 && gTarPath.charAt(gTarPath.length - 1) === '/') gTarPath = gTarPath.slice(0, -1);
-        var gCurFull = gCurU.origin + gCurPath + (gCurU.hash || '');
-        var gTarFull = gTarU.origin + gTarPath + (gTarU.hash || '');
-        if (gCurFull !== gTarFull) {
-          diag('step', 'URL mismatch for step, waiting for correct page', { current: gCurFull, expected: gTarFull, stepIndex: currentStepIndex });
+        var gCurBase = gCurU.origin + gCurPath;
+        var gTarBase = gTarU.origin + gTarPath;
+        // Loose match: current URL path starts with target path, and hashes match if target has one
+        var gTarHash = gTarU.hash || '';
+        var gCurHash = gCurU.hash || '';
+        var urlMatches = gCurBase.indexOf(gTarBase) === 0 && (gTarHash === '' || gCurHash === gTarHash);
+        if (!urlMatches) {
+          diag('step', 'URL mismatch for step, waiting for correct page', { current: gCurBase + gCurHash, expected: gTarBase + gTarHash, stepIndex: currentStepIndex });
           // Release locks so the step can re-execute once URL matches
           _bpgStepLock = false;
           _bpgLastExecutedStep = currentStepIndex - 1;
@@ -1365,16 +1370,17 @@ export function getContentJS(): string {
               var pCur = new URL(window.location.href);
               var pCurPath = pCur.pathname;
               while (pCurPath.length > 1 && pCurPath.charAt(pCurPath.length - 1) === '/') pCurPath = pCurPath.slice(0, -1);
-              var pCurFull = pCur.origin + pCurPath + (pCur.hash || '');
-              if (pCurFull === gTarFull) {
+              var pCurBase = pCur.origin + pCurPath;
+              var pCurHash = pCur.hash || '';
+              var pUrlMatches = pCurBase.indexOf(gTarBase) === 0 && (gTarHash === '' || pCurHash === gTarHash);
+              if (pUrlMatches) {
                 clearInterval(urlPollTimer);
-                diag('step', 'URL now matches, resuming step execution', { url: pCurFull, stepIndex: currentStepIndex, waitTime: (Date.now() - urlPollStart) + 'ms' });
+                diag('step', 'URL now matches, resuming step execution', { url: pCurBase + pCurHash, stepIndex: currentStepIndex, waitTime: (Date.now() - urlPollStart) + 'ms' });
                 showStep();
               } else if (Date.now() - urlPollStart > 10000) {
                 clearInterval(urlPollTimer);
-                diag('step', 'URL match timeout after 10s, proceeding with navigation', { current: pCurFull, expected: gTarFull, stepIndex: currentStepIndex });
-                // Fall through to normal navigation logic by re-calling showStep
-                showStep();
+                diag('step', 'URL match timeout after 10s - step NOT executed (waiting for navigation)', { current: pCurBase + pCurHash, expected: gTarBase + gTarHash, stepIndex: currentStepIndex });
+                // Do NOT execute - wait for user/navigation to reach correct page
               }
             } catch(pe) {
               clearInterval(urlPollTimer);
