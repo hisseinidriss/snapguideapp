@@ -1,48 +1,74 @@
+/**
+ * Chrome Extension Generator (Hissein 3-21-2026)
+ * 
+ * Generates a complete browser extension ZIP package for Chrome, Edge, or Firefox.
+ * The extension provides interactive business process guides (tours) that overlay
+ * on the target application's pages, guiding users through step-by-step workflows.
+ * 
+ * Key capabilities:
+ * - Multi-browser support (Chrome/Edge MV3, Firefox MV2) - Hissein
+ * - Self-healing element resolution with 6-strategy fallback chain
+ * - Multi-page navigation with URL-match gating (3-18-2026)
+ * - Multilingual support (EN, AR, FR) with RTL rendering
+ * - Analytics event tracking and user feedback collection
+ * - Scribe recorder for capturing browser interactions
+ * - Diagnostic logging system for troubleshooting (Hissein 3-21-2026)
+ */
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import { apiGet, apiPost } from "@/api";
 
+// Translation data for a single step in a specific language - Hissein
 interface StepTranslation {
   language: string;
   title: string;
   content: string;
 }
 
+// Shape of a single step bundled into the extension's data.json (3-14-2026)
 interface ProcessStep {
   title: string;
   content: string;
-  selector: string | null;
-  placement: string;
+  selector: string | null;           // CSS selector targeting the page element
+  placement: string;                 // Tooltip position (top/bottom/left/right)
   sort_order: number;
-  target_url?: string | null;
-  click_selector?: string | null;
-  step_type?: string;
-  video_url?: string | null;
-  fallback_selectors?: string[] | null;
-  element_metadata?: Record<string, any> | null;
-  translations?: Record<string, { title: string; content: string }>;
+  target_url?: string | null;        // URL where this step should execute (multi-page support)
+  click_selector?: string | null;    // Element to click before showing tooltip (e.g., open a modal) - Hissein
+  step_type?: string;                // 'standard' or 'video'
+  video_url?: string | null;         // Video URL for video-type steps
+  fallback_selectors?: string[] | null;   // Alternative selectors for self-healing (Hissein 3-21-2026)
+  element_metadata?: Record<string, any> | null;  // aria-label, name, placeholder for recovery
+  translations?: Record<string, { title: string; content: string }>;  // Localized content by language code
 }
 
+// A process (tour) with its ordered steps - maps to a tour in the admin (3-15-2026)
 interface Process {
   id: string;
   name: string;
   steps: ProcessStep[];
 }
 
+// Launcher configuration bundled into the extension (beacon, button, or hotspot) - Hissein
 interface LauncherData {
   id: string;
   name: string;
-  type: string;
-  selector: string;
+  type: string;           // 'beacon', 'button', or 'hotspot'
+  selector: string;       // CSS selector for the element to attach the launcher to
   color: string | null;
   label: string | null;
-  pulse: boolean | null;
+  pulse: boolean | null;  // Whether to show pulse animation (beacons)
   is_active: boolean | null;
-  tour_id: string | null;
+  tour_id: string | null; // The tour this launcher triggers when clicked
 }
 
+// Supported browser targets for extension generation (Hissein 3-21-2026)
 export type BrowserTarget = 'chrome' | 'edge' | 'firefox';
 
+/**
+ * Main entry point: generates and downloads a browser extension ZIP package
+ * Fetches all tours, steps, translations, and launchers from the API,
+ * then assembles manifest.json, content.js, popup.html, popup.js, and data.json (3-12-2026)
+ */
 export async function generateChromeExtension(
   appId: string,
   appName: string,
@@ -50,7 +76,7 @@ export async function generateChromeExtension(
   trackingConfig?: { apiBaseUrl: string },
   browser: BrowserTarget = 'chrome',
   enabledLanguages: string[] = [],
-  diagnosticsEnabled: boolean = false
+  diagnosticsEnabled: boolean = false     // Controls diagnostic tab visibility in extension popup - Hissein
 ) {
   // Trim whitespace from appUrl to prevent invalid match patterns
   appUrl = (appUrl || '').trim();
@@ -104,6 +130,7 @@ export async function generateChromeExtension(
     }
   }
 
+  // Filter to only active launchers and extract relevant fields for the extension bundle (3-16-2026)
   const activeLaunchers: LauncherData[] = (launchers || [])
     .filter((l) => l.is_active)
     .map((l) => ({
@@ -120,7 +147,7 @@ export async function generateChromeExtension(
 
   const zip = new JSZip();
 
-  // manifest.json – browser-specific
+  // Build manifest.json – Firefox uses MV2, Chrome/Edge use MV3 (Hissein 3-21-2026)
   const manifest: Record<string, any> = {
     manifest_version: browser === 'firefox' ? 2 : 3,
     name: `${appName} - Business Process Guide`,
@@ -192,11 +219,12 @@ export async function generateChromeExtension(
   // popup.js
   zip.file("popup.js", getPopupJS());
 
-  // Generate simple icons (colored squares as SVG-based PNGs)
+  // Generate icons at 3 sizes from the app logo (16px, 48px, 128px) - Hissein
   zip.file("icon16.png", await generateIcon(16));
   zip.file("icon48.png", await generateIcon(48));
   zip.file("icon128.png", await generateIcon(128));
 
+  // Package everything into a ZIP and trigger browser download (3-19-2026)
   const browserLabel = browser === 'firefox' ? 'firefox' : browser === 'edge' ? 'edge' : 'chrome';
   const blob = await zip.generateAsync({ type: "blob" });
   saveAs(blob, `${appName.replace(/\s+/g, "-").toLowerCase()}-${browserLabel}-extension.zip`);
@@ -204,6 +232,7 @@ export async function generateChromeExtension(
 
 import isdbLogo from "@/assets/isdb-logo.png";
 
+// Render the app logo onto a canvas at the specified size and export as PNG (Hissein 3-21-2026)
 function generateIcon(size: number): Promise<Uint8Array> {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -235,9 +264,11 @@ function generateIcon(size: number): Promise<Uint8Array> {
   });
 }
 
+// Returns the CSS stylesheet bundled as content.css in the extension - Hissein
+// Styles the overlay, spotlight, tooltip, launchers, video player, and RTL layout
 export function getContentCSS(): string {
   return `
-/* Business Process Guide - Overlay Styles */
+/* Business Process Guide - Overlay Styles (3-13-2026) */
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
 
 .bpg-overlay-box {
@@ -463,31 +494,43 @@ export function getContentCSS(): string {
 }
 `;
 }
+/**
+ * Returns the content.js script bundled in the extension (Hissein 3-21-2026)
+ * This is the core engine that runs on the target application pages.
+ * It handles: element resolution, tooltip rendering, overlay management,
+ * multi-page navigation, analytics tracking, feedback collection, and Scribe recording.
+ */
 export function getContentJS(): string {
   return `
-// Business Process Guide - Content Script
+// Business Process Guide - Content Script (3-14-2026)
+// Injected into target application pages via manifest content_scripts
 (function() {
   'use strict';
+  // Guard against duplicate injection (e.g., if content script runs twice) - Hissein
   if (window.__bpg_guard) return;
   window.__bpg_guard = true;
 
-  // ==================== DIAGNOSTIC LOGGER ====================
+  // ==================== DIAGNOSTIC LOGGER (Hissein 3-21-2026) ====================
+  // Captures timestamped events for troubleshooting step execution,
+  // element resolution, navigation, and timing issues.
+  // Logs are persisted to chrome.storage.local and viewable in the popup Diagnostics tab.
   var _diagLog = [];
   var _diagStartTime = Date.now();
 
+  // Log a diagnostic event with category, message, and optional detail object (3-17-2026)
   function diag(category, message, detail) {
     var elapsed = Date.now() - _diagStartTime;
     var entry = {
       ts: new Date().toISOString(),
       elapsed: elapsed,
-      cat: category,
+      cat: category,        // Category: init, step, process, message, nav, resume
       msg: message,
       detail: detail || null
     };
     _diagLog.push(entry);
-    // Keep max 500 entries
+    // Cap at 500 entries to prevent memory bloat - Hissein
     if (_diagLog.length > 500) _diagLog.shift();
-    // Persist to chrome.storage for popup access
+    // Persist to chrome.storage so the popup Diagnostics tab can read it
     try {
       chrome.storage.local.set({ bpg_diagnostics: _diagLog });
     } catch(e) {}
@@ -495,27 +538,35 @@ export function getContentJS(): string {
 
   diag('init', 'Content script loaded', { url: window.location.href, readyState: document.readyState });
 
-  let currentProcess = null;
-  let currentStepIndex = 0;
-  let _bpgNavDone = false;
-  let _bpgStepLock = false; // Execution lock: prevents duplicate/backward step execution
-  let _bpgLastExecutedStep = -1; // Tracks highest executed step to prevent backward loops
-  let overlayEls = [];
-  let spotlightRing = null;
-  let tooltipEl = null;
+  // ==================== CORE STATE VARIABLES (3-11-2026) ====================
+  let currentProcess = null;          // Currently active process (tour) being executed
+  let currentStepIndex = 0;           // Index of the current step being displayed
+  let _bpgNavDone = false;            // Flag: true after hash navigation completes, prevents re-navigation
+  let _bpgStepLock = false;           // Execution lock: prevents duplicate/backward step execution (Hissein 3-21-2026)
+  let _bpgLastExecutedStep = -1;      // Tracks highest executed step to prevent backward loops
+  let overlayEls = [];                // Array of overlay DOM elements (4-box spotlight cutout)
+  let spotlightRing = null;           // Red border ring highlighting the target element - Hissein
+  let tooltipEl = null;               // The tooltip DOM element showing step content
 
-  // ==================== SELF-HEALING ELEMENT RESOLVER ====================
+  // ==================== SELF-HEALING ELEMENT RESOLVER (Hissein 3-21-2026) ====================
+  // Multi-strategy element resolution system that finds DOM elements even when
+  // selectors break due to dynamic pages, SPA re-renders, or DOM structure changes.
+  // Strategies: primary selector → iframe search → container-anchored → stored fallbacks →
+  //             metadata recovery → generated fallbacks → semantic patterns → text matching
 
+  // Safe querySelector wrapper - returns null instead of throwing on invalid selectors (3-15-2026)
   function safeQuerySelector(selector, root) {
     if (!selector) return null;
     try { return (root || document).querySelector(selector); } catch(e) { return null; }
   }
 
+  // Safe querySelectorAll wrapper - returns empty array on invalid selectors - Hissein
   function safeQuerySelectorAll(selector, root) {
     if (!selector) return [];
     try { return Array.from((root || document).querySelectorAll(selector)); } catch(e) { return []; }
   }
 
+  // Check if an element is visible on the page (not hidden, not zero-size) (3-18-2026)
   function isElementVisible(el) {
     if (!el || !el.getBoundingClientRect) return false;
     var style = window.getComputedStyle(el);
@@ -524,6 +575,8 @@ export function getContentJS(): string {
     return rect.width > 0 && rect.height > 0;
   }
 
+  // Search for an element inside same-origin iframes (Hissein 3-21-2026)
+  // Cross-origin iframes will silently fail due to security restrictions
   function tryIframes(selector) {
     try {
       var iframes = document.querySelectorAll('iframe');
@@ -537,6 +590,8 @@ export function getContentJS(): string {
     return null;
   }
 
+  // Remove positional pseudo-selectors (:nth-child, :first-child, etc.) to create a relaxed selector - Hissein
+  // This helps when DOM order changes but the element's tag/class/id remain stable
   function stripPositionalPseudoSelectors(selector) {
     if (!selector) return selector;
     return selector
@@ -547,6 +602,7 @@ export function getContentJS(): string {
       .trim();
   }
 
+  // Extract the numeric index from nth-child/nth-of-type pseudo-selectors (3-13-2026)
   function extractNthIndex(selectorPart) {
     if (!selectorPart) return null;
     var match = selectorPart.match(/:nth-(?:of-type|child)[(]\s*(\d+)\s*[)]/i);
@@ -555,6 +611,8 @@ export function getContentJS(): string {
     return isNaN(idx) ? null : idx;
   }
 
+  // Split a compound selector into container (parent) and leaf (target) parts (Hissein 3-21-2026)
+  // E.g., ".sidebar .nav-item a" → container: ".sidebar .nav-item", leaf: "a"
   function splitSelectorForAnchoring(selector) {
     if (!selector) return null;
     var normalized = selector.trim().replace(/\s+/g, ' ');
@@ -566,6 +624,7 @@ export function getContentJS(): string {
     };
   }
 
+  // Parse and extract attribute selectors like [href*="apply"] from a CSS selector string - Hissein
   function extractAttributeSelectors(selector) {
     if (!selector) return [];
     var attrs = [];
@@ -601,6 +660,8 @@ export function getContentJS(): string {
     return attrs;
   }
 
+  // Generate a set of progressively more relaxed selectors for self-healing (3-16-2026)
+  // Tries: relaxed positional → anchored leaf → tag+classes → attributes → ID fragments → tag-only
   function generateFallbackSelectors(selector) {
     if (!selector) return [];
     var fallbacks = [];
@@ -680,6 +741,8 @@ export function getContentJS(): string {
     });
   }
 
+  // Last-resort element finder: matches by visible text content (Hissein 3-21-2026)
+  // Searches interactive elements (buttons, links, inputs) for text matching the step title/content
   function findByText(step) {
     var searchText = (step.title || '').trim();
     if (!searchText) searchText = (step.content || '').trim();
@@ -716,6 +779,8 @@ export function getContentJS(): string {
     return null;
   }
 
+  // Score a candidate element against the step's expected properties (3-14-2026)
+  // Higher score = better match. Used when multiple candidates match a fallback selector - Hissein
   function scoreCandidate(el, step, originalSelector) {
     var score = 0;
 
@@ -754,6 +819,7 @@ export function getContentJS(): string {
     return score;
   }
 
+  // Find a container element by fuzzy ID matching (handles dynamic ID prefixes) (Hissein 3-21-2026)
   function findContainerByLooseId(selectorText) {
     if (!selectorText || selectorText.indexOf('#') < 0) return null;
     var idMatch = selectorText.match(/#([a-zA-Z_-][a-zA-Z0-9_-]*)/);
@@ -790,6 +856,8 @@ export function getContentJS(): string {
     return bestScore >= 2 ? best : null;
   }
 
+  // Semantic fallback: recognizes common UI patterns (footer, social links) (3-12-2026)
+  // and finds them even when selectors are completely wrong - Hissein
   function findSemanticStepFallback(step, selectorText) {
     var hint = ((step && step.title) || '') + ' ' + ((step && step.content) || '') + ' ' + (selectorText || '');
     hint = hint.toLowerCase();
@@ -827,13 +895,15 @@ export function getContentJS(): string {
     return null;
   }
 
+  // Main element resolution function - tries 6 strategies over 30 seconds (Hissein 3-21-2026)
+  // Returns a Promise that resolves with the found element or null
   function resolveStepElement(step) {
     return new Promise(function(resolve) {
       if (!step.selector) { resolve(null); return; }
 
       var selector = step.selector;
-      var retryInterval = 500;
-      var maxTimeout = 30000;
+      var retryInterval = 500;      // Retry every 500ms
+      var maxTimeout = 30000;       // Give up after 30 seconds (3-17-2026)
       var start = Date.now();
 
       function attempt() {
