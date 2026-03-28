@@ -1,7 +1,10 @@
+// Tours API endpoints - manages guided tour lifecycle (3-16-2026)
+// Tours belong to an app and contain ordered steps
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
 import { query } from "../db";
 import { corsHeaders, jsonResponse, errorResponse } from "../auth";
 
+// List tours for an app or create a new tour - Hissein
 app.http("tours-list-create", {
   methods: ["GET", "POST", "OPTIONS"],
   authLevel: "anonymous",
@@ -13,6 +16,7 @@ app.http("tours-list-create", {
       if (req.method === "GET") {
         const appId = req.query.get("app_id");
         if (!appId) return errorResponse("app_id required", 400);
+        // Order by sort_order first, then creation date for consistent display (Hissein 3-21-2026)
         const result = await query(
           "SELECT * FROM tours WHERE app_id = $1 ORDER BY sort_order ASC, created_at ASC",
           [appId]
@@ -38,6 +42,7 @@ app.http("tours-list-create", {
   },
 });
 
+// Get, update, or delete a specific tour (3-13-2026)
 app.http("tours-get-update-delete", {
   methods: ["GET", "PATCH", "DELETE", "OPTIONS"],
   authLevel: "anonymous",
@@ -54,6 +59,7 @@ app.http("tours-get-update-delete", {
       }
 
       if (req.method === "PATCH") {
+        // Whitelist allowed update fields to prevent SQL injection - Hissein
         const body = await req.json() as any;
         const fields: string[] = [];
         const values: any[] = [];
@@ -76,6 +82,7 @@ app.http("tours-get-update-delete", {
       }
 
       if (req.method === "DELETE") {
+        // Cascading delete removes associated steps via FK constraint (Hissein 3-21-2026)
         await query("DELETE FROM tours WHERE id = $1", [id]);
         return { status: 204, headers: corsHeaders() };
       }

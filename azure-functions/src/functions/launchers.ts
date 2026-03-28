@@ -1,7 +1,10 @@
+// Launchers API endpoints - manages in-page trigger elements for starting tours - Hissein
+// Launchers can be beacons (pulsing dots), buttons, or hotspots attached to page elements
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
 import { query } from "../db";
 import { corsHeaders, jsonResponse, errorResponse } from "../auth";
 
+// List all launchers for an app or create a new one (3-16-2026)
 app.http("launchers-list-create", {
   methods: ["GET", "POST", "OPTIONS"],
   authLevel: "anonymous",
@@ -21,6 +24,7 @@ app.http("launchers-list-create", {
       }
 
       if (req.method === "POST") {
+        // Create launcher with sensible defaults for optional fields (Hissein 3-21-2026)
         const body = await req.json() as any;
         const { app_id, name, type, selector, tour_id, color, label, pulse, is_active } = body;
         const result = await query(
@@ -41,6 +45,7 @@ app.http("launchers-list-create", {
   },
 });
 
+// Update or delete a specific launcher by ID - Hissein
 app.http("launchers-update-delete", {
   methods: ["PATCH", "DELETE", "OPTIONS"],
   authLevel: "anonymous",
@@ -51,6 +56,7 @@ app.http("launchers-update-delete", {
     const id = req.params.id;
     try {
       if (req.method === "PATCH") {
+        // Only allow updates to known launcher fields (3-11-2026)
         const body = await req.json() as any;
         const allowedFields = ["name", "type", "selector", "tour_id", "color", "label", "pulse", "is_active"];
         const fields: string[] = [];

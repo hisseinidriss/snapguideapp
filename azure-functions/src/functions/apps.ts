@@ -1,21 +1,27 @@
+// Apps API endpoints - CRUD operations for registered applications (Hissein 3-21-2026)
+// Handles listing, creating, updating, and deleting app configurations
 import { app, HttpRequest, HttpResponseInit, InvocationContext } from "@azure/functions";
 import { query } from "../db";
 import { corsHeaders, jsonResponse, errorResponse } from "../auth";
 
+// List all apps or create a new app - Hissein
 app.http("apps-list-create", {
   methods: ["GET", "POST", "OPTIONS"],
   authLevel: "anonymous",
   route: "apps",
   handler: async (req: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> => {
+    // Handle CORS preflight requests from browser extensions (3-14-2026)
     if (req.method === "OPTIONS") return { status: 204, headers: corsHeaders() };
 
     try {
       if (req.method === "GET") {
+        // Return all apps sorted by most recently created
         const result = await query("SELECT * FROM apps ORDER BY created_at DESC");
         return jsonResponse(result.rows);
       }
 
       if (req.method === "POST") {
+        // Create a new application with name, URL, and description
         const body = await req.json() as any;
         const { name, url, description } = body;
         const result = await query(
@@ -33,6 +39,7 @@ app.http("apps-list-create", {
   },
 });
 
+// Get, update, or delete a specific app by ID (3-17-2026)
 app.http("apps-get-update-delete", {
   methods: ["GET", "PATCH", "DELETE", "OPTIONS"],
   authLevel: "anonymous",
@@ -49,6 +56,7 @@ app.http("apps-get-update-delete", {
       }
 
       if (req.method === "PATCH") {
+        // Dynamic field update - only whitelisted fields are accepted to prevent injection - Hissein
         const body = await req.json() as any;
         const fields: string[] = [];
         const values: any[] = [];
@@ -60,6 +68,7 @@ app.http("apps-get-update-delete", {
           }
         }
         if (fields.length === 0) return errorResponse("No valid fields", 400);
+        // Always update the timestamp when modifying an app (Hissein 3-21-2026)
         fields.push(`updated_at = NOW()`);
         values.push(id);
         const result = await query(
