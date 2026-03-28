@@ -1017,12 +1017,13 @@ export function getContentJS(): string {
     });
   }
 
+  // ==================== RUNTIME STATE & DATA (3-15-2026) ====================
   let _bpgData = { processes: [], launchers: [], appName: '', appId: '', trackUrl: '' };
-  var _currentLang = 'en';
+  var _currentLang = 'en';          // Active language code, defaults to English - Hissein
   var _sessionId = 'bpg_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
-  var _eventQueue = [];
-  var _dataReady = false;
-  var _pendingStartIndex = null;
+  var _eventQueue = [];              // Queued analytics events waiting to be flushed
+  var _dataReady = false;            // True once data.json has been loaded
+  var _pendingStartIndex = null;     // Process index queued before data was ready (Hissein 3-21-2026)
 
   // Load saved language preference
   try {
@@ -1031,6 +1032,7 @@ export function getContentJS(): string {
     });
   } catch(e) {}
 
+  // Get localized text for a step field, falling back to English if translation missing - Hissein
   function getStepText(step, field) {
     if (_currentLang !== 'en' && step.translations && step.translations[_currentLang]) {
       var translated = step.translations[_currentLang][field];
@@ -1039,22 +1041,27 @@ export function getContentJS(): string {
     return step[field] || '';
   }
 
+  // Check if current language is right-to-left (Arabic) (3-10-2026)
   function isRTL() {
     return _currentLang === 'ar';
   }
 
+  // ==================== ANALYTICS TRACKING (Hissein 3-21-2026) ====================
+  // Events are queued and batch-sent to the API every 1 second for performance
   function trackEvent(eventType, stepIndex) {
     if (!_bpgData.trackUrl || !_bpgData.appId || !currentProcess) return;
     _eventQueue.push({
       tour_id: currentProcess.id,
       app_id: _bpgData.appId,
-      event_type: eventType,
+      event_type: eventType,        // e.g., tour_started, step_viewed, tour_completed
       step_index: typeof stepIndex === 'number' ? stepIndex : null,
       session_id: _sessionId
     });
+    // Flush after 1 second delay to batch multiple rapid events (3-17-2026)
     if (_eventQueue.length === 1) setTimeout(flushEvents, 1000);
   }
 
+  // Send queued events to the tracking API in a single batch request - Hissein
   function flushEvents() {
     if (_eventQueue.length === 0) return;
     var batch = _eventQueue.splice(0);
@@ -1065,12 +1072,16 @@ export function getContentJS(): string {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ events: batch })
-      }).catch(function(){});
+      }).catch(function(){});        // Fire-and-forget, don't block on errors
     } catch(e) {}
   }
 
+  // Flush any remaining events when user leaves the page (3-14-2026)
   window.addEventListener('beforeunload', flushEvents);
 
+  // ==================== FEEDBACK DIALOG (Hissein 3-21-2026) ====================
+  // Shows a modal dialog after tour completion asking for thumbs up/down rating
+  // Supports EN/AR/FR localization with RTL layout for Arabic
   function showFeedbackDialog(tourId, appId, sessionId, trackUrl) {
     var overlay = document.createElement('div');
     overlay.id = 'bpg-feedback-overlay';
@@ -1173,7 +1184,9 @@ export function getContentJS(): string {
     setTimeout(function() { if (document.getElementById('bpg-feedback-overlay')) overlay.remove(); }, 30000);
   }
 
-  // Listen for messages from popup - registered immediately, outside init()
+  // ==================== MESSAGE LISTENER (3-16-2026) ====================
+  // Handles messages from the popup: start process, get data, diagnostics, language switch
+  // Registered immediately (outside init) so popup can communicate even before data loads - Hissein
   chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     if (msg.type === 'START_PROCESS') {
       diag('message', 'Received START_PROCESS', { processIndex: msg.processIndex, dataReady: _dataReady });
@@ -1207,9 +1220,12 @@ export function getContentJS(): string {
     }
   });
 
+  // ==================== INITIALIZATION (Hissein 3-21-2026) ====================
+  // Loads data.json, sets up launchers, resumes any interrupted processes,
+  // and listens for hash changes (SAP/Neptune SPA navigation)
   var _initialized = false;
   function init() {
-    if (_initialized) return;
+    if (_initialized) return;        // Prevent double initialization
     _initialized = true;
     diag('init', 'init() called', { readyState: document.readyState });
 
@@ -1244,14 +1260,18 @@ export function getContentJS(): string {
       });
   }
 
+  // Accessor for the processes array from loaded data - Hissein
   function getProcesses() {
     return _bpgData.processes || [];
   }
 
+  // Accessor for the launchers array from loaded data (3-11-2026)
   function getLaunchers() {
     return _bpgData.launchers || [];
   }
 
+  // ==================== LAUNCHER SETUP (Hissein 3-21-2026) ====================
+  // Creates in-page trigger elements (beacons, buttons) that start tours when clicked
   function setupLaunchers() {
     const launchers = getLaunchers();
     const processes = getProcesses();
@@ -1306,8 +1326,11 @@ export function getContentJS(): string {
     });
   }
 
+  // ==================== MULTI-PAGE RESUME (3-18-2026) ====================
+  // Handles resuming a process after page navigation or hash change
+  // Uses sessionStorage for cross-page state and chrome.storage for popup-initiated launches
   function resumeIfNeeded() {
-    // Check sessionStorage for multi-page navigation resume
+    // Check sessionStorage for multi-page navigation resume - Hissein
     const saved = sessionStorage.getItem('bpg_resume');
     if (saved) {
       sessionStorage.removeItem('bpg_resume');
@@ -1345,6 +1368,8 @@ export function getContentJS(): string {
     });
   }
 
+  // ==================== PROCESS LIFECYCLE (Hissein 3-21-2026) ====================
+  // Start a process by index, reset all state, generate a new session ID
   function startProcess(index) {
     const processes = getProcesses();
     if (!processes[index] || !processes[index].steps.length) {
@@ -1353,14 +1378,17 @@ export function getContentJS(): string {
     }
     currentProcess = processes[index];
     currentStepIndex = 0;
-    _bpgStepLock = false;
-    _bpgLastExecutedStep = -1;
+    _bpgStepLock = false;              // Reset execution lock for new process
+    _bpgLastExecutedStep = -1;         // Reset step tracker (3-12-2026)
     _sessionId = 'bpg_' + Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
     diag('process', 'Process started', { processName: currentProcess.name, processId: currentProcess.id, totalSteps: currentProcess.steps.length, sessionId: _sessionId });
     trackEvent('tour_started', null);
     showStep();
   }
 
+  // ==================== STEP EXECUTION ENGINE (Hissein 3-21-2026) ====================
+  // Core function that executes each step: URL gate → navigation → click action →
+  // element resolution → overlay rendering → tooltip display → button event binding
   async function showStep() {
     cleanup();
     if (!currentProcess || currentStepIndex >= currentProcess.steps.length) {
@@ -1656,6 +1684,8 @@ export function getContentJS(): string {
     }
   }
 
+  // ==================== VIDEO SUPPORT (3-19-2026) ====================
+  // Convert video URLs to embeddable format (YouTube, OneDrive, SharePoint)
   function getVideoEmbedUrl(url) {
     if (!url) return null;
     var ytMatch = url.match(/(?:youtube\\.com\\/watch\\?v=|youtu\\.be\\/|youtube\\.com\\/embed\\/)([a-zA-Z0-9_-]{11})/);
@@ -1667,6 +1697,7 @@ export function getContentJS(): string {
     return url;
   }
 
+  // Build the tooltip inner HTML with localized labels (EN/AR/FR) - Hissein
   function buildTooltipHTML(step, index, total, processName, targetMissing) {
     var isFirst = index === 0;
     var isLast = index === total - 1;
@@ -1712,6 +1743,8 @@ export function getContentJS(): string {
       + '</div></div>';
   }
 
+  // ==================== TOOLTIP POSITIONING (Hissein 3-21-2026) ====================
+  // Calculate tooltip position for a given placement side relative to the target rect
   function calcPosition(rect, tw, th, gap, side) {
     switch (side) {
       case 'top':    return { top: rect.top - th - gap, left: rect.left + rect.width / 2 - tw / 2 };
@@ -1722,17 +1755,21 @@ export function getContentJS(): string {
     }
   }
 
+  // Check if a position fits entirely within the viewport (3-13-2026)
   function fitsViewport(pos, tw, th, margin) {
     return pos.top >= margin && pos.left >= margin &&
            pos.top + th <= window.innerHeight - margin &&
            pos.left + tw <= window.innerWidth - margin;
   }
 
+  // Check if tooltip position overlaps with the target element - Hissein
   function overlapsTarget(pos, tw, th, rect) {
     return !(pos.left + tw < rect.left || pos.left > rect.right ||
              pos.top + th < rect.top || pos.top > rect.bottom);
   }
 
+  // Smart tooltip positioning: tries preferred placement, then fallbacks (Hissein 3-21-2026)
+  // Avoids overlapping target and clamps to viewport boundaries
   function positionTooltip(tooltip, target, placement) {
     const rect = target.getBoundingClientRect();
     const tw = tooltip.offsetWidth;
@@ -1765,6 +1802,7 @@ export function getContentJS(): string {
     tooltip.style.left = bestPos.left + 'px';
   }
 
+  // Remove all overlay, spotlight, and tooltip elements from the DOM (3-11-2026)
   function cleanup() {
     overlayEls.forEach(function(el) { el.remove(); });
     overlayEls = [];
@@ -1773,6 +1811,7 @@ export function getContentJS(): string {
     document.querySelectorAll('.bpg-highlight').forEach(el => el.classList.remove('bpg-highlight'));
   }
 
+  // End the current process (user clicked overlay or close button) - Hissein
   function endProcess() {
     if (currentProcess) {
       diag('process', 'Process abandoned', { processName: currentProcess.name, stepIndex: currentStepIndex });
@@ -1784,7 +1823,8 @@ export function getContentJS(): string {
     currentStepIndex = 0;
   }
 
-  // Initialize when DOM is ready
+  // ==================== DOM READY HANDLER (3-15-2026) ====================
+  // Initialize when DOM is ready, or immediately if already loaded
   if (document.readyState === 'loading') {
     diag('init', 'DOM still loading, waiting for DOMContentLoaded');
     document.addEventListener('DOMContentLoaded', init);
@@ -1793,12 +1833,16 @@ export function getContentJS(): string {
     init();
   }
 
-  // ==================== SCRIBE RECORDER ====================
-  var _scribeRecording = false;
-  var _scribeSteps = [];
-  var _scribeRecordingId = null;
-  var _scribeOverlay = null;
+  // ==================== SCRIBE RECORDER (Hissein 3-21-2026) ====================
+  // In-browser recording engine that captures user interactions (clicks, typing, navigation)
+  // to auto-generate tour steps. Activated via popup commands.
+  var _scribeRecording = false;       // True while recording is active
+  var _scribeSteps = [];              // Accumulated recorded steps
+  var _scribeRecordingId = null;      // Server-side recording ID for saving steps
+  var _scribeOverlay = null;          // Recording toolbar UI element
 
+  // Generate a CSS selector for a DOM element, preferring stable identifiers (3-18-2026)
+  // Priority: ID → name attr → data-testid → unique class combo → nth-child fallback
   function scribeGetSelector(el) {
     if (!el || el === document.body || el === document.documentElement) return '';
     if (el.id) return '#' + CSS.escape(el.id);
@@ -1822,6 +1866,8 @@ export function getContentJS(): string {
     return el.tagName.toLowerCase();
   }
 
+  // Extract meaningful text from an element for step descriptions - Hissein
+  // For inputs, tries label, placeholder, or aria-label instead of value
   function scribeGetElementText(el) {
     if (!el) return '';
     var text = (el.textContent || el.innerText || '').trim();
@@ -1843,6 +1889,7 @@ export function getContentJS(): string {
     return null; // screenshots handled server-side or via extension tab capture
   }
 
+  // Generate a human-readable instruction from a recorded action (Hissein 3-21-2026)
   function scribeGenerateInstruction(actionType, tag, text, inputValue) {
     tag = (tag || '').toLowerCase();
     text = (text || '').trim();
@@ -1867,6 +1914,7 @@ export function getContentJS(): string {
     }
   }
 
+  // Add a captured step to the recording buffer and update the UI counter (3-14-2026)
   function scribeAddStep(actionType, el, extra) {
     if (!_scribeRecording) return;
     extra = extra || {};
@@ -1893,6 +1941,7 @@ export function getContentJS(): string {
     }
   }
 
+  // Click event handler for Scribe: captures click actions on page elements - Hissein
   var _scribeClickHandler = function(e) {
     if (!_scribeRecording) return;
     var el = e.target;
@@ -1909,6 +1958,7 @@ export function getContentJS(): string {
     }
   };
 
+  // Input event handler for Scribe: debounced text entry capture (Hissein 3-21-2026)
   var _scribeInputHandler = function(e) {
     if (!_scribeRecording) return;
     var el = e.target;
@@ -1920,6 +1970,7 @@ export function getContentJS(): string {
     }, 800);
   };
 
+  // URL change detector for SPA navigation during recording (3-16-2026)
   var _lastUrl = window.location.href;
   var _scribeNavHandler = function() {
     if (!_scribeRecording) return;
@@ -1930,6 +1981,7 @@ export function getContentJS(): string {
     }
   };
 
+  // Start recording user interactions - sets up event listeners and shows toolbar - Hissein
   function scribeStartRecording(recordingId) {
     _scribeRecordingId = recordingId;
     _scribeSteps = [];
@@ -1960,6 +2012,7 @@ export function getContentJS(): string {
 
   var _scribeNavInterval;
 
+  // Stop recording and save captured steps to the server (Hissein 3-21-2026)
   function scribeStopRecording() {
     _scribeRecording = false;
     document.removeEventListener('click', _scribeClickHandler, true);
@@ -1996,7 +2049,7 @@ export function getContentJS(): string {
     _scribeRecordingId = null;
   }
 
-  // Listen for scribe commands from popup
+  // Listen for Scribe start/stop commands from the popup (3-13-2026)
   chrome.runtime.onMessage.addListener((msg) => {
     if (msg.type === 'START_SCRIBE') {
       scribeStartRecording(msg.recordingId);
