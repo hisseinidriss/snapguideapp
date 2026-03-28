@@ -1343,6 +1343,48 @@ export function getContentJS(): string {
 
     const step = currentProcess.steps[currentStepIndex];
 
+    // URL-match gate: if step has a target_url, wait until current page matches before executing
+    if (step.target_url) {
+      try {
+        var gCurU = new URL(window.location.href);
+        var gTarU = new URL(step.target_url, window.location.origin);
+        var gCurPath = gCurU.pathname;
+        var gTarPath = gTarU.pathname;
+        while (gCurPath.length > 1 && gCurPath.charAt(gCurPath.length - 1) === '/') gCurPath = gCurPath.slice(0, -1);
+        while (gTarPath.length > 1 && gTarPath.charAt(gTarPath.length - 1) === '/') gTarPath = gTarPath.slice(0, -1);
+        var gCurFull = gCurU.origin + gCurPath + (gCurU.hash || '');
+        var gTarFull = gTarU.origin + gTarPath + (gTarU.hash || '');
+        if (gCurFull !== gTarFull) {
+          diag('step', 'URL mismatch for step, waiting for correct page', { current: gCurFull, expected: gTarFull, stepIndex: currentStepIndex });
+          // Release locks so the step can re-execute once URL matches
+          _bpgStepLock = false;
+          _bpgLastExecutedStep = currentStepIndex - 1;
+          var urlPollStart = Date.now();
+          var urlPollTimer = setInterval(function() {
+            try {
+              var pCur = new URL(window.location.href);
+              var pCurPath = pCur.pathname;
+              while (pCurPath.length > 1 && pCurPath.charAt(pCurPath.length - 1) === '/') pCurPath = pCurPath.slice(0, -1);
+              var pCurFull = pCur.origin + pCurPath + (pCur.hash || '');
+              if (pCurFull === gTarFull) {
+                clearInterval(urlPollTimer);
+                diag('step', 'URL now matches, resuming step execution', { url: pCurFull, stepIndex: currentStepIndex, waitTime: (Date.now() - urlPollStart) + 'ms' });
+                showStep();
+              } else if (Date.now() - urlPollStart > 10000) {
+                clearInterval(urlPollTimer);
+                diag('step', 'URL match timeout after 10s, proceeding with navigation', { current: pCurFull, expected: gTarFull, stepIndex: currentStepIndex });
+                // Fall through to normal navigation logic by re-calling showStep
+                showStep();
+              }
+            } catch(pe) {
+              clearInterval(urlPollTimer);
+            }
+          }, 200);
+          return;
+        }
+      } catch(ue) {}
+    }
+
     // Multi-page: navigate if step has a target_url on a DIFFERENT page
     // Skip navigation if we already navigated (navDone flag from hash resume)
     var skipNav = _bpgNavDone;
