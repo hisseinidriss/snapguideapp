@@ -46,6 +46,7 @@ interface Process {
   id: string;
   name: string;
   steps: ProcessStep[];
+  translations?: Record<string, { name: string }>;  // Localized process name by language code - Hissein
 }
 
 // Launcher configuration bundled into the extension (beacon, button, or hotspot) - Hissein
@@ -97,7 +98,7 @@ export async function generateChromeExtension(
     allTranslations = transRes.flat();
 
     for (const tour of tours) {
-      processes.push({
+      const proc: Process = {
         id: tour.id,
         name: tour.name,
         steps: (steps || [])
@@ -126,8 +127,37 @@ export async function generateChromeExtension(
               translations: Object.keys(stepTrans).length > 0 ? stepTrans : undefined,
             };
           }),
-      });
+      };
+      processes.push(proc);
     }
+  }
+
+  // Auto-translate process names for each enabled language via AI endpoint (Hissein 3-29-2026)
+  if (enabledLanguages.length > 0 && processes.length > 0) {
+    const translatePromises = processes.map(async (proc) => {
+      const nameTrans: Record<string, { name: string }> = {};
+      await Promise.all(
+        enabledLanguages.map(async (lang) => {
+          try {
+            const res = await apiPost<any>("/api/translations/auto", {
+              step_id: proc.id,
+              source_title: proc.name,
+              source_content: proc.name,
+              target_language: lang,
+            });
+            if (res.data?.title) {
+              nameTrans[lang] = { name: res.data.title };
+            }
+          } catch (e) {
+            // Silently skip failed translations - English name will be used as fallback
+          }
+        })
+      );
+      if (Object.keys(nameTrans).length > 0) {
+        proc.translations = nameTrans;
+      }
+    });
+    await Promise.all(translatePromises);
   }
 
   // Filter to only active launchers and extract relevant fields for the extension bundle (3-16-2026)
@@ -2340,12 +2370,21 @@ document.addEventListener('DOMContentLoaded', () => {
   var _processes = [];
   var _appUrl = '';
 
+  // Get translated process name based on current language - Hissein 3-29-2026
+  function getProcessName(proc) {
+    if (_currentLang !== 'en' && proc.translations && proc.translations[_currentLang] && proc.translations[_currentLang].name) {
+      return proc.translations[_currentLang].name;
+    }
+    return proc.name;
+  }
+
   function renderProcesses() {
     list.innerHTML = '';
     var query = (searchInput.value || '').trim().toLowerCase();
     var filtered = _processes.filter(function(proc) {
       if (!query) return true;
-      return proc.name.toLowerCase().indexOf(query) >= 0;
+      var displayName = getProcessName(proc);
+      return displayName.toLowerCase().indexOf(query) >= 0;
     });
 
     if (filtered.length === 0 && _processes.length > 0) {
@@ -2360,12 +2399,13 @@ document.addEventListener('DOMContentLoaded', () => {
     filtered.forEach(function(proc) {
       var origIndex = _processes.indexOf(proc);
       var isCompleted = !!completedProcesses[proc.id];
+      var displayName = getProcessName(proc);
       var item = document.createElement('div');
       item.className = 'process-item' + (isCompleted ? ' completed' : '');
       item.innerHTML = '<div>'
         + '<div class="process-name-row">'
         + (isCompleted ? '<span class="check-icon" title="Completed">✓</span>' : '')
-        + '<span class="process-name">' + proc.name + '</span>'
+        + '<span class="process-name">' + displayName + '</span>'
         + '</div>'
         + '<div class="process-steps">' + proc.steps.length + ' step' + (proc.steps.length !== 1 ? 's' : '') + '</div>'
         + '</div>'
