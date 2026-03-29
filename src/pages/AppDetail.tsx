@@ -476,11 +476,22 @@ const AppDetail = () => {
                 <Switch
                   checked={enabledLanguages.includes(lang.code)}
                   onCheckedChange={async (checked) => {
+                    const previous = enabledLanguages;
                     const updated = checked
-                      ? [...enabledLanguages, lang.code]
+                      ? Array.from(new Set([...enabledLanguages, lang.code]))
                       : enabledLanguages.filter((l) => l !== lang.code);
                     setEnabledLanguages(updated);
-                    await appsApi.update(appId!, { enabled_languages: updated } as any);
+                    const { data, error } = await appsApi.update(appId!, { enabled_languages: updated } as any);
+
+                    if (error) {
+                      setEnabledLanguages(previous);
+                      toast({ title: "Error", description: error.message, variant: "destructive" });
+                      return;
+                    }
+
+                    if (data) {
+                      setEnabledLanguages(data.enabled_languages || updated);
+                    }
                   }}
                 />
                 <span className="text-sm">{lang.flag} {lang.label}</span>
