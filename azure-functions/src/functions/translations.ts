@@ -103,7 +103,8 @@ app.http("translations-bulk", {
   },
 });
 
-// AUTO-TRANSLATE: POST /api/translations/auto { step_id, source_title, source_content, target_language }
+// AUTO-TRANSLATE: POST /api/translations/auto { step_id, source_title, source_content, target_language, skip_save? }
+// When skip_save is true, returns translated text without persisting to DB (used for process name translation) - Hissein 3-29-2026
 app.http("translations-auto", {
   methods: ["POST", "OPTIONS"],
   authLevel: "anonymous",
@@ -113,8 +114,9 @@ app.http("translations-auto", {
 
     try {
       const body = await req.json() as any;
-      const { step_id, source_title, source_content, target_language } = body;
-      if (!step_id || !target_language) return errorResponse("step_id and target_language required", 400);
+      const { step_id, source_title, source_content, target_language, skip_save } = body;
+      if (!target_language) return errorResponse("target_language required", 400);
+      if (!skip_save && !step_id) return errorResponse("step_id required when saving translation", 400);
 
       const langNames: Record<string, string> = { ar: "Arabic", fr: "French", en: "English" };
       const langName = langNames[target_language] || target_language;
@@ -151,6 +153,11 @@ app.http("translations-auto", {
       // Strip markdown code fences if present
       const cleaned = raw.replace(/```json\s*/g, "").replace(/```/g, "").trim();
       const translated = JSON.parse(cleaned);
+
+      // Skip DB save for process name translations (no step_id context) - Hissein 3-29-2026
+      if (skip_save) {
+        return jsonResponse({ title: translated.title || "", content: translated.content || "" }, 200);
+      }
 
       // Save translation to DB
       const result = await query(
