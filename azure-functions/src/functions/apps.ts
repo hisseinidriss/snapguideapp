@@ -61,10 +61,17 @@ app.http("apps-get-update-delete", {
         const fields: string[] = [];
         const values: any[] = [];
         let i = 1;
+        const allowedFields = ["name", "url", "description", "icon_url", "enabled_languages", "diagnostics_enabled"];
         for (const [key, value] of Object.entries(body)) {
-          if (["name", "url", "description", "icon_url", "enabled_languages", "diagnostics_enabled"].includes(key)) {
+          if (allowedFields.includes(key)) {
             fields.push(`${key} = $${i++}`);
-            values.push(value);
+            // jsonb columns (e.g. enabled_languages) must be passed as a JSON string,
+            // otherwise pg serializes JS arrays as PostgreSQL arrays which breaks jsonb storage - Hissein
+            if (key === "enabled_languages") {
+              values.push(JSON.stringify(value));
+            } else {
+              values.push(value);
+            }
           }
         }
         if (fields.length === 0) return errorResponse("No valid fields", 400);
