@@ -140,10 +140,10 @@ export async function generateChromeExtension(
         enabledLanguages.map(async (lang) => {
           try {
             const res = await apiPost<any>("/api/translations/auto", {
-              step_id: proc.id,
               source_title: proc.name,
               source_content: proc.name,
               target_language: lang,
+              skip_save: true,
             });
             if (res.data?.title) {
               nameTrans[lang] = { name: res.data.title };
