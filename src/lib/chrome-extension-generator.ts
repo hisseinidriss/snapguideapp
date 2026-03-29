@@ -2351,6 +2351,8 @@ document.addEventListener('DOMContentLoaded', () => {
     chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
       if (tabs[0]) chrome.tabs.sendMessage(tabs[0].id, { type: 'SET_LANGUAGE', language: lang });
     });
+    // Re-render process list with translated names - Hissein 3-29-2026
+    renderProcesses();
   });
 
   // Listen for completion events from content script
