@@ -1028,7 +1028,10 @@ export function getContentJS(): string {
   // Load saved language preference
   try {
     chrome.storage.local.get(['bpg_language'], function(result) {
-      if (result.bpg_language) _currentLang = result.bpg_language;
+      if (result.bpg_language) {
+        _currentLang = result.bpg_language;
+        if (currentProcess) showStep();
+      }
     });
   } catch(e) {}
 
@@ -1189,6 +1192,10 @@ export function getContentJS(): string {
   // Registered immediately (outside init) so popup can communicate even before data loads - Hissein
   chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     if (msg.type === 'START_PROCESS') {
+      if (msg.language) {
+        _currentLang = msg.language;
+        chrome.storage.local.set({ bpg_language: _currentLang });
+      }
       diag('message', 'Received START_PROCESS', { processIndex: msg.processIndex, dataReady: _dataReady });
       if (!_dataReady) {
         _pendingStartIndex = msg.processIndex;
@@ -1356,11 +1363,17 @@ export function getContentJS(): string {
     // Check chrome.storage for pending process launch (from popup navigation)
     chrome.storage.local.get(['bpg_pending_process'], function(result) {
       if (result.bpg_pending_process != null) {
-        var pendingIndex = result.bpg_pending_process;
+        var pendingPayload = result.bpg_pending_process;
+        var pendingIndex = typeof pendingPayload === 'object' ? pendingPayload.processIndex : pendingPayload;
+        var pendingLanguage = typeof pendingPayload === 'object' ? pendingPayload.language : null;
         chrome.storage.local.remove('bpg_pending_process');
         var processes = getProcesses();
         diag('resume', 'Found pending process in storage', { pendingIndex: pendingIndex, processExists: !!processes[pendingIndex] });
         if (processes[pendingIndex]) {
+          if (pendingLanguage) {
+            _currentLang = pendingLanguage;
+            chrome.storage.local.set({ bpg_language: _currentLang });
+          }
           diag('resume', 'Starting pending process after 3s delay');
           setTimeout(function() { startProcess(pendingIndex); }, 3000);
         }
@@ -2382,7 +2395,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function injectAndSend(tabId, message) {
     // Try sending directly first (content script may already be loaded via manifest)
-    chrome.tabs.sendMessage(tabId, message, function(response) {
+      chrome.tabs.sendMessage(tabId, message, function(response) {
       if (chrome.runtime.lastError) {
         // Content script not ready - inject it then send
         chrome.scripting.executeScript({
@@ -2430,11 +2443,11 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch(e) { finalUrl = navUrl; }
         
         // Store pending process so content script auto-starts after page loads
-        chrome.storage.local.set({ bpg_pending_process: index }, () => {
+        chrome.storage.local.set({ bpg_pending_process: { processIndex: index, language: _currentLang } }, () => {
           chrome.tabs.update(tab.id, { url: finalUrl });
         });
       } else {
-        injectAndSend(tab.id, { type: 'START_PROCESS', processIndex: index });
+        injectAndSend(tab.id, { type: 'START_PROCESS', processIndex: index, language: _currentLang });
       }
       window.close();
     });
