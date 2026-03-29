@@ -1595,8 +1595,22 @@ export function getContentJS(): string {
       }
       if (clickEl) {
         diag('step', 'click_selector interactable, clicking', { click_selector: step.click_selector, stepIndex: currentStepIndex, waitTime: (Date.now() - clickStart) + 'ms' });
+        // Pre-save resume data before clicking in case the click triggers a full page navigation
+        var preClickUrl = window.location.href;
+        sessionStorage.setItem('bpg_resume', JSON.stringify({
+          processIndex: _bpgData.processes.indexOf(currentProcess),
+          stepIndex: currentStepIndex,
+          navDone: true
+        }));
         clickEl.click();
         await new Promise(r => setTimeout(r, 600));
+        // If page did NOT navigate, clear the safety resume data and continue normally
+        if (window.location.href === preClickUrl) {
+          sessionStorage.removeItem('bpg_resume');
+        } else {
+          // Page navigated — content script will re-init and resumeIfNeeded will pick up
+          return;
+        }
       } else {
         diag('step', 'click_selector not interactable or not in DOM, skipping', { click_selector: step.click_selector, stepIndex: currentStepIndex, waitTime: (Date.now() - clickStart) + 'ms' });
       }
