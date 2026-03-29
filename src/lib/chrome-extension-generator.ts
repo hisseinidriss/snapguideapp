@@ -1381,10 +1381,35 @@ export function getContentJS(): string {
         if (processes[processIndex]) {
           currentProcess = processes[processIndex];
           currentStepIndex = stepIndex;
-          diag('resume', 'Resuming after 2s delay', { processName: currentProcess.name });
+        diag('resume', 'Resuming - waiting for selector', { processName: currentProcess.name, stepIndex: stepIndex });
           _bpgStepLock = false;
           _bpgLastExecutedStep = stepIndex - 1; // Allow this step to execute
-          setTimeout(() => showStep(), 2000);
+          var resumeStep = currentProcess.steps[stepIndex];
+          var resumeSelector = resumeStep ? resumeStep.selector : null;
+          function pollForSelector(attemptsLeft, retryAfterFail) {
+            if (!resumeSelector) {
+              diag('resume', 'No selector for step, executing immediately');
+              showStep();
+              return;
+            }
+            var el = document.querySelector(resumeSelector);
+            if (el) {
+              diag('resume', 'Selector found after navigation, executing step', { selector: resumeSelector });
+              showStep();
+              return;
+            }
+            if (attemptsLeft > 0) {
+              setTimeout(function() { pollForSelector(attemptsLeft - 1, retryAfterFail); }, 100);
+            } else if (retryAfterFail) {
+              diag('resume', 'Step delayed — selector not ready after navigation', { selector: resumeSelector });
+              setTimeout(function() { pollForSelector(20, false); }, 2000);
+            } else {
+              diag('resume', 'Selector still not found after retry, executing step anyway', { selector: resumeSelector });
+              showStep();
+            }
+          }
+          // Start polling: 50 attempts x 100ms = 5s, with one retry
+          setTimeout(function() { pollForSelector(50, true); }, 500);
           return;
         }
       } catch(e) {}
