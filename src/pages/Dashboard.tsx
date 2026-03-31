@@ -234,9 +234,6 @@ const Dashboard = () => {
                   <Button variant="outline" asChild className="justify-start">
                     <Link to="/report"><FileText className="mr-2 h-4 w-4" />Technical Report</Link>
                   </Button>
-                  <Button variant="outline" asChild className="justify-start">
-                    <Link to="/cab-report"><ClipboardCheck className="mr-2 h-4 w-4" />CAB Report</Link>
-                  </Button>
                 </div>
               </SheetContent>
             </Sheet>
