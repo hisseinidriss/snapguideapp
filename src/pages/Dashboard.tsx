@@ -177,25 +177,27 @@ const Dashboard = () => {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
-                  <UserCircle className="h-5 w-5" />
+                  <BookOpen className="h-5 w-5" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem asChild>
-                  <Link to="/account" className="flex items-center gap-2">
-                    <UserCircle className="h-4 w-4" />
-                    Account
-                  </Link>
-                </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link to="/guide" className="flex items-center gap-2">
                     <BookOpen className="h-4 w-4" />
                     User Guide
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={async () => { await signOut(); navigate("/auth"); }} className="text-destructive">
-                  <LogOut className="h-4 w-4" />
-                  Sign Out
+                <DropdownMenuItem asChild>
+                  <Link to="/report" className="flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    Technical Report
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/cab-report" className="flex items-center gap-2">
+                    <ClipboardCheck className="h-4 w-4" />
+                    CAB Report
+                  </Link>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
