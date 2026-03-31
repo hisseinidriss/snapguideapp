@@ -193,12 +193,6 @@ const Dashboard = () => {
                     Technical Report
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/cab-report" className="flex items-center gap-2">
-                    <ClipboardCheck className="h-4 w-4" />
-                    CAB Report
-                  </Link>
-                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
