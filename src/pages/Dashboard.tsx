@@ -193,12 +193,6 @@ const Dashboard = () => {
                     Technical Report
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/cab-report" className="flex items-center gap-2">
-                    <ClipboardCheck className="h-4 w-4" />
-                    CAB Report
-                  </Link>
-                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -239,9 +233,6 @@ const Dashboard = () => {
                   </Button>
                   <Button variant="outline" asChild className="justify-start">
                     <Link to="/report"><FileText className="mr-2 h-4 w-4" />Technical Report</Link>
-                  </Button>
-                  <Button variant="outline" asChild className="justify-start">
-                    <Link to="/cab-report"><ClipboardCheck className="mr-2 h-4 w-4" />CAB Report</Link>
                   </Button>
                 </div>
               </SheetContent>
