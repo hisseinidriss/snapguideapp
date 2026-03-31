@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Plus, Globe, MoreVertical, Trash2, ArrowRight, BookOpen, UserCircle, Menu, Pencil, ImagePlus, LogOut, LayoutGrid, List } from "lucide-react";
+import { Plus, Globe, MoreVertical, Trash2, ArrowRight, BookOpen, Menu, Pencil, ImagePlus, LayoutGrid, List, FileText, ClipboardCheck } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -177,25 +177,27 @@ const Dashboard = () => {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
-                  <UserCircle className="h-5 w-5" />
+                  <BookOpen className="h-5 w-5" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem asChild>
-                  <Link to="/account" className="flex items-center gap-2">
-                    <UserCircle className="h-4 w-4" />
-                    Account
-                  </Link>
-                </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link to="/guide" className="flex items-center gap-2">
                     <BookOpen className="h-4 w-4" />
                     User Guide
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={async () => { await signOut(); navigate("/auth"); }} className="text-destructive">
-                  <LogOut className="h-4 w-4" />
-                  Sign Out
+                <DropdownMenuItem asChild>
+                  <Link to="/report" className="flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    Technical Report
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/cab-report" className="flex items-center gap-2">
+                    <ClipboardCheck className="h-4 w-4" />
+                    CAB Report
+                  </Link>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -233,18 +235,15 @@ const Dashboard = () => {
                 </SheetHeader>
                 <div className="flex flex-col gap-2 mt-4">
                   <Button variant="outline" asChild className="justify-start">
-                    <Link to="/account"><UserCircle className="mr-2 h-4 w-4" />Account</Link>
-                  </Button>
-                  <Button variant="outline" asChild className="justify-start">
                     <Link to="/guide"><BookOpen className="mr-2 h-4 w-4" />User Guide</Link>
                   </Button>
-                  <Button variant="destructive" onClick={async () => { await signOut(); navigate("/auth"); }} className="justify-start">
-                    <LogOut className="mr-2 h-4 w-4" />Sign Out
+                  <Button variant="outline" asChild className="justify-start">
+                    <Link to="/report"><FileText className="mr-2 h-4 w-4" />Technical Report</Link>
+                  </Button>
+                  <Button variant="outline" asChild className="justify-start">
+                    <Link to="/cab-report"><ClipboardCheck className="mr-2 h-4 w-4" />CAB Report</Link>
                   </Button>
                 </div>
-                {user && (
-                  <p className="text-xs text-muted-foreground mt-6 truncate">{user.email}</p>
-                )}
               </SheetContent>
             </Sheet>
           </div>
