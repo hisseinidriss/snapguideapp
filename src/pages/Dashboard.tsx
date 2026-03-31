@@ -235,18 +235,15 @@ const Dashboard = () => {
                 </SheetHeader>
                 <div className="flex flex-col gap-2 mt-4">
                   <Button variant="outline" asChild className="justify-start">
-                    <Link to="/account"><UserCircle className="mr-2 h-4 w-4" />Account</Link>
-                  </Button>
-                  <Button variant="outline" asChild className="justify-start">
                     <Link to="/guide"><BookOpen className="mr-2 h-4 w-4" />User Guide</Link>
                   </Button>
-                  <Button variant="destructive" onClick={async () => { await signOut(); navigate("/auth"); }} className="justify-start">
-                    <LogOut className="mr-2 h-4 w-4" />Sign Out
+                  <Button variant="outline" asChild className="justify-start">
+                    <Link to="/report"><FileText className="mr-2 h-4 w-4" />Technical Report</Link>
+                  </Button>
+                  <Button variant="outline" asChild className="justify-start">
+                    <Link to="/cab-report"><ClipboardCheck className="mr-2 h-4 w-4" />CAB Report</Link>
                   </Button>
                 </div>
-                {user && (
-                  <p className="text-xs text-muted-foreground mt-6 truncate">{user.email}</p>
-                )}
               </SheetContent>
             </Sheet>
           </div>
