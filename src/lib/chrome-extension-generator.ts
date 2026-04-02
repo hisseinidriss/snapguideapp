@@ -1458,7 +1458,7 @@ export function getContentJS(): string {
   }
 
   // ==================== STEP EXECUTION ENGINE (Hissein 3-21-2026) ====================
-  // Core function that executes each step: URL gate → navigation → click action →
+  // Core function that executes each step: navigation → URL gate → click action →
   // element resolution → overlay rendering → tooltip display → button event binding
   async function showStep() {
     cleanup();
@@ -1512,6 +1512,48 @@ export function getContentJS(): string {
 
     const step = currentProcess.steps[currentStepIndex];
 
+    // Multi-page: navigate if step has a target_url on a DIFFERENT page
+    // Skip navigation if we already navigated (navDone flag from hash resume)
+    var skipNav = _bpgNavDone;
+    _bpgNavDone = false;
+    if (step.target_url && !skipNav) {
+      try {
+        var curU = new URL(window.location.href);
+        var tarU = new URL(step.target_url, window.location.origin);
+        var curPath = curU.pathname;
+        var tarPath = tarU.pathname;
+        while (curPath.length > 1 && curPath.charAt(curPath.length - 1) === '/') curPath = curPath.slice(0, -1);
+        while (tarPath.length > 1 && tarPath.charAt(tarPath.length - 1) === '/') tarPath = tarPath.slice(0, -1);
+        var curFull = curU.origin + curPath + (curU.hash || '');
+        var tarFull = tarU.origin + tarPath + (tarU.hash || '');
+        if (curFull !== tarFull) {
+          diag('step', 'Navigating to target URL', { from: curFull, to: tarFull, stepIndex: currentStepIndex });
+          // Hash-only navigation (SAP/Neptune): no page reload occurs,
+          // so hashchange listener will pick up resume. For full-page
+          // navigations the content script re-inits and calls resumeIfNeeded.
+          var isHashOnly = curU.origin === tarU.origin && curPath === tarPath && curU.hash !== tarU.hash;
+          if (isHashOnly) {
+            // Store SAME stepIndex but mark navigation done so we don't re-navigate
+            sessionStorage.setItem('bpg_resume', JSON.stringify({
+              processIndex: _bpgData.processes.indexOf(currentProcess),
+              stepIndex: currentStepIndex,
+              navDone: true
+            }));
+            diag('step', 'Hash-only navigation detected, using hashchange resume', { from: curU.hash, to: tarU.hash });
+            cleanup();
+            window.location.hash = tarU.hash;
+          } else {
+            sessionStorage.setItem('bpg_resume', JSON.stringify({
+              processIndex: _bpgData.processes.indexOf(currentProcess),
+              stepIndex: currentStepIndex + 1
+            }));
+            window.location.href = tarU.href;
+          }
+          return;
+        }
+      } catch(e) {}
+    }
+
     // URL-match gate: if step has a target_url, wait until current page matches before executing
     // Uses startsWith for loose matching to tolerate query params, locale suffixes, etc.
     if (step.target_url) {
@@ -1558,48 +1600,6 @@ export function getContentJS(): string {
           return;
         }
       } catch(ue) {}
-    }
-
-    // Multi-page: navigate if step has a target_url on a DIFFERENT page
-    // Skip navigation if we already navigated (navDone flag from hash resume)
-    var skipNav = _bpgNavDone;
-    _bpgNavDone = false;
-    if (step.target_url && !skipNav) {
-      try {
-        var curU = new URL(window.location.href);
-        var tarU = new URL(step.target_url, window.location.origin);
-        var curPath = curU.pathname;
-        var tarPath = tarU.pathname;
-        while (curPath.length > 1 && curPath.charAt(curPath.length - 1) === '/') curPath = curPath.slice(0, -1);
-        while (tarPath.length > 1 && tarPath.charAt(tarPath.length - 1) === '/') tarPath = tarPath.slice(0, -1);
-        var curFull = curU.origin + curPath + (curU.hash || '');
-        var tarFull = tarU.origin + tarPath + (tarU.hash || '');
-        if (curFull !== tarFull) {
-          diag('step', 'Navigating to target URL', { from: curFull, to: tarFull, stepIndex: currentStepIndex });
-          // Hash-only navigation (SAP/Neptune): no page reload occurs,
-          // so hashchange listener will pick up resume. For full-page
-          // navigations the content script re-inits and calls resumeIfNeeded.
-          var isHashOnly = curU.origin === tarU.origin && curPath === tarPath && curU.hash !== tarU.hash;
-          if (isHashOnly) {
-            // Store SAME stepIndex but mark navigation done so we don't re-navigate
-            sessionStorage.setItem('bpg_resume', JSON.stringify({
-              processIndex: _bpgData.processes.indexOf(currentProcess),
-              stepIndex: currentStepIndex,
-              navDone: true
-            }));
-            diag('step', 'Hash-only navigation detected, using hashchange resume', { from: curU.hash, to: tarU.hash });
-            cleanup();
-            window.location.hash = tarU.hash;
-          } else {
-            sessionStorage.setItem('bpg_resume', JSON.stringify({
-              processIndex: _bpgData.processes.indexOf(currentProcess),
-              stepIndex: currentStepIndex + 1
-            }));
-            window.location.href = tarU.href;
-          }
-          return;
-        }
-      } catch(e) {}
     }
 
     // Click action: click a button to open a modal/popup before looking for target
