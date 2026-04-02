@@ -2288,7 +2288,7 @@ function getPopupHTML(appName: string, processes: Process[], enabledLanguages: s
       transition: all 0.15s;
     }
     .tab-btn:hover { color: #2d3b34; }
-    .tab-btn.active { color: #4d8b6f; border-bottom-color: #4d8b6f; }
+    .tab-btn.active { color: #1a6b3c; border-bottom-color: #1a6b3c; }
     .tab-content { display: none; }
     .tab-content.active { display: block; }
     .diag-panel { padding: 8px; max-height: 350px; overflow-y: auto; }
