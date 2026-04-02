@@ -2267,8 +2267,8 @@ function getPopupHTML(appName: string, processes: Process[], enabledLanguages: s
       font-family: 'DM Sans', sans-serif;
       text-align: center;
     }
-    .lang-btn:hover { border-color: #4d8b6f; }
-    .lang-btn.active { background: #4d8b6f; color: #fff; border-color: #4d8b6f; }
+    .lang-btn:hover { border-color: #1a6b3c; }
+    .lang-btn.active { background: #1a6b3c; color: #fff; border-color: #1a6b3c; }
     .tab-bar {
       display: flex;
       border-bottom: 1px solid #dfe6e2;
