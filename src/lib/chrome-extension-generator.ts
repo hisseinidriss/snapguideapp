@@ -254,6 +254,9 @@ export async function generateChromeExtension(
   zip.file("icon48.png", await generateIcon(48));
   zip.file("icon128.png", await generateIcon(128));
 
+  // Add logo for popup header
+  zip.file("logo.png", await generateIcon(64));
+
   // Package everything into a ZIP and trigger browser download (3-19-2026)
   const browserLabel = browser === 'firefox' ? 'firefox' : browser === 'edge' ? 'edge' : 'chrome';
   const blob = await zip.generateAsync({ type: "blob" });
