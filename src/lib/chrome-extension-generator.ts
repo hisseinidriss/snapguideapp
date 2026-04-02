@@ -2331,9 +2331,9 @@ function getPopupHTML(appName: string, processes: Process[], enabledLanguages: s
     </div>
   </div>
   ${enabledLanguages.length > 0 ? `<div class="lang-selector" id="langSelector">
-    <button class="lang-btn active" data-lang="en">🇬🇧 English</button>
-    ${enabledLanguages.includes('ar') ? '<button class="lang-btn" data-lang="ar">🇸🇦 العربية</button>' : ''}
-    ${enabledLanguages.includes('fr') ? '<button class="lang-btn" data-lang="fr">🇫🇷 Français</button>' : ''}
+    <button class="lang-btn active" data-lang="en">English</button>
+    ${enabledLanguages.includes('ar') ? '<button class="lang-btn" data-lang="ar">العربية</button>' : ''}
+    ${enabledLanguages.includes('fr') ? '<button class="lang-btn" data-lang="fr">Français</button>' : ''}
   </div>` : ''}
   ${diagnosticsEnabled ? `<div class="tab-bar">
     <button class="tab-btn active" data-tab="processes">Processes</button>
