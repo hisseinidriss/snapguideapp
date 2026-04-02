@@ -2186,10 +2186,10 @@ function getPopupHTML(appName: string, processes: Process[], enabledLanguages: s
       font-family: 'DM Sans', sans-serif;
       font-size: 12px;
       outline: none;
-      background: #f4f7f5 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238a9b92' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E") 10px center no-repeat;
+      background: #eef3f7 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238a9b92' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E") 10px center no-repeat;
       margin-bottom: 10px;
     }
-    .search-input:focus { border-color: #4d8b6f; background-color: #fff; }
+    .search-input:focus { border-color: #1a6b3c; background-color: #fff; }
     .process-list { padding: 10px; }
     .process-item {
       display: flex;
