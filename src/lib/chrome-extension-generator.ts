@@ -2213,7 +2213,7 @@ function getPopupHTML(appName: string, processes: Process[], enabledLanguages: s
     .play-btn {
       width: 32px; height: 32px;
       border-radius: 50%;
-      background: #4d8b6f;
+      background: #1a6b3c;
       color: white;
       border: none;
       cursor: pointer;
@@ -2224,7 +2224,7 @@ function getPopupHTML(appName: string, processes: Process[], enabledLanguages: s
       flex-shrink: 0;
       transition: background 0.15s;
     }
-    .play-btn:hover { background: #3d7a5e; }
+    .play-btn:hover { background: #145a30; }
     .restart-btn {
       width: 28px; height: 28px;
       border-radius: 50%;
