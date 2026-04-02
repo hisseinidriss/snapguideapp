@@ -254,6 +254,9 @@ export async function generateChromeExtension(
   zip.file("icon48.png", await generateIcon(48));
   zip.file("icon128.png", await generateIcon(128));
 
+  // Add logo for popup header
+  zip.file("logo.png", await generateIcon(64));
+
   // Package everything into a ZIP and trigger browser download (3-19-2026)
   const browserLabel = browser === 'firefox' ? 'firefox' : browser === 'edge' ? 'edge' : 'chrome';
   const blob = await zip.generateAsync({ type: "blob" });
@@ -386,10 +389,10 @@ export function getContentCSS(): string {
 .bpg-btn-secondary:hover { background: #dfe6e2; }
 
 .bpg-btn-primary {
-  background: #4d8b6f;
+  background: #1a6b3c;
   color: #fff;
 }
-.bpg-btn-primary:hover { background: #3d7a5e; }
+.bpg-btn-primary:hover { background: #145a30; }
 
 .bpg-btn-close {
   position: absolute;
@@ -497,7 +500,7 @@ export function getContentCSS(): string {
   font-family: 'DM Sans', sans-serif;
   transition: all 0.15s;
 }
-.bpg-btn-fullscreen:hover { border-color: #4d8b6f; color: #2d3b34; }
+.bpg-btn-fullscreen:hover { border-color: #1a6b3c; color: #2d3b34; }
 
 .bpg-tooltip.bpg-video-tooltip {
   max-width: 480px;
@@ -1152,12 +1155,12 @@ export function getContentJS(): string {
       var b = document.createElement('button');
       b.innerHTML = '<span style="font-size:28px;display:block;margin-bottom:4px;">' + emoji + '</span><span style="font-size:11px;color:#6b7280;">' + label + '</span>';
       b.style.cssText = 'border:2px solid #e5e7eb;border-radius:10px;padding:12px 24px;cursor:pointer;background:#fff;transition:all 0.15s;';
-      b.onmouseenter = function() { b.style.borderColor = '#4d8b6f'; b.style.background = '#f0fdf4'; };
+      b.onmouseenter = function() { b.style.borderColor = '#1a6b3c'; b.style.background = '#f0fdf4'; };
       b.onmouseleave = function() { if (selectedRating !== value) { b.style.borderColor = '#e5e7eb'; b.style.background = '#fff'; } };
       b.onclick = function() {
         selectedRating = value;
         btnRow.querySelectorAll('button').forEach(function(btn) { btn.style.borderColor = '#e5e7eb'; btn.style.background = '#fff'; });
-        b.style.borderColor = '#4d8b6f';
+        b.style.borderColor = '#1a6b3c';
         b.style.background = '#f0fdf4';
         commentArea.style.display = 'block';
         submitRow.style.display = 'flex';
@@ -1177,7 +1180,7 @@ export function getContentJS(): string {
 
     var submitBtn = document.createElement('button');
     submitBtn.textContent = fl.submit;
-    submitBtn.style.cssText = 'background:#4d8b6f;color:#fff;border:none;border-radius:8px;padding:8px 24px;font-size:13px;font-weight:500;cursor:pointer;';
+    submitBtn.style.cssText = 'background:#1a6b3c;color:#fff;border:none;border-radius:8px;padding:8px 24px;font-size:13px;font-weight:500;cursor:pointer;';
     submitBtn.onclick = function() {
       if (!selectedRating) return;
       var feedbackUrl = trackUrl.replace('/track-events', '/feedback');
@@ -1324,7 +1327,7 @@ export function getContentJS(): string {
         const btn = document.createElement('button');
         btn.className = 'bpg-launcher-button';
         btn.setAttribute('data-bpg-launcher-id', launcher.id);
-        btn.style.backgroundColor = launcher.color || '#4d8b6f';
+        btn.style.backgroundColor = launcher.color || '#1a6b3c';
         btn.textContent = launcher.label || launcher.name;
         btn.addEventListener('click', () => {
           const procIndex = processes.findIndex(p => p.id === launcher.tour_id);
@@ -1345,8 +1348,8 @@ export function getContentJS(): string {
         const dot = document.createElement('div');
         dot.className = 'bpg-beacon' + (launcher.pulse ? ' bpg-beacon-pulse' : '');
         dot.setAttribute('data-bpg-launcher-id', launcher.id);
-        dot.style.backgroundColor = launcher.color || '#4d8b6f';
-        dot.style.color = launcher.color || '#4d8b6f';
+        dot.style.backgroundColor = launcher.color || '#1a6b3c';
+        dot.style.color = launcher.color || '#1a6b3c';
         dot.addEventListener('click', () => {
           const procIndex = processes.findIndex(p => p.id === launcher.tour_id);
           if (procIndex >= 0) startProcess(procIndex);
@@ -1799,8 +1802,8 @@ export function getContentJS(): string {
     var videoHtml = '';
     if (isVideo) {
       videoHtml = '<div class="bpg-video-container" data-video-url="' + step.video_url + '" style="display:flex;flex-direction:column;align-items:center;justify-content:center;background:#f1f5f1;border-radius:8px;padding:24px;font-family:DM Sans,sans-serif;min-height:120px;margin:8px 0;cursor:pointer" data-action="open-video">'
-        + '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#4d8b6f" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>'
-        + '<span style="margin-top:10px;color:#4d8b6f;font-size:14px;font-weight:600">' + l.watchVideo + '</span>'
+        + '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#1a6b3c" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>'
+        + '<span style="margin-top:10px;color:#1a6b3c;font-size:14px;font-weight:600">' + l.watchVideo + '</span>'
         + '<span style="margin-top:4px;color:#6b7280;font-size:11px">' + l.opensNewTab + '</span>'
         + '</div>'
         + '<div class="bpg-video-actions">'
@@ -1809,7 +1812,7 @@ export function getContentJS(): string {
     }
 
     return '<button class="bpg-btn-close">&times;</button>'
-      + '<div style="font-size:11px;color:#4d8b6f;font-weight:600;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;font-family:DM Sans,sans-serif">' + processName + '</div>'
+      + '<div style="font-size:11px;color:#1a6b3c;font-weight:600;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;font-family:DM Sans,sans-serif">' + processName + '</div>'
       + '<h3 class="bpg-tooltip-title">' + title + '</h3>'
       + '<p class="bpg-tooltip-content">' + content + '</p>'
       + videoHtml
@@ -2119,7 +2122,7 @@ export function getContentJS(): string {
         .then(function() {
           // Show success
           var msg = document.createElement('div');
-          msg.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:2147483647;padding:12px 24px;background:#4d8b6f;color:#fff;border-radius:10px;font-family:DM Sans,sans-serif;font-size:13px;font-weight:500;box-shadow:0 8px 24px rgba(0,0,0,0.15)';
+          msg.style.cssText = 'position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:2147483647;padding:12px 24px;background:#1a6b3c;color:#fff;border-radius:10px;font-family:DM Sans,sans-serif;font-size:13px;font-weight:500;box-shadow:0 8px 24px rgba(0,0,0,0.15)';
           msg.textContent = '✓ ' + _scribeSteps.length + ' steps saved to recording';
           document.body.appendChild(msg);
           setTimeout(function() { msg.remove(); }, 3000);
@@ -2156,15 +2159,20 @@ function getPopupHTML(appName: string, processes: Process[], enabledLanguages: s
     body {
       width: 320px;
       font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #f4f7f5;
+      background: #eef3f7;
     }
     .header {
-      background: linear-gradient(135deg, #4d8b6f, #5a9e7e);
+      background: linear-gradient(135deg, #1a6b3c, #1a5276);
       color: white;
-      padding: 18px 16px;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
     }
-    .header h1 { font-size: 15px; font-weight: 600; }
-    .header p { font-size: 11px; opacity: 0.85; margin-top: 3px; font-weight: 400; }
+    .header-logo { width: 40px; height: 40px; border-radius: 8px; background: rgba(255,255,255,0.15); padding: 4px; }
+    .header-logo img { width: 100%; height: 100%; object-fit: contain; }
+    .header-text h1 { font-size: 15px; font-weight: 600; }
+    .header-text p { font-size: 11px; opacity: 0.85; margin-top: 3px; font-weight: 400; }
     .search-box {
       padding: 10px 10px 0;
       background: #fff;
@@ -2178,10 +2186,10 @@ function getPopupHTML(appName: string, processes: Process[], enabledLanguages: s
       font-family: 'DM Sans', sans-serif;
       font-size: 12px;
       outline: none;
-      background: #f4f7f5 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238a9b92' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E") 10px center no-repeat;
+      background: #eef3f7 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238a9b92' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E") 10px center no-repeat;
       margin-bottom: 10px;
     }
-    .search-input:focus { border-color: #4d8b6f; background-color: #fff; }
+    .search-input:focus { border-color: #1a6b3c; background-color: #fff; }
     .process-list { padding: 10px; }
     .process-item {
       display: flex;
@@ -2195,17 +2203,17 @@ function getPopupHTML(appName: string, processes: Process[], enabledLanguages: s
       cursor: pointer;
       transition: all 0.15s;
     }
-    .process-item:hover { border-color: #4d8b6f; background: #f0f7f3; }
-    .process-item.completed { border-left: 3px solid #4d8b6f; }
+    .process-item:hover { border-color: #1a6b3c; background: #eef5f0; }
+    .process-item.completed { border-left: 3px solid #1a6b3c; }
     .process-name-row { display: flex; align-items: center; gap: 6px; }
-    .process-name { font-size: 13px; font-weight: 500; color: #2d3b34; }
+    .process-name { font-size: 13px; font-weight: 500; color: #1a3c5e; }
     .process-steps { font-size: 11px; color: #8a9b92; margin-top: 2px; }
-    .check-icon { color: #4d8b6f; font-size: 14px; flex-shrink: 0; }
+    .check-icon { color: #1a6b3c; font-size: 14px; flex-shrink: 0; }
     .process-actions { display: flex; align-items: center; gap: 6px; }
     .play-btn {
       width: 32px; height: 32px;
       border-radius: 50%;
-      background: #4d8b6f;
+      background: #1a6b3c;
       color: white;
       border: none;
       cursor: pointer;
@@ -2216,7 +2224,7 @@ function getPopupHTML(appName: string, processes: Process[], enabledLanguages: s
       flex-shrink: 0;
       transition: background 0.15s;
     }
-    .play-btn:hover { background: #3d7a5e; }
+    .play-btn:hover { background: #145a30; }
     .restart-btn {
       width: 28px; height: 28px;
       border-radius: 50%;
@@ -2259,8 +2267,8 @@ function getPopupHTML(appName: string, processes: Process[], enabledLanguages: s
       font-family: 'DM Sans', sans-serif;
       text-align: center;
     }
-    .lang-btn:hover { border-color: #4d8b6f; }
-    .lang-btn.active { background: #4d8b6f; color: #fff; border-color: #4d8b6f; }
+    .lang-btn:hover { border-color: #1a6b3c; }
+    .lang-btn.active { background: #1a6b3c; color: #fff; border-color: #1a6b3c; }
     .tab-bar {
       display: flex;
       border-bottom: 1px solid #dfe6e2;
@@ -2280,7 +2288,7 @@ function getPopupHTML(appName: string, processes: Process[], enabledLanguages: s
       transition: all 0.15s;
     }
     .tab-btn:hover { color: #2d3b34; }
-    .tab-btn.active { color: #4d8b6f; border-bottom-color: #4d8b6f; }
+    .tab-btn.active { color: #1a6b3c; border-bottom-color: #1a6b3c; }
     .tab-content { display: none; }
     .tab-content.active { display: block; }
     .diag-panel { padding: 8px; max-height: 350px; overflow-y: auto; }
@@ -2294,7 +2302,7 @@ function getPopupHTML(appName: string, processes: Process[], enabledLanguages: s
       cursor: pointer;
       font-family: 'DM Sans', sans-serif;
     }
-    .diag-btn:hover { border-color: #4d8b6f; }
+    .diag-btn:hover { border-color: #1a6b3c; }
     .diag-entry {
       padding: 4px 6px;
       border-bottom: 1px solid #f0f0f0;
@@ -2304,7 +2312,7 @@ function getPopupHTML(appName: string, processes: Process[], enabledLanguages: s
     }
     .diag-entry:hover { background: #f4f7f5; }
     .diag-ts { color: #8a9b92; }
-    .diag-cat { font-weight: 600; color: #4d8b6f; }
+    .diag-cat { font-weight: 600; color: #1a6b3c; }
     .diag-cat-step { color: #b45309; }
     .diag-cat-process { color: #7c3aed; }
     .diag-cat-message { color: #2563eb; }
@@ -2316,8 +2324,11 @@ function getPopupHTML(appName: string, processes: Process[], enabledLanguages: s
 </head>
 <body>
   <div class="header">
-    <h1>${appName}</h1>
-    <p>Business Process Guide</p>
+    <div class="header-logo"><img src="logo.png" alt="Logo" /></div>
+    <div class="header-text">
+      <h1>\${appName}</h1>
+      <p>Business Process Guide</p>
+    </div>
   </div>
   ${enabledLanguages.length > 0 ? `<div class="lang-selector" id="langSelector">
     <button class="lang-btn active" data-lang="en">🇬🇧 English</button>
