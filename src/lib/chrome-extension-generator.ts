@@ -2302,7 +2302,7 @@ function getPopupHTML(appName: string, processes: Process[], enabledLanguages: s
       cursor: pointer;
       font-family: 'DM Sans', sans-serif;
     }
-    .diag-btn:hover { border-color: #4d8b6f; }
+    .diag-btn:hover { border-color: #1a6b3c; }
     .diag-entry {
       padding: 4px 6px;
       border-bottom: 1px solid #f0f0f0;
