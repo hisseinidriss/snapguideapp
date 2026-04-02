@@ -2203,12 +2203,12 @@ function getPopupHTML(appName: string, processes: Process[], enabledLanguages: s
       cursor: pointer;
       transition: all 0.15s;
     }
-    .process-item:hover { border-color: #4d8b6f; background: #f0f7f3; }
-    .process-item.completed { border-left: 3px solid #4d8b6f; }
+    .process-item:hover { border-color: #1a6b3c; background: #eef5f0; }
+    .process-item.completed { border-left: 3px solid #1a6b3c; }
     .process-name-row { display: flex; align-items: center; gap: 6px; }
-    .process-name { font-size: 13px; font-weight: 500; color: #2d3b34; }
+    .process-name { font-size: 13px; font-weight: 500; color: #1a3c5e; }
     .process-steps { font-size: 11px; color: #8a9b92; margin-top: 2px; }
-    .check-icon { color: #4d8b6f; font-size: 14px; flex-shrink: 0; }
+    .check-icon { color: #1a6b3c; font-size: 14px; flex-shrink: 0; }
     .process-actions { display: flex; align-items: center; gap: 6px; }
     .play-btn {
       width: 32px; height: 32px;
