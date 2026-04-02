@@ -2159,15 +2159,20 @@ function getPopupHTML(appName: string, processes: Process[], enabledLanguages: s
     body {
       width: 320px;
       font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #f4f7f5;
+      background: #eef3f7;
     }
     .header {
-      background: linear-gradient(135deg, #4d8b6f, #5a9e7e);
+      background: linear-gradient(135deg, #1a6b3c, #1a5276);
       color: white;
-      padding: 18px 16px;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
     }
-    .header h1 { font-size: 15px; font-weight: 600; }
-    .header p { font-size: 11px; opacity: 0.85; margin-top: 3px; font-weight: 400; }
+    .header-logo { width: 40px; height: 40px; border-radius: 8px; background: rgba(255,255,255,0.15); padding: 4px; }
+    .header-logo img { width: 100%; height: 100%; object-fit: contain; }
+    .header-text h1 { font-size: 15px; font-weight: 600; }
+    .header-text p { font-size: 11px; opacity: 0.85; margin-top: 3px; font-weight: 400; }
     .search-box {
       padding: 10px 10px 0;
       background: #fff;
