@@ -2312,7 +2312,7 @@ function getPopupHTML(appName: string, processes: Process[], enabledLanguages: s
     }
     .diag-entry:hover { background: #f4f7f5; }
     .diag-ts { color: #8a9b92; }
-    .diag-cat { font-weight: 600; color: #4d8b6f; }
+    .diag-cat { font-weight: 600; color: #1a6b3c; }
     .diag-cat-step { color: #b45309; }
     .diag-cat-process { color: #7c3aed; }
     .diag-cat-message { color: #2563eb; }
