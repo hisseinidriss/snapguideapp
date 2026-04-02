@@ -2324,8 +2324,11 @@ function getPopupHTML(appName: string, processes: Process[], enabledLanguages: s
 </head>
 <body>
   <div class="header">
-    <h1>${appName}</h1>
-    <p>Business Process Guide</p>
+    <div class="header-logo"><img src="logo.png" alt="Logo" /></div>
+    <div class="header-text">
+      <h1>\${appName}</h1>
+      <p>Business Process Guide</p>
+    </div>
   </div>
   ${enabledLanguages.length > 0 ? `<div class="lang-selector" id="langSelector">
     <button class="lang-btn active" data-lang="en">🇬🇧 English</button>
