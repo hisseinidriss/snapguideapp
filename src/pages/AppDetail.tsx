@@ -29,6 +29,7 @@ import type { Tour, Launcher, LauncherType, Checklist } from "@/types/tour";
 import type { ProcessRecording } from "@/types/recording";
 import { useToast } from "@/hooks/use-toast";
 import { generateAppColor, generateAppAccent } from "@/lib/app-colors";
+import { normalizeManualImportData } from "@/lib/manual-import";
 
 const LAUNCHER_TYPES: { value: LauncherType; label: string; icon: typeof Circle; desc: string }[] = [
   { value: "beacon", label: "Beacon", icon: Circle, desc: "Pulsing dot that draws attention" },
@@ -283,13 +284,12 @@ const AppDetail = () => {
         });
       }
 
-      // Truncate text to avoid oversized request bodies (Azure Function truncates to 10k anyway)
       const trimmedText = textContent ? textContent.substring(0, 12000) : null;
       const { data, error } = await functionsApi.generateTourFromManual({ fileBase64: base64, fileName: file.name, mimeType: file.type, textContent: trimmedText });
-      if (error) throw new Error(error.message);
-      if (data?.error) throw new Error(data.error);
-      const processes = data.processes || [];
+      const processes = normalizeManualImportData(data, file.name, trimmedText);
       if (processes.length === 0) {
+        if (error) throw new Error(error.message);
+        if (data?.error) throw new Error(data.error);
         toast({ title: "No processes found", description: "Could not extract business processes from this document.", variant: "destructive" });
         return;
       }
