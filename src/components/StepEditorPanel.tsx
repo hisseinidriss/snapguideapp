@@ -231,7 +231,7 @@ const StepEditorPanel = ({ step, stepIndex, totalSteps, onUpdate, onRemove, onPi
                 <TabsList className={`w-full grid grid-cols-${availableLanguages.length}`}>
                   {availableLanguages.map((lang) => (
                     <TabsTrigger key={lang.code} value={lang.code} className="text-xs gap-1">
-                      <span>{lang.flag}</span> {lang.label}
+                      {lang.label}
                     </TabsTrigger>
                   ))}
                 </TabsList>
