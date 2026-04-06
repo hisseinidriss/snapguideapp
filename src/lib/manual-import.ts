@@ -12,22 +12,146 @@ export interface ManualImportProcess {
   steps: ManualImportStep[];
 }
 
+export type StepGranularity = "coarse" | "fine";
+
 const CONFIDENTIAL_NOTICE = /This document contains confidential information belonging to Islamic Development Bank and is intended solely for the use of the individual or entity to whom it is addressed\.?/gi;
 const VALID_PLACEMENTS = new Set(["top", "bottom", "left", "right", "center"]);
 
-export function normalizeManualImportData(data: any, fileName: string, textContent?: string | null): ManualImportProcess[] {
+/**
+ * Action-verb pattern used to detect sub-action boundaries inside a dense step.
+ * Matches lines/sentences beginning with an imperative verb commonly found in
+ * user-manual instructions.
+ */
+const ACTION_VERB_RE = /^(?:click|fill|select|check|enter|choose|save|open|navigate|go\s+to|scroll|type|press|confirm|provide|mark|allocate|add|create|set|update|review|submit|expand|close|ensure|verify|note|drag|drop|upload|download|search|filter|sort|copy|paste|delete|remove|edit|modify|enable|disable|toggle|switch|log\s*in|sign\s*in|log\s*out)\b/i;
+
+/**
+ * Signals that a sentence is describing a UI event (popup, modal, screen change)
+ * which often marks a new logical sub-step.
+ */
+const UI_EVENT_RE = /\b(?:pop\s*up|popup|modal|dialog|screen|page|window|form|section|tab|panel|will\s+be\s+displayed|will\s+appear|is\s+displayed|opens?|shows?)\b/i;
+
+/**
+ * Bullet / numbered-list prefix at the start of a line.
+ */
+const BULLET_RE = /^(?:[-–—•*]|\d+[.)]\s)/;
+
+export function normalizeManualImportData(
+  data: any,
+  fileName: string,
+  textContent?: string | null,
+  granularity: StepGranularity = "coarse",
+): ManualImportProcess[] {
   const fallbackName = deriveProcessName(fileName);
 
-  const processResults = normalizeProcesses(data?.processes, fallbackName);
-  if (processResults.length > 0) return processResults;
+  let processes: ManualImportProcess[] = [];
 
-  const stepResults = normalizeSteps(data?.steps);
-  if (stepResults.length > 0) {
-    return [{ name: fallbackName, steps: stepResults }];
+  const processResults = normalizeProcesses(data?.processes, fallbackName);
+  if (processResults.length > 0) {
+    processes = processResults;
+  } else {
+    const stepResults = normalizeSteps(data?.steps);
+    if (stepResults.length > 0) {
+      processes = [{ name: fallbackName, steps: stepResults }];
+    } else {
+      processes = parseProcessesFromText(textContent ?? "", fallbackName);
+    }
   }
 
-  return parseProcessesFromText(textContent ?? "", fallbackName);
+  if (granularity === "fine") {
+    processes = processes.map((p) => ({
+      ...p,
+      steps: expandToSubActions(p.steps),
+    }));
+  }
+
+  return processes;
 }
+
+// ---------------------------------------------------------------------------
+// Fine-grained sub-action expansion
+// ---------------------------------------------------------------------------
+
+function expandToSubActions(steps: ManualImportStep[]): ManualImportStep[] {
+  const expanded: ManualImportStep[] = [];
+
+  for (const step of steps) {
+    const subs = splitIntoSubActions(step.content);
+    if (subs.length <= 1) {
+      expanded.push(step);
+      continue;
+    }
+
+    for (let i = 0; i < subs.length; i++) {
+      const content = truncate(subs[i].trim(), 320);
+      if (!content) continue;
+      expanded.push({
+        ...step,
+        title: truncate(inferStepTitle(content, expanded.length + 1), 80),
+        content,
+      });
+    }
+  }
+
+  return expanded;
+}
+
+/**
+ * Split a dense step body into sub-actions using multiple heuristics:
+ *  1. Explicit bullet / numbered-list items
+ *  2. Sentences starting with action verbs
+ *  3. Sentences describing UI events (popup displayed, screen shown, etc.)
+ */
+function splitIntoSubActions(text: string): string[] {
+  // First try splitting on bullet / numbered items
+  const lines = text.split(/\n/).map((l) => l.trim()).filter(Boolean);
+  const bulletChunks = chunkByPredicate(lines, (line) => BULLET_RE.test(line));
+  if (bulletChunks.length > 1) return bulletChunks;
+
+  // Fall back to sentence-level splitting
+  const sentences = text
+    .split(/(?<=[.!?])\s+|\n+/)
+    .map((s) => s.trim())
+    .filter((s) => s.length > 5);
+
+  if (sentences.length <= 1) return [text];
+
+  const chunks: string[] = [];
+  let current = "";
+
+  for (const sentence of sentences) {
+    const isActionStart = ACTION_VERB_RE.test(sentence);
+    const isUIEvent = UI_EVENT_RE.test(sentence);
+
+    if ((isActionStart || isUIEvent) && current) {
+      chunks.push(current.trim());
+      current = sentence;
+    } else {
+      current += (current ? " " : "") + sentence;
+    }
+  }
+  if (current) chunks.push(current.trim());
+
+  return chunks.length > 1 ? chunks : [text];
+}
+
+function chunkByPredicate(lines: string[], isBoundary: (line: string) => boolean): string[] {
+  const chunks: string[] = [];
+  let current = "";
+  for (const line of lines) {
+    if (isBoundary(line) && current) {
+      chunks.push(current.trim());
+      current = line;
+    } else {
+      current += (current ? " " : "") + line;
+    }
+  }
+  if (current) chunks.push(current.trim());
+  return chunks;
+}
+
+// ---------------------------------------------------------------------------
+// Original helpers (unchanged logic)
+// ---------------------------------------------------------------------------
 
 function normalizeProcesses(processes: unknown, fallbackName: string): ManualImportProcess[] {
   if (!Array.isArray(processes)) return [];
@@ -111,10 +235,18 @@ function inferStepTitle(content: string, index: number): string {
   if (/modes?\s+of\s+finance/.test(normalized)) return "Add Modes of Finance";
   if (/save\s+the\s+screen|status\s+pipeline|successfully\s+creat/.test(normalized)) return "Save the Project";
   if (/basic\s+data|estimated\s+cost|financing\s+plan/.test(normalized)) return "Complete Project Details";
+  if (/fill\s+in/.test(normalized)) return "Fill in the Required Fields";
+  if (/pop\s*up|modal|dialog/.test(normalized)) return "Complete the Pop-up Form";
+  if (/duplicate/.test(normalized)) return "Handle Duplicate Warning";
+  if (/confirm/.test(normalized)) return "Confirm the Action";
+  if (/filter/.test(normalized)) return "Filter the List";
+  if (/select|choose|click\s+on\s+the\s+needed/.test(normalized)) return "Select the Required Option";
+  if (/warning|alert/.test(normalized)) return "Review Warning Message";
+  if (/mark.*(?:important|favorite)/.test(normalized)) return "Mark as Important/Favorite";
 
   const firstSentence = content.split(/(?<=[.!?])\s+/)[0] || content;
   const title = firstSentence
-    .replace(/[“”"']/g, "")
+    .replace(/["""']/g, "")
     .replace(/[:;,]+$/g, "")
     .trim()
     .split(/\s+/)
