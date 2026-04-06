@@ -29,7 +29,7 @@ import type { Tour, Launcher, LauncherType, Checklist } from "@/types/tour";
 import type { ProcessRecording } from "@/types/recording";
 import { useToast } from "@/hooks/use-toast";
 import { generateAppColor, generateAppAccent } from "@/lib/app-colors";
-import { normalizeManualImportData } from "@/lib/manual-import";
+import { normalizeManualImportData, type StepGranularity } from "@/lib/manual-import";
 
 const LAUNCHER_TYPES: { value: LauncherType; label: string; icon: typeof Circle; desc: string }[] = [
   { value: "beacon", label: "Beacon", icon: Circle, desc: "Pulsing dot that draws attention" },
@@ -137,6 +137,7 @@ const AppDetail = () => {
   const [stepCounts, setStepCounts] = useState<Record<string, number>>({});
   const [generatingFromManual, setGeneratingFromManual] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [stepGranularity, setStepGranularity] = useState<StepGranularity>("fine");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [validating, setValidating] = useState(false);
   const [validationReport, setValidationReport] = useState<ValidationReport | null>(null);
@@ -286,7 +287,7 @@ const AppDetail = () => {
 
       const trimmedText = textContent ? textContent.substring(0, 12000) : null;
       const { data, error } = await functionsApi.generateTourFromManual({ fileBase64: base64, fileName: file.name, mimeType: file.type, textContent: trimmedText });
-      const processes = normalizeManualImportData(data, file.name, trimmedText);
+      const processes = normalizeManualImportData(data, file.name, trimmedText, stepGranularity);
       if (processes.length === 0) {
         if (error) throw new Error(error.message);
         if (data?.error) throw new Error(data.error);
@@ -542,6 +543,21 @@ const AppDetail = () => {
             className="hidden"
             onChange={handleManualUpload}
           />
+          <div className="flex items-center gap-2 border rounded-md px-2 py-1 bg-muted/50">
+            <span className="text-xs text-muted-foreground whitespace-nowrap">Steps:</span>
+            <button
+              onClick={() => setStepGranularity("coarse")}
+              className={`text-xs px-2 py-0.5 rounded transition-colors ${stepGranularity === "coarse" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
+            >
+              Coarse
+            </button>
+            <button
+              onClick={() => setStepGranularity("fine")}
+              className={`text-xs px-2 py-0.5 rounded transition-colors ${stepGranularity === "fine" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
+            >
+              Fine
+            </button>
+          </div>
           <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={generatingFromManual}>
             {generatingFromManual ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
             Import from Manual
