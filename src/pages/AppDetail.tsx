@@ -283,7 +283,9 @@ const AppDetail = () => {
         });
       }
 
-      const { data, error } = await functionsApi.generateTourFromManual({ fileBase64: base64, fileName: file.name, mimeType: file.type, textContent });
+      // Truncate text to avoid oversized request bodies (Azure Function truncates to 10k anyway)
+      const trimmedText = textContent ? textContent.substring(0, 12000) : null;
+      const { data, error } = await functionsApi.generateTourFromManual({ fileBase64: base64, fileName: file.name, mimeType: file.type, textContent: trimmedText });
       if (error) throw new Error(error.message);
       if (data?.error) throw new Error(data.error);
       const processes = data.processes || [];
