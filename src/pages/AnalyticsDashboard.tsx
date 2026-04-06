@@ -181,33 +181,77 @@ const AnalyticsDashboard = () => {
           <Card className="p-4 sm:p-6">
             <h2 className="text-sm font-semibold mb-4">Activity (Last 30 Days)</h2>
             {dailyCounts.some((d) => d.starts > 0 || d.completions > 0) ? (
-              <div className="h-32 sm:h-40 flex items-end gap-[2px]">
-                {dailyCounts.map((day, i) => {
-                  const maxVal = Math.max(...dailyCounts.map((d) => d.starts + d.completions), 1);
-                  const height = ((day.starts + day.completions) / maxVal) * 100;
-                  const compHeight = day.starts > 0 ? (day.completions / (day.starts + day.completions)) * height : 0;
-                  return (
-                    <div key={i} className="flex-1 flex flex-col justify-end group relative" title={`${day.date}: ${day.starts} starts, ${day.completions} completions`}>
-                      <div className="rounded-t-sm bg-primary/30" style={{ height: `${height}%`, minHeight: height > 0 ? 2 : 0 }}>
-                        <div className="rounded-t-sm bg-primary" style={{ height: `${compHeight}%`, minHeight: compHeight > 0 ? 2 : 0 }} />
-                      </div>
-                    </div>
-                  );
-                })}
+              <div className="h-48 sm:h-56">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={dailyCounts} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="gradStarts" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.15} />
+                        <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                      </linearGradient>
+                      <linearGradient id="gradCompletions" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.4} />
+                        <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.05} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                    <XAxis
+                      dataKey="date"
+                      tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                      tickFormatter={(v: string) => { const d = new Date(v); return `${d.getMonth() + 1}/${d.getDate()}`; }}
+                      axisLine={false}
+                      tickLine={false}
+                      interval={4}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
+                      axisLine={false}
+                      tickLine={false}
+                      allowDecimals={false}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        background: "hsl(var(--card))",
+                        border: "1px solid hsl(var(--border))",
+                        borderRadius: "8px",
+                        fontSize: "12px",
+                        boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                      }}
+                      labelFormatter={(v: string) => new Date(v).toLocaleDateString()}
+                    />
+                    <Legend
+                      iconType="circle"
+                      iconSize={8}
+                      wrapperStyle={{ fontSize: "11px", paddingTop: "8px" }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="starts"
+                      name="Starts"
+                      stroke="hsl(var(--primary) / 0.5)"
+                      fill="url(#gradStarts)"
+                      strokeWidth={2}
+                      dot={false}
+                      activeDot={{ r: 4, strokeWidth: 2, fill: "hsl(var(--background))" }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="completions"
+                      name="Completions"
+                      stroke="hsl(var(--primary))"
+                      fill="url(#gradCompletions)"
+                      strokeWidth={2}
+                      dot={false}
+                      activeDot={{ r: 4, strokeWidth: 2, fill: "hsl(var(--background))" }}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
               </div>
             ) : (
-              <div className="h-32 sm:h-40 flex items-center justify-center text-muted-foreground text-sm">
+              <div className="h-48 sm:h-56 flex items-center justify-center text-muted-foreground text-sm">
                 No activity yet. Events will appear here once users interact with your processes.
               </div>
             )}
-            <div className="flex justify-between mt-2 text-[10px] text-muted-foreground">
-              <span>{dailyCounts[0]?.date}</span>
-              <div className="flex items-center gap-3">
-                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-primary inline-block" /> Completions</span>
-                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-primary/30 inline-block" /> Starts</span>
-              </div>
-              <span>{dailyCounts[dailyCounts.length - 1]?.date}</span>
-            </div>
           </Card>
 
           {/* Per-tour breakdown */}
