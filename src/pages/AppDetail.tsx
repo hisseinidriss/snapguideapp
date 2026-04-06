@@ -485,33 +485,38 @@ const AppDetail = () => {
           </div>
           <div className="flex flex-wrap gap-4">
             {[
-              { code: "ar", label: "العربية", flag: "🇸🇦" },
-              { code: "fr", label: "Français", flag: "🇫🇷" },
+              { code: "ar", label: "العربية", description: "Arabic (Right-to-Left)" },
+              { code: "fr", label: "Français", description: "French" },
             ].map((lang) => (
-              <label key={lang.code} className="flex items-center gap-2 cursor-pointer">
-                <Switch
-                  checked={enabledLanguages.includes(lang.code)}
-                  onCheckedChange={async (checked) => {
-                    const previous = enabledLanguages;
-                    const updated = checked
-                      ? Array.from(new Set([...enabledLanguages, lang.code]))
-                      : enabledLanguages.filter((l) => l !== lang.code);
-                    setEnabledLanguages(updated);
-                    const { data, error } = await appsApi.update(appId!, { enabled_languages: updated } as any);
+              <Tooltip key={lang.code}>
+                <TooltipTrigger asChild>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <Switch
+                      checked={enabledLanguages.includes(lang.code)}
+                      onCheckedChange={async (checked) => {
+                        const previous = enabledLanguages;
+                        const updated = checked
+                          ? Array.from(new Set([...enabledLanguages, lang.code]))
+                          : enabledLanguages.filter((l) => l !== lang.code);
+                        setEnabledLanguages(updated);
+                        const { data, error } = await appsApi.update(appId!, { enabled_languages: updated } as any);
 
-                    if (error) {
-                      setEnabledLanguages(previous);
-                      toast({ title: "Error", description: error.message, variant: "destructive" });
-                      return;
-                    }
+                        if (error) {
+                          setEnabledLanguages(previous);
+                          toast({ title: "Error", description: error.message, variant: "destructive" });
+                          return;
+                        }
 
-                    if (data) {
-                      setEnabledLanguages(data.enabled_languages || updated);
-                    }
-                  }}
-                />
-                <span className="text-sm">{lang.flag} {lang.label}</span>
-              </label>
+                        if (data) {
+                          setEnabledLanguages(data.enabled_languages || updated);
+                        }
+                      }}
+                    />
+                    <span className="text-sm">{lang.label}</span>
+                  </label>
+                </TooltipTrigger>
+                <TooltipContent>{lang.description}</TooltipContent>
+              </Tooltip>
             ))}
           </div>
         </div>
