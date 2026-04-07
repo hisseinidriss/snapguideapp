@@ -543,6 +543,14 @@ const AppDetail = () => {
             </div>
           </div>
         </div>
+        <input
+          type="file"
+          ref={fileInputRef}
+          accept=".pdf,.doc,.docx,.txt,.md"
+          className="hidden"
+          onChange={handleManualUpload}
+        />
+
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 mb-6">
           <div className="flex items-center gap-2 border rounded-md px-2 py-1 bg-muted/50">
             <span className="text-xs text-muted-foreground whitespace-nowrap">Steps:</span>
@@ -568,46 +576,36 @@ const AppDetail = () => {
               </TooltipTrigger>
               <TooltipContent>Expand each step into individual atomic actions</TooltipContent>
             </Tooltip>
-          </div>
-
-          <input
-            type="file"
-            ref={fileInputRef}
-            accept=".pdf,.doc,.docx,.txt,.md"
-            className="hidden"
-            onChange={handleManualUpload}
-          />
-
-          <div className="grid grid-cols-2 gap-3 w-full sm:w-auto">
+            <span className="text-muted-foreground/30 mx-1">|</span>
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
-              className="h-10"
+              className="h-7 text-xs"
               onClick={() => fileInputRef.current?.click()}
               disabled={generatingFromManual}
             >
               {generatingFromManual && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Import from Manual
             </Button>
-
-            <Dialog open={open} onOpenChange={setOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline" size="sm" className="h-10">
-                  Create Business Process
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader><DialogTitle>Create a new business process</DialogTitle></DialogHeader>
-                <div className="space-y-4 pt-2">
-                  <div className="space-y-2">
-                    <Label>Process Name</Label>
-                    <Input placeholder="e.g. Employee Onboarding" value={processName} onChange={(e) => setProcessName(e.target.value)} />
-                  </div>
-                  <Button onClick={handleCreateProcess} className="w-full" disabled={!processName.trim()}>Create Business Process</Button>
-                </div>
-              </DialogContent>
-            </Dialog>
           </div>
+
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm">
+                Create Business Process
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader><DialogTitle>Create a new business process</DialogTitle></DialogHeader>
+              <div className="space-y-4 pt-2">
+                <div className="space-y-2">
+                  <Label>Process Name</Label>
+                  <Input placeholder="e.g. Employee Onboarding" value={processName} onChange={(e) => setProcessName(e.target.value)} />
+                </div>
+                <Button onClick={handleCreateProcess} className="w-full" disabled={!processName.trim()}>Create Business Process</Button>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
 
         {tours.length === 0 ? (
