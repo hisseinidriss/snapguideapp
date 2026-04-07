@@ -362,13 +362,25 @@ const AppDetail = () => {
           <div className="flex items-center gap-2">
             {/* Desktop buttons */}
             <div className="hidden md:flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => navigate(`/app/${appId}/analytics`)}>
-                Analytics
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => navigate(`/app/${appId}/simulator`)}>
-                Simulate
-              </Button>
-              <Button variant="outline" size="sm" onClick={async () => {
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" size="sm" onClick={() => navigate(`/app/${appId}/analytics`)}>
+                    Analytics
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>View tour usage statistics and completion rates</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" size="sm" onClick={() => navigate(`/app/${appId}/simulator`)}>
+                    Simulate
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Preview how tours will look and behave in the extension</TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" size="sm" onClick={async () => {
                 setValidating(true);
                 try {
                   const report = await validateChromeExtension(appId!, appName, appUrl);
@@ -383,6 +395,9 @@ const AppDetail = () => {
                 {validating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Validate
               </Button>
+                </TooltipTrigger>
+                <TooltipContent>Check the extension package for errors and compatibility issues</TooltipContent>
+              </Tooltip>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm">
@@ -545,18 +560,28 @@ const AppDetail = () => {
           />
           <div className="flex items-center gap-2 border rounded-md px-2 py-1 bg-muted/50">
             <span className="text-xs text-muted-foreground whitespace-nowrap">Steps:</span>
-            <button
-              onClick={() => setStepGranularity("coarse")}
-              className={`text-xs px-2 py-0.5 rounded transition-colors ${stepGranularity === "coarse" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
-            >
-              Coarse
-            </button>
-            <button
-              onClick={() => setStepGranularity("fine")}
-              className={`text-xs px-2 py-0.5 rounded transition-colors ${stepGranularity === "fine" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
-            >
-              Fine
-            </button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => setStepGranularity("coarse")}
+                  className={`text-xs px-2 py-0.5 rounded transition-colors ${stepGranularity === "coarse" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
+                >
+                  Coarse
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>Keep the document's original step labels as-is</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => setStepGranularity("fine")}
+                  className={`text-xs px-2 py-0.5 rounded transition-colors ${stepGranularity === "fine" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
+                >
+                  Fine
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>Expand each step into individual atomic actions</TooltipContent>
+            </Tooltip>
           </div>
           <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={generatingFromManual}>
             {generatingFromManual ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
