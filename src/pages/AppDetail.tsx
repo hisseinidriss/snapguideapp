@@ -478,67 +478,61 @@ const AppDetail = () => {
       </Dialog>
 
       <main className="container py-8 px-4">
-        {/* Language Settings */}
-        <div className="mb-6 border rounded-lg p-4 bg-card">
-          <div className="flex items-center gap-2 mb-3">
-            <Languages className="h-4 w-4 text-primary" />
-            <h3 className="text-sm font-semibold">Translation Languages</h3>
-          </div>
-          <div className="flex flex-wrap gap-4">
-            {[
-              { code: "ar", label: "العربية", description: "Arabic (Right-to-Left)" },
-              { code: "fr", label: "Français", description: "French" },
-            ].map((lang) => (
-              <Tooltip key={lang.code}>
-                <TooltipTrigger asChild>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <Switch
-                      checked={enabledLanguages.includes(lang.code)}
-                      onCheckedChange={async (checked) => {
-                        const previous = enabledLanguages;
-                        const updated = checked
-                          ? Array.from(new Set([...enabledLanguages, lang.code]))
-                          : enabledLanguages.filter((l) => l !== lang.code);
-                        setEnabledLanguages(updated);
-                        const { data, error } = await appsApi.update(appId!, { enabled_languages: updated } as any);
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+          {/* Language Settings */}
+          <div className="border rounded-lg p-4 bg-card">
+            <h3 className="text-sm font-semibold mb-3">Translation Languages</h3>
+            <div className="flex flex-wrap gap-4">
+              {[
+                { code: "ar", label: "العربية", description: "Arabic (Right-to-Left)" },
+                { code: "fr", label: "Français", description: "French" },
+              ].map((lang) => (
+                <Tooltip key={lang.code}>
+                  <TooltipTrigger asChild>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <Switch
+                        checked={enabledLanguages.includes(lang.code)}
+                        onCheckedChange={async (checked) => {
+                          const previous = enabledLanguages;
+                          const updated = checked
+                            ? Array.from(new Set([...enabledLanguages, lang.code]))
+                            : enabledLanguages.filter((l) => l !== lang.code);
+                          setEnabledLanguages(updated);
+                          const { data, error } = await appsApi.update(appId!, { enabled_languages: updated } as any);
 
-                        if (error) {
-                          setEnabledLanguages(previous);
-                          toast({ title: "Error", description: error.message, variant: "destructive" });
-                          return;
-                        }
+                          if (error) {
+                            setEnabledLanguages(previous);
+                            toast({ title: "Error", description: error.message, variant: "destructive" });
+                            return;
+                          }
 
-                        if (data) {
-                          setEnabledLanguages(data.enabled_languages || updated);
-                        }
-                      }}
-                    />
-                    <span className="text-sm">{lang.label}</span>
-                  </label>
-                </TooltipTrigger>
-                <TooltipContent>{lang.description}</TooltipContent>
-              </Tooltip>
-            ))}
-          </div>
-        </div>
-
-        {/* Diagnostics Settings */}
-        <div className="mb-6 border rounded-lg p-4 bg-card">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <FileText className="h-4 w-4 text-primary" />
-              <div>
-                <h3 className="text-sm font-semibold">Extension Diagnostics</h3>
-                <p className="text-xs text-muted-foreground">Show a Diagnostics tab in the browser extension for troubleshooting</p>
-              </div>
+                          if (data) {
+                            setEnabledLanguages(data.enabled_languages || updated);
+                          }
+                        }}
+                      />
+                      <span className="text-sm">{lang.label}</span>
+                    </label>
+                  </TooltipTrigger>
+                  <TooltipContent>{lang.description}</TooltipContent>
+                </Tooltip>
+              ))}
             </div>
-            <Switch
-              checked={diagnosticsEnabled}
-              onCheckedChange={async (checked) => {
-                setDiagnosticsEnabled(checked);
-                await appsApi.update(appId!, { diagnostics_enabled: checked } as any);
-              }}
-            />
+          </div>
+
+          {/* Diagnostics Settings */}
+          <div className="border rounded-lg p-4 bg-card">
+            <h3 className="text-sm font-semibold mb-3">Extension Diagnostics</h3>
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-muted-foreground">Show a Diagnostics tab in the extension</p>
+              <Switch
+                checked={diagnosticsEnabled}
+                onCheckedChange={async (checked) => {
+                  setDiagnosticsEnabled(checked);
+                  await appsApi.update(appId!, { diagnostics_enabled: checked } as any);
+                }}
+              />
+            </div>
           </div>
         </div>
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 mb-6">
