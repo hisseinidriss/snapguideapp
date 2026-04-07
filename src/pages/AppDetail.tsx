@@ -363,10 +363,10 @@ const AppDetail = () => {
             {/* Desktop buttons */}
             <div className="hidden md:flex items-center gap-2">
               <Button variant="outline" size="sm" onClick={() => navigate(`/app/${appId}/analytics`)}>
-                <BarChart3 className="mr-2 h-4 w-4" />Analytics
+                Analytics
               </Button>
               <Button variant="outline" size="sm" onClick={() => navigate(`/app/${appId}/simulator`)}>
-                <Play className="mr-2 h-4 w-4" />Simulate
+                Simulate
               </Button>
               <Button variant="outline" size="sm" onClick={async () => {
                 setValidating(true);
@@ -380,7 +380,7 @@ const AppDetail = () => {
                   setValidating(false);
                 }
               }} disabled={validating}>
-                {validating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}
+                {validating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Validate
               </Button>
               <DropdownMenu>
