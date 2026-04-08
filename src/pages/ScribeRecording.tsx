@@ -1,8 +1,9 @@
+// ScribeRecording - step editor for a single recording
 import { useState, useEffect, useCallback } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import {
-  ArrowLeft, Pencil, Trash2, GripVertical, ChevronUp, ChevronDown,
-  FileText, Download, Plus, StickyNote, Image as ImageIcon, Link2,
+  ArrowLeft, Pencil, Trash2, GripVertical,
+  FileText, Download, Plus, StickyNote, Image as ImageIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -17,12 +18,9 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { recordingsApi, recordingStepsApi } from "@/api/recordings";
-import { toursApi, tourStepsApi } from "@/api/tours";
 import { useToast } from "@/hooks/use-toast";
 import { generateSOPPdf } from "@/lib/pdf-generator";
-import { generateInstruction } from "@/lib/instruction-generator";
 import type { ProcessRecording, ProcessRecordingStep } from "@/types/recording";
-import type { Tour } from "@/types/tour";
 import {
   DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, useSensors,
   type DragEndEvent, DragOverlay, type DragStartEvent,
@@ -82,7 +80,6 @@ const ScribeRecording = () => {
 
   const [recording, setRecording] = useState<ProcessRecording | null>(null);
   const [steps, setSteps] = useState<ProcessRecordingStep[]>([]);
-  const [tours, setTours] = useState<Tour[]>([]);
   const [selectedStepId, setSelectedStepId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [editTitle, setEditTitle] = useState(false);
@@ -99,10 +96,9 @@ const ScribeRecording = () => {
   useEffect(() => {
     if (!appId || !recordingId) return;
     const load = async () => {
-      const [recRes, stepsRes, toursRes] = await Promise.all([
+      const [recRes, stepsRes] = await Promise.all([
         recordingsApi.get(recordingId),
         recordingStepsApi.list(recordingId),
-        toursApi.list(appId),
       ]);
       if (recRes.data) {
         setRecording(recRes.data as unknown as ProcessRecording);
@@ -110,7 +106,6 @@ const ScribeRecording = () => {
         setDescVal(recRes.data.description || "");
       }
       setSteps((stepsRes.data || []) as unknown as ProcessRecordingStep[]);
-      setTours(toursRes.data || []);
       if (stepsRes.data?.length) setSelectedStepId(stepsRes.data[0].id);
       setLoading(false);
     };
@@ -176,29 +171,6 @@ const ScribeRecording = () => {
     }
   };
 
-  const handleConvertToWalkthrough = async () => {
-    if (!appId || !recording) return;
-    const { data: tour, error: tourErr } = await toursApi.create({ app_id: appId, name: recording.title });
-    if (tourErr || !tour) {
-      toast({ title: "Error", description: tourErr?.message || "Failed to create process", variant: "destructive" });
-      return;
-    }
-    for (const [i, s] of steps.entries()) {
-      await tourStepsApi.create({
-        tour_id: tour.id,
-        title: s.instruction,
-        content: s.notes || s.instruction,
-        selector: s.selector || '',
-        placement: 'bottom',
-        sort_order: i,
-        target_url: s.target_url || null,
-      });
-    }
-    await updateRecording({ tour_id: tour.id });
-    toast({ title: "Walkthrough created!", description: `"${recording.title}" is now also an interactive walkthrough.` });
-    navigate(`/app/${appId}/tour/${tour.id}`);
-  };
-
   const handleDownloadPdf = async () => {
     if (!recording) return;
     await generateSOPPdf(recording.title, recording.description || '', steps);
@@ -231,21 +203,11 @@ const ScribeRecording = () => {
                 {recording.title}<Pencil className="inline-block ml-1.5 h-3 w-3 text-muted-foreground" />
               </h1>
             )}
-            <p className="text-xs text-muted-foreground">{steps.length} steps · Scribe Recording</p>
+            <p className="text-xs text-muted-foreground">{steps.length} steps · SnapGuide Recording</p>
           </div>
           <div className="flex items-center gap-2">
-            {!recording.tour_id && (
-              <Button variant="outline" size="sm" className="h-8" onClick={handleConvertToWalkthrough}>
-                <Link2 className="mr-1.5 h-3.5 w-3.5" /><span className="hidden sm:inline">Convert to Walkthrough</span>
-              </Button>
-            )}
-            {recording.tour_id && (
-              <Button variant="outline" size="sm" className="h-8" asChild>
-                <Link to={`/app/${appId}/tour/${recording.tour_id}`}><Link2 className="mr-1.5 h-3.5 w-3.5" /><span className="hidden sm:inline">View Walkthrough</span></Link>
-              </Button>
-            )}
             <Button variant="outline" size="sm" className="h-8" onClick={() => setPreviewOpen(true)}>
-              <FileText className="mr-1.5 h-3.5 w-3.5" /><span className="hidden sm:inline">Preview Documentation</span>
+              <FileText className="mr-1.5 h-3.5 w-3.5" /><span className="hidden sm:inline">Preview</span>
             </Button>
             <Button size="sm" className="h-8" onClick={handleDownloadPdf}>
               <Download className="mr-1.5 h-3.5 w-3.5" /><span className="hidden sm:inline">Download PDF</span>
@@ -268,7 +230,7 @@ const ScribeRecording = () => {
                 ) : null}
               </DragOverlay>
             </DndContext>
-            {steps.length === 0 && (<p className="text-xs text-muted-foreground text-center py-8">No steps yet. Use Scribe Mode in the Chrome Extension to record, or add steps manually.</p>)}
+            {steps.length === 0 && (<p className="text-xs text-muted-foreground text-center py-8">No steps yet. Add steps manually to document the process.</p>)}
           </div>
         </div>
 
@@ -326,7 +288,7 @@ const ScribeRecording = () => {
                 </div>
               </div>
             ))}
-            {steps.length === 0 && (<p className="text-center text-muted-foreground py-8">No steps recorded yet. Start recording in the Chrome Extension.</p>)}
+            {steps.length === 0 && (<p className="text-center text-muted-foreground py-8">No steps recorded yet.</p>)}
           </div>
           <div className="flex justify-end pt-2 border-t"><Button onClick={handleDownloadPdf}><Download className="mr-2 h-4 w-4" />Download PDF</Button></div>
         </DialogContent>
