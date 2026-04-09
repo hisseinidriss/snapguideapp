@@ -1,6 +1,3 @@
-// API barrel export - SnapGuide
-export { api, apiGet, apiPost, apiPut, apiPatch, apiDelete, apiUpload, setToken, clearToken, hasToken, API_BASE_URL } from "./client";
-export type { ApiError, ApiResult } from "./client";
-
+// API barrel export - SnapGuide (Supabase-backed)
 export { appsApi } from "./apps";
 export { recordingsApi, recordingStepsApi } from "./recordings";
