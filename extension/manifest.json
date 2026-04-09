@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "SnapGuide Scribe",
+  "version": "1.0.0",
+  "description": "Record browser actions to generate step-by-step SOPs in SnapGuide",
+  "permissions": ["activeTab", "storage", "tabs", "scripting"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "48": "icon48.png",
+      "128": "icon128.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "icons": {
+    "48": "icon48.png",
+    "128": "icon128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "host_permissions": ["<all_urls>"]
+}
