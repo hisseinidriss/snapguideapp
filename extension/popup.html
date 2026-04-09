@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { width: 340px; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #fafbfc; color: #1a2b23; }
+    .header { background: #1a6b3c; color: white; padding: 14px 16px; display: flex; align-items: center; gap: 10px; }
+    .header .logo { width: 28px; height: 28px; background: rgba(255,255,255,0.2); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px; }
+    .header h1 { font-size: 15px; font-weight: 600; }
+    .content { padding: 16px; }
+    .setup-section { margin-bottom: 16px; }
+    .setup-section label { display: block; font-size: 12px; font-weight: 600; color: #5a6b62; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+    select, input { width: 100%; padding: 9px 12px; border: 1px solid #d1d9d4; border-radius: 8px; font-size: 13px; background: white; color: #1a2b23; outline: none; }
+    select:focus, input:focus { border-color: #1a6b3c; box-shadow: 0 0 0 2px rgba(26,107,60,0.15); }
+    .btn { width: 100%; padding: 11px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.15s; }
+    .btn-primary { background: #1a6b3c; color: white; }
+    .btn-primary:hover { background: #155731; }
+    .btn-danger { background: #dc2626; color: white; }
+    .btn-danger:hover { background: #b91c1c; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .status { text-align: center; padding: 12px; margin-bottom: 12px; border-radius: 8px; font-size: 13px; }
+    .status.recording { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+    .status.idle { background: #f0fdf4; color: #1a6b3c; border: 1px solid #bbf7d0; }
+    .step-count { text-align: center; font-size: 24px; font-weight: 700; color: #1a6b3c; margin: 8px 0; }
+    .step-label { text-align: center; font-size: 12px; color: #5a6b62; margin-bottom: 16px; }
+    .recording-title { font-size: 13px; font-weight: 600; text-align: center; margin-bottom: 4px; color: #1a2b23; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+    .dot.red { background: #dc2626; animation: pulse 1.5s infinite; }
+    .dot.green { background: #1a6b3c; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+    .error { color: #dc2626; font-size: 12px; margin-top: 8px; padding: 8px; background: #fef2f2; border-radius: 6px; }
+    .connect-info { font-size: 11px; color: #8a9b92; margin-top: 12px; text-align: center; }
+    .divider { height: 1px; background: #e5e9e7; margin: 16px 0; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo">SG</div>
+    <h1>SnapGuide Scribe</h1>
+  </div>
+
+  <div class="content">
+    <!-- Not connected / Setup -->
+    <div id="setup-view">
+      <div class="setup-section">
+        <label>Application</label>
+        <select id="app-select"><option value="">Loading apps...</option></select>
+      </div>
+      <div class="setup-section">
+        <label>Recording</label>
+        <select id="recording-select"><option value="">Select an app first</option></select>
+      </div>
+      <div class="setup-section">
+        <label>Or create new recording</label>
+        <input id="new-recording-name" type="text" placeholder="e.g. Employee Onboarding" />
+      </div>
+      <button class="btn btn-primary" id="start-btn" disabled>
+        <span class="dot red"></span> Start Recording
+      </button>
+      <div id="error-msg" class="error" style="display:none"></div>
+    </div>
+
+    <!-- Recording in progress -->
+    <div id="recording-view" style="display:none">
+      <div class="status recording"><span class="dot red"></span> Recording in progress</div>
+      <div class="recording-title" id="rec-title"></div>
+      <div class="step-count" id="step-count">0</div>
+      <div class="step-label">steps captured</div>
+      <button class="btn btn-danger" id="stop-btn">⏹ Stop Recording</button>
+    </div>
+
+    <p class="connect-info">Actions are saved to your SnapGuide database in real-time.</p>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
