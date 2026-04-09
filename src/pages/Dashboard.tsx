@@ -130,7 +130,27 @@ const Dashboard = () => {
             <h1 className="text-lg font-semibold">SnapGuide</h1>
           </div>
 
-          <div className="flex gap-3 items-center">
+          <div className="flex gap-2 items-center">
+            <Button
+              variant="outline"
+              size="sm"
+              className="px-4 shadow-sm"
+              onClick={() => {
+                fetch("/snapguide-scribe.zip")
+                  .then(r => { if (!r.ok) throw new Error("Download failed"); return r.blob(); })
+                  .then(blob => {
+                    const a = document.createElement("a");
+                    a.href = URL.createObjectURL(blob);
+                    a.download = "snapguide-scribe.zip";
+                    a.click();
+                    URL.revokeObjectURL(a.href);
+                  })
+                  .catch(err => toast({ title: "Error", description: err.message, variant: "destructive" }));
+              }}
+            >
+              <Download className="mr-1.5 h-4 w-4" />
+              Get Extension
+            </Button>
             <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger asChild>
                 <Button size="sm" className="px-4 shadow-sm">
