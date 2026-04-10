@@ -1,7 +1,7 @@
 // AppDetail - shows recordings (Scribe documents) for an application
 import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, MoreVertical, HelpCircle, GripVertical, FileText } from "lucide-react";
+import { ArrowLeft, Plus, MoreVertical, HelpCircle, GripVertical, FileText, Download, Loader2 } from "lucide-react";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
