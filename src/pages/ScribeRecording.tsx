@@ -83,6 +83,7 @@ const ScribeRecording = () => {
   const [selectedStepId, setSelectedStepId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [editTitle, setEditTitle] = useState(false);
+  const [editDesc, setEditDesc] = useState(false);
   const [titleVal, setTitleVal] = useState("");
   const [descVal, setDescVal] = useState("");
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -203,7 +204,16 @@ const ScribeRecording = () => {
                 {recording.title}<Pencil className="inline-block ml-1.5 h-3 w-3 text-muted-foreground" />
               </h1>
             )}
-            <p className="text-xs text-muted-foreground">{steps.length} steps · SnapGuide Recording</p>
+            {editDesc ? (
+              <Input value={descVal} onChange={e => setDescVal(e.target.value)}
+                onBlur={() => { updateRecording({ description: descVal }); setEditDesc(false); }}
+                onKeyDown={e => { if (e.key === 'Enter') { updateRecording({ description: descVal }); setEditDesc(false); } }}
+                className="h-6 text-xs mt-0.5" placeholder="Add a description…" autoFocus />
+            ) : (
+              <p className="text-xs text-muted-foreground cursor-pointer hover:text-primary transition-colors truncate" onClick={() => setEditDesc(true)}>
+                {descVal || "Add a description…"}<Pencil className="inline-block ml-1 h-2.5 w-2.5" />
+              </p>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" className="h-8" onClick={() => setPreviewOpen(true)}>
@@ -255,7 +265,6 @@ const ScribeRecording = () => {
               <div className="space-y-2"><Label>Notes <span className="text-muted-foreground font-normal">(optional)</span></Label><Textarea value={selectedStep.notes || ""} onChange={e => updateStep(selectedStep.id, { notes: e.target.value || null })} placeholder="Additional context or tips for this step" rows={2} /></div>
               <div className="space-y-2"><Label>CSS Selector <span className="text-muted-foreground font-normal">(optional)</span></Label><Input value={selectedStep.selector || ""} onChange={e => updateStep(selectedStep.id, { selector: e.target.value })} placeholder="#submit-btn" className="font-mono text-sm" /></div>
               <div className="space-y-2"><Label>Target URL <span className="text-muted-foreground font-normal">(optional)</span></Label><Input value={selectedStep.target_url || ""} onChange={e => updateStep(selectedStep.id, { target_url: e.target.value })} placeholder="/page or https://app.com/page" className="font-mono text-sm" /></div>
-              <div className="space-y-2"><Label>Description</Label><Textarea value={descVal} onChange={e => { setDescVal(e.target.value); updateRecording({ description: e.target.value }); }} placeholder="Describe what this process is about" rows={2} /></div>
               {selectedStep.screenshot_url && (
                 <div className="space-y-2"><Label>Screenshot</Label><div className="rounded-lg border overflow-hidden bg-muted"><img src={selectedStep.screenshot_url} alt={`Step ${steps.indexOf(selectedStep) + 1} screenshot`} className="w-full h-auto" /></div></div>
               )}

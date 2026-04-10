@@ -61,9 +61,65 @@ function buildInstruction(action, el) {
   }
 }
 
+// Add a highlight overlay around an element, returns a cleanup function
+function highlightElement(el) {
+  if (!el || el === document.body) return () => {};
+
+  const rect = el.getBoundingClientRect();
+  const pad = 4;
+
+  const overlay = document.createElement("div");
+  overlay.id = "sg-highlight-overlay";
+  overlay.style.cssText = `
+    position: fixed;
+    top: ${rect.top - pad}px;
+    left: ${rect.left - pad}px;
+    width: ${rect.width + pad * 2}px;
+    height: ${rect.height + pad * 2}px;
+    border: 3px solid #e53e3e;
+    border-radius: 4px;
+    background: rgba(229, 62, 62, 0.08);
+    box-shadow: 0 0 0 2px rgba(229, 62, 62, 0.3), 0 0 12px rgba(229, 62, 62, 0.25);
+    z-index: 2147483647;
+    pointer-events: none;
+    transition: none;
+  `;
+
+  // Add a small label
+  const label = document.createElement("div");
+  label.style.cssText = `
+    position: absolute;
+    top: -22px;
+    left: -3px;
+    background: #e53e3e;
+    color: #fff;
+    font-size: 10px;
+    font-family: system-ui, sans-serif;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 3px 3px 0 0;
+    white-space: nowrap;
+    line-height: 14px;
+  `;
+  label.textContent = "▶ Click";
+  overlay.appendChild(label);
+
+  document.documentElement.appendChild(overlay);
+
+  return () => {
+    overlay.remove();
+  };
+}
+
 // Capture a step
 async function captureStep(actionType, element, extra = {}) {
   if (!isRecording) return;
+
+  // Add highlight before taking screenshot
+  const removeHighlight = highlightElement(element);
+
+  // Small delay to ensure highlight renders before screenshot
+  await new Promise(r => setTimeout(r, 80));
 
   // Request screenshot from background
   let screenshotData = null;
@@ -71,6 +127,9 @@ async function captureStep(actionType, element, extra = {}) {
     const res = await chrome.runtime.sendMessage({ type: "SG_CAPTURE_SCREENSHOT" });
     if (res?.screenshot) screenshotData = res.screenshot;
   } catch (e) {}
+
+  // Remove highlight after screenshot
+  removeHighlight();
 
   const data = {
     action_type: actionType,
@@ -90,7 +149,6 @@ async function captureStep(actionType, element, extra = {}) {
 document.addEventListener("click", (e) => {
   if (!isRecording) return;
   const el = e.target;
-  // Skip if this is an input element (will be captured on blur/change)
   if (el.tagName === "INPUT" && (el.type === "text" || el.type === "email" || el.type === "password" || el.type === "search" || el.type === "tel" || el.type === "url" || el.type === "number")) {
     lastInputEl = el;
     return;
@@ -130,7 +188,6 @@ const navObserver = new MutationObserver(() => {
 });
 navObserver.observe(document.body, { childList: true, subtree: true });
 
-// Also capture via popstate / pushState
 window.addEventListener("popstate", () => {
   if (!isRecording || window.location.href === lastUrl) return;
   lastUrl = window.location.href;
