@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import {
   ArrowLeft, Pencil, Trash2, GripVertical,
-  FileText, Download, Plus, StickyNote, Image as ImageIcon,
+  FileText, Download, Plus, StickyNote, Image as ImageIcon, Languages, Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
