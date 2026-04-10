@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import {
   ArrowLeft, Pencil, Trash2, GripVertical,
-  FileText, Download, Plus, StickyNote, Image as ImageIcon,
+  FileText, Download, Plus, StickyNote, Image as ImageIcon, Languages, Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -19,8 +19,9 @@ import {
 } from "@/components/ui/select";
 import { recordingsApi, recordingStepsApi } from "@/api/recordings";
 import { useToast } from "@/hooks/use-toast";
-import { generateSOPPdf } from "@/lib/pdf-generator";
+import { generateSOPPdf, type PdfLanguage } from "@/lib/pdf-generator";
 import type { ProcessRecording, ProcessRecordingStep } from "@/types/recording";
+import { supabase } from "@/integrations/supabase/client";
 import {
   DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, useSensors,
   type DragEndEvent, DragOverlay, type DragStartEvent,
@@ -172,10 +173,45 @@ const ScribeRecording = () => {
     }
   };
 
-  const handleDownloadPdf = async () => {
+  const [translating, setTranslating] = useState(false);
+
+  const handleDownloadPdf = async (lang: PdfLanguage = 'en') => {
     if (!recording) return;
-    await generateSOPPdf(recording.title, recording.description || '', steps);
-    toast({ title: "PDF downloaded", description: "SOP document has been saved." });
+
+    if (lang === 'en') {
+      await generateSOPPdf(recording.title, recording.description || '', steps);
+      toast({ title: "PDF downloaded", description: "SOP document has been saved." });
+      return;
+    }
+
+    // Translate via edge function
+    setTranslating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('translate-steps', {
+        body: {
+          title: recording.title,
+          description: recording.description || '',
+          steps: steps.map(s => ({ instruction: s.instruction, notes: s.notes })),
+          targetLanguage: lang,
+        },
+      });
+
+      if (error) throw error;
+
+      await generateSOPPdf(recording.title, recording.description || '', steps, {
+        language: lang,
+        translatedTitle: data.title,
+        translatedDescription: data.description,
+        translatedSteps: data.steps,
+      });
+
+      const langName = lang === 'ar' ? 'Arabic' : 'French';
+      toast({ title: "PDF downloaded", description: `${langName} SOP document has been saved.` });
+    } catch (err: any) {
+      toast({ title: "Translation failed", description: err.message || "Could not translate. Try again.", variant: "destructive" });
+    } finally {
+      setTranslating(false);
+    }
   };
 
   const selectedStep = steps.find(s => s.id === selectedStepId);
@@ -219,9 +255,17 @@ const ScribeRecording = () => {
             <Button variant="outline" size="sm" className="h-8" onClick={() => setPreviewOpen(true)}>
               <FileText className="mr-1.5 h-3.5 w-3.5" /><span className="hidden sm:inline">Preview</span>
             </Button>
-            <Button size="sm" className="h-8" onClick={handleDownloadPdf}>
-              <Download className="mr-1.5 h-3.5 w-3.5" /><span className="hidden sm:inline">Download PDF</span>
-            </Button>
+            <Select onValueChange={(v) => handleDownloadPdf(v as PdfLanguage)} disabled={translating}>
+              <SelectTrigger className="h-8 w-auto gap-1.5 text-sm">
+                {translating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+                <span className="hidden sm:inline">{translating ? 'Translating…' : 'Download PDF'}</span>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="en">🇬🇧 English</SelectItem>
+                <SelectItem value="ar">🇸🇦 العربية (Arabic)</SelectItem>
+                <SelectItem value="fr">🇫🇷 Français (French)</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </div>
       </header>
@@ -299,7 +343,11 @@ const ScribeRecording = () => {
             ))}
             {steps.length === 0 && (<p className="text-center text-muted-foreground py-8">No steps recorded yet.</p>)}
           </div>
-          <div className="flex justify-end pt-2 border-t"><Button onClick={handleDownloadPdf}><Download className="mr-2 h-4 w-4" />Download PDF</Button></div>
+          <div className="flex justify-end gap-2 pt-2 border-t">
+            <Button variant="outline" onClick={() => handleDownloadPdf('en')}><Download className="mr-2 h-4 w-4" />English</Button>
+            <Button variant="outline" onClick={() => handleDownloadPdf('ar')}><Languages className="mr-2 h-4 w-4" />العربية</Button>
+            <Button variant="outline" onClick={() => handleDownloadPdf('fr')}><Languages className="mr-2 h-4 w-4" />Français</Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
