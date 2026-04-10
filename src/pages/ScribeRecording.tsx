@@ -173,10 +173,45 @@ const ScribeRecording = () => {
     }
   };
 
-  const handleDownloadPdf = async () => {
+  const [translating, setTranslating] = useState(false);
+
+  const handleDownloadPdf = async (lang: PdfLanguage = 'en') => {
     if (!recording) return;
-    await generateSOPPdf(recording.title, recording.description || '', steps);
-    toast({ title: "PDF downloaded", description: "SOP document has been saved." });
+
+    if (lang === 'en') {
+      await generateSOPPdf(recording.title, recording.description || '', steps);
+      toast({ title: "PDF downloaded", description: "SOP document has been saved." });
+      return;
+    }
+
+    // Translate via edge function
+    setTranslating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('translate-steps', {
+        body: {
+          title: recording.title,
+          description: recording.description || '',
+          steps: steps.map(s => ({ instruction: s.instruction, notes: s.notes })),
+          targetLanguage: lang,
+        },
+      });
+
+      if (error) throw error;
+
+      await generateSOPPdf(recording.title, recording.description || '', steps, {
+        language: lang,
+        translatedTitle: data.title,
+        translatedDescription: data.description,
+        translatedSteps: data.steps,
+      });
+
+      const langName = lang === 'ar' ? 'Arabic' : 'French';
+      toast({ title: "PDF downloaded", description: `${langName} SOP document has been saved.` });
+    } catch (err: any) {
+      toast({ title: "Translation failed", description: err.message || "Could not translate. Try again.", variant: "destructive" });
+    } finally {
+      setTranslating(false);
+    }
   };
 
   const selectedStep = steps.find(s => s.id === selectedStepId);
