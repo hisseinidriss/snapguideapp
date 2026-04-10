@@ -16,10 +16,11 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { appsApi } from "@/api/apps";
-import { recordingsApi } from "@/api/recordings";
+import { recordingsApi, recordingStepsApi } from "@/api/recordings";
 import type { ProcessRecording } from "@/types/recording";
 import { useToast } from "@/hooks/use-toast";
 import { generateAppColor } from "@/lib/app-colors";
+import { generateCombinedPdf } from "@/lib/pdf-generator";
 
 interface SortableRecordingCardProps {
   recording: ProcessRecording;
