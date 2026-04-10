@@ -106,6 +106,26 @@ const AppDetail = () => {
   const [recordingName, setRecordingName] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
+  const [downloadingAll, setDownloadingAll] = useState(false);
+
+  const handleDownloadAll = async () => {
+    if (!recordings.length) return;
+    setDownloadingAll(true);
+    try {
+      const allWithSteps = await Promise.all(
+        recordings.map(async (rec) => {
+          const { data } = await recordingStepsApi.list(rec.id);
+          return { title: rec.title, description: rec.description || '', steps: data || [] };
+        })
+      );
+      await generateCombinedPdf(appName, allWithSteps as any);
+      toast({ title: "PDF downloaded", description: `All ${recordings.length} recordings exported.` });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message || "Failed to generate PDF", variant: "destructive" });
+    } finally {
+      setDownloadingAll(false);
+    }
+  };
 
   useEffect(() => {
     if (!appId) return;
