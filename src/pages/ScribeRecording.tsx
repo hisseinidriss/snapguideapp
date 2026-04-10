@@ -83,6 +83,7 @@ const ScribeRecording = () => {
   const [selectedStepId, setSelectedStepId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [editTitle, setEditTitle] = useState(false);
+  const [editDesc, setEditDesc] = useState(false);
   const [titleVal, setTitleVal] = useState("");
   const [descVal, setDescVal] = useState("");
   const [previewOpen, setPreviewOpen] = useState(false);
