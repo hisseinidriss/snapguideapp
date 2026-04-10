@@ -203,7 +203,16 @@ const ScribeRecording = () => {
                 {recording.title}<Pencil className="inline-block ml-1.5 h-3 w-3 text-muted-foreground" />
               </h1>
             )}
-            <p className="text-xs text-muted-foreground">{steps.length} steps · SnapGuide Recording</p>
+            {editDesc ? (
+              <Input value={descVal} onChange={e => setDescVal(e.target.value)}
+                onBlur={() => { updateRecording({ description: descVal }); setEditDesc(false); }}
+                onKeyDown={e => { if (e.key === 'Enter') { updateRecording({ description: descVal }); setEditDesc(false); } }}
+                className="h-6 text-xs mt-0.5" placeholder="Add a description…" autoFocus />
+            ) : (
+              <p className="text-xs text-muted-foreground cursor-pointer hover:text-primary transition-colors truncate" onClick={() => setEditDesc(true)}>
+                {descVal || "Add a description…"}<Pencil className="inline-block ml-1 h-2.5 w-2.5" />
+              </p>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" className="h-8" onClick={() => setPreviewOpen(true)}>
