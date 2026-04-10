@@ -1,7 +1,7 @@
 // AppDetail - shows recordings (Scribe documents) for an application
 import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, MoreVertical, HelpCircle, GripVertical, FileText } from "lucide-react";
+import { ArrowLeft, Plus, MoreVertical, HelpCircle, GripVertical, FileText, Download, Loader2 } from "lucide-react";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -16,10 +16,11 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { appsApi } from "@/api/apps";
-import { recordingsApi } from "@/api/recordings";
+import { recordingsApi, recordingStepsApi } from "@/api/recordings";
 import type { ProcessRecording } from "@/types/recording";
 import { useToast } from "@/hooks/use-toast";
 import { generateAppColor } from "@/lib/app-colors";
+import { generateCombinedPdf } from "@/lib/pdf-generator";
 
 interface SortableRecordingCardProps {
   recording: ProcessRecording;
@@ -105,6 +106,26 @@ const AppDetail = () => {
   const [recordingName, setRecordingName] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
+  const [downloadingAll, setDownloadingAll] = useState(false);
+
+  const handleDownloadAll = async () => {
+    if (!recordings.length) return;
+    setDownloadingAll(true);
+    try {
+      const allWithSteps = await Promise.all(
+        recordings.map(async (rec) => {
+          const { data } = await recordingStepsApi.list(rec.id);
+          return { title: rec.title, description: rec.description || '', steps: data || [] };
+        })
+      );
+      await generateCombinedPdf(appName, allWithSteps as any);
+      toast({ title: "PDF downloaded", description: `All ${recordings.length} recordings exported.` });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message || "Failed to generate PDF", variant: "destructive" });
+    } finally {
+      setDownloadingAll(false);
+    }
+  };
 
   useEffect(() => {
     if (!appId) return;
@@ -201,13 +222,20 @@ const AppDetail = () => {
       <main className="container py-8 px-4">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-semibold">Recordings</h2>
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm">
-                <Plus className="mr-1.5 h-4 w-4" />
-                New Recording
+          <div className="flex items-center gap-2">
+            {recordings.length > 0 && (
+              <Button variant="outline" size="sm" onClick={handleDownloadAll} disabled={downloadingAll}>
+                {downloadingAll ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Download className="mr-1.5 h-4 w-4" />}
+                Download All
               </Button>
-            </DialogTrigger>
+            )}
+            <Dialog open={open} onOpenChange={setOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm">
+                  <Plus className="mr-1.5 h-4 w-4" />
+                  New Recording
+                </Button>
+              </DialogTrigger>
             <DialogContent>
               <DialogHeader><DialogTitle>Create a new recording</DialogTitle></DialogHeader>
               <div className="space-y-4 pt-2">
@@ -218,7 +246,8 @@ const AppDetail = () => {
                 <Button onClick={handleCreateRecording} className="w-full" disabled={!recordingName.trim()}>Create Recording</Button>
               </div>
             </DialogContent>
-          </Dialog>
+           </Dialog>
+          </div>
         </div>
 
         {recordings.length === 0 ? (
