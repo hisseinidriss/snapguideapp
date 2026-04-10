@@ -246,7 +246,8 @@ const AppDetail = () => {
                 <Button onClick={handleCreateRecording} className="w-full" disabled={!recordingName.trim()}>Create Recording</Button>
               </div>
             </DialogContent>
-          </Dialog>
+           </Dialog>
+          </div>
         </div>
 
         {recordings.length === 0 ? (
