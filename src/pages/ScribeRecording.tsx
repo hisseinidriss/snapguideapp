@@ -19,8 +19,9 @@ import {
 } from "@/components/ui/select";
 import { recordingsApi, recordingStepsApi } from "@/api/recordings";
 import { useToast } from "@/hooks/use-toast";
-import { generateSOPPdf } from "@/lib/pdf-generator";
+import { generateSOPPdf, type PdfLanguage } from "@/lib/pdf-generator";
 import type { ProcessRecording, ProcessRecordingStep } from "@/types/recording";
+import { supabase } from "@/integrations/supabase/client";
 import {
   DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, useSensors,
   type DragEndEvent, DragOverlay, type DragStartEvent,
