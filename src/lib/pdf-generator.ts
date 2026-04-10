@@ -1,16 +1,37 @@
 import jsPDF from 'jspdf';
 import type { ProcessRecordingStep } from '@/types/recording';
 
+export type PdfLanguage = 'en' | 'ar' | 'fr';
+
+interface PdfOptions {
+  language?: PdfLanguage;
+  translatedTitle?: string;
+  translatedDescription?: string;
+  translatedSteps?: { instruction: string; notes: string | null }[];
+}
+
 export async function generateSOPPdf(
   title: string,
   description: string,
-  steps: ProcessRecordingStep[]
+  steps: ProcessRecordingStep[],
+  options: PdfOptions = {}
 ): Promise<void> {
+  const lang = options.language || 'en';
+  const isRTL = lang === 'ar';
+
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
   const margin = 20;
   const contentW = pageW - margin * 2;
   let y = margin;
+
+  const pdfTitle = options.translatedTitle || title;
+  const pdfDesc = options.translatedDescription || description;
+
+  const textAlign = isRTL ? 'right' : 'left';
+  const textX = isRTL ? pageW - margin : margin;
+  const stepTextX = isRTL ? pageW - margin - 12 : margin + 12;
 
   // Header bar
   doc.setFillColor(77, 139, 111);
@@ -18,23 +39,33 @@ export async function generateSOPPdf(
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(18);
   doc.setFont('helvetica', 'bold');
-  doc.text(title || 'Standard Operating Procedure', margin, 20);
+
+  const headerLabel = lang === 'ar' ? 'إجراء التشغيل القياسي' : lang === 'fr' ? 'Procédure Opératoire Standard' : 'Standard Operating Procedure';
+  doc.text(pdfTitle || headerLabel, textX, 20, { align: textAlign });
   y = 42;
 
+  // Language badge
+  const langLabels: Record<string, string> = { en: 'English', ar: 'العربية', fr: 'Français' };
+  doc.setFontSize(8);
+  doc.setTextColor(138, 155, 146);
+  doc.text(langLabels[lang], isRTL ? margin : pageW - margin, 28, { align: isRTL ? 'left' : 'right' });
+
   // Description
-  if (description) {
+  if (pdfDesc) {
     doc.setTextColor(90, 107, 98);
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    const descLines = doc.splitTextToSize(description, contentW);
-    doc.text(descLines, margin, y);
+    const descLines = doc.splitTextToSize(pdfDesc, contentW);
+    doc.text(descLines, textX, y, { align: textAlign });
     y += descLines.length * 5 + 8;
   }
 
   // Metadata
   doc.setTextColor(138, 155, 146);
   doc.setFontSize(8);
-  doc.text(`Generated: ${new Date().toLocaleDateString()} • ${steps.length} step${steps.length !== 1 ? 's' : ''}`, margin, y);
+  const genLabel = lang === 'ar' ? 'تم الإنشاء' : lang === 'fr' ? 'Généré le' : 'Generated';
+  const stepLabel = lang === 'ar' ? 'خطوة' : lang === 'fr' ? 'étape' : 'step';
+  doc.text(`${genLabel}: ${new Date().toLocaleDateString()} • ${steps.length} ${stepLabel}${steps.length !== 1 && lang === 'en' ? 's' : ''}`, textX, y, { align: textAlign });
   y += 10;
 
   // Divider
@@ -45,35 +76,41 @@ export async function generateSOPPdf(
   // Steps
   for (let i = 0; i < steps.length; i++) {
     const step = steps[i];
+    const translated = options.translatedSteps?.[i];
+    const instruction = translated?.instruction || step.instruction;
+    const notes = translated?.notes ?? step.notes;
+
     const neededHeight = step.screenshot_url ? 80 : 30;
-    if (y + neededHeight > doc.internal.pageSize.getHeight() - margin) {
+    if (y + neededHeight > pageH - margin) {
       doc.addPage();
       y = margin;
     }
 
     // Step number circle
+    const circleX = isRTL ? pageW - margin - 4 : margin + 4;
     doc.setFillColor(77, 139, 111);
-    doc.circle(margin + 4, y + 3, 4, 'F');
+    doc.circle(circleX, y + 3, 4, 'F');
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(8);
     doc.setFont('helvetica', 'bold');
-    doc.text(String(i + 1), margin + 4, y + 4.5, { align: 'center' });
+    doc.text(String(i + 1), circleX, y + 4.5, { align: 'center' });
 
     // Instruction
     doc.setTextColor(45, 59, 52);
     doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
-    const instructionLines = doc.splitTextToSize(step.instruction, contentW - 16);
-    doc.text(instructionLines, margin + 12, y + 5);
+    const instructionLines = doc.splitTextToSize(instruction, contentW - 16);
+    doc.text(instructionLines, stepTextX, y + 5, { align: textAlign });
     y += instructionLines.length * 5 + 4;
 
     // Notes
-    if (step.notes) {
+    if (notes) {
       doc.setTextColor(107, 114, 128);
       doc.setFontSize(9);
       doc.setFont('helvetica', 'italic');
-      const noteLines = doc.splitTextToSize(`Note: ${step.notes}`, contentW - 16);
-      doc.text(noteLines, margin + 12, y);
+      const notePrefix = lang === 'ar' ? 'ملاحظة: ' : lang === 'fr' ? 'Note : ' : 'Note: ';
+      const noteLines = doc.splitTextToSize(`${notePrefix}${notes}`, contentW - 16);
+      doc.text(noteLines, stepTextX, y, { align: textAlign });
       y += noteLines.length * 4 + 2;
     }
 
@@ -87,17 +124,17 @@ export async function generateSOPPdf(
         const imgW = img.width * ratio;
         const imgH = img.height * ratio;
 
-        if (y + imgH + 8 > doc.internal.pageSize.getHeight() - margin) {
+        if (y + imgH + 8 > pageH - margin) {
           doc.addPage();
           y = margin;
         }
 
+        const imgX = isRTL ? pageW - margin - 14 - imgW : margin + 12;
         doc.setDrawColor(223, 230, 226);
-        doc.roundedRect(margin + 12, y, imgW + 4, imgH + 4, 2, 2);
-        doc.addImage(img, 'PNG', margin + 14, y + 2, imgW, imgH);
+        doc.roundedRect(imgX, y, imgW + 4, imgH + 4, 2, 2);
+        doc.addImage(img, 'PNG', imgX + 2, y + 2, imgW, imgH);
         y += imgH + 10;
       } catch {
-        // Skip screenshot if loading fails
         y += 4;
       }
     }
@@ -105,7 +142,7 @@ export async function generateSOPPdf(
     y += 6;
   }
 
-  doc.save(`${(title || 'SOP').replace(/\s+/g, '-').toLowerCase()}.pdf`);
+  doc.save(`${(pdfTitle || 'SOP').replace(/\s+/g, '-').toLowerCase()}.pdf`);
 }
 
 function loadImage(url: string): Promise<HTMLImageElement> {
