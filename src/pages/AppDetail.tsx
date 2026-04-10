@@ -222,13 +222,20 @@ const AppDetail = () => {
       <main className="container py-8 px-4">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-semibold">Recordings</h2>
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm">
-                <Plus className="mr-1.5 h-4 w-4" />
-                New Recording
+          <div className="flex items-center gap-2">
+            {recordings.length > 0 && (
+              <Button variant="outline" size="sm" onClick={handleDownloadAll} disabled={downloadingAll}>
+                {downloadingAll ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Download className="mr-1.5 h-4 w-4" />}
+                Download All
               </Button>
-            </DialogTrigger>
+            )}
+            <Dialog open={open} onOpenChange={setOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm">
+                  <Plus className="mr-1.5 h-4 w-4" />
+                  New Recording
+                </Button>
+              </DialogTrigger>
             <DialogContent>
               <DialogHeader><DialogTitle>Create a new recording</DialogTitle></DialogHeader>
               <div className="space-y-4 pt-2">
