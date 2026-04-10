@@ -343,7 +343,11 @@ const ScribeRecording = () => {
             ))}
             {steps.length === 0 && (<p className="text-center text-muted-foreground py-8">No steps recorded yet.</p>)}
           </div>
-          <div className="flex justify-end pt-2 border-t"><Button onClick={handleDownloadPdf}><Download className="mr-2 h-4 w-4" />Download PDF</Button></div>
+          <div className="flex justify-end gap-2 pt-2 border-t">
+            <Button variant="outline" onClick={() => handleDownloadPdf('en')}><Download className="mr-2 h-4 w-4" />English</Button>
+            <Button variant="outline" onClick={() => handleDownloadPdf('ar')}><Languages className="mr-2 h-4 w-4" />العربية</Button>
+            <Button variant="outline" onClick={() => handleDownloadPdf('fr')}><Languages className="mr-2 h-4 w-4" />Français</Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
