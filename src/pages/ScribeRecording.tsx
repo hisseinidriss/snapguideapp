@@ -250,7 +250,7 @@ const ScribeRecording = () => {
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel className="text-xs">Word Document</DropdownMenuLabel>
                 <DropdownMenuItem onClick={handleDownloadDocx}>
-                  <FileType className="mr-2 h-4 w-4 text-blue-600" />
+                  <FileType className="mr-2 h-4 w-4 text-primary" />
                   Download as .docx
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
