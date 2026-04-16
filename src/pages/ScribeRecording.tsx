@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import {
-  ArrowLeft, Pencil, Trash2, Download, Plus, Languages, Loader2, FileText,
+  ArrowLeft, Pencil, Trash2, Download, Languages, Loader2, FileText, FileType, ChevronDown,
 } from "lucide-react";
 import isdbLogo from "@/assets/isdb-logo.jpg";
 import { Button } from "@/components/ui/button";
@@ -12,11 +12,12 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { recordingsApi, recordingStepsApi } from "@/api/recordings";
 import { useToast } from "@/hooks/use-toast";
 import { generateSOPPdf, type PdfLanguage } from "@/lib/pdf-generator";
+import { generateSOPDocx } from "@/lib/docx-generator";
 import type { ProcessRecording, ProcessRecordingStep } from "@/types/recording";
 import { supabase } from "@/integrations/supabase/client";
 
