@@ -161,16 +161,8 @@ const ScribeRecording = () => {
   };
 
   const addStep = async () => {
-    if (!recordingId) return;
-    const { data, error } = await recordingStepsApi.create({
-      recording_id: recordingId,
-      sort_order: steps.length,
-      action_type: 'click',
-      instruction: 'New step - describe the action',
-    });
-    if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
-    if (data) {
-      setSteps(prev => [...prev, data as unknown as ProcessRecordingStep]);
+    // Steps are captured by the browser extension
+    return;
     }
   };
 
