@@ -292,7 +292,7 @@ const ScribeRecording = () => {
       {/* Steps list */}
       <div className="container max-w-5xl mx-auto px-4 py-10">
         {/* Hero - Editable */}
-        <div className="mb-12 text-center group/hero">
+        <div className="mb-20 text-center group/hero">
           <p className="text-xs font-semibold uppercase tracking-widest text-primary mb-3">Process Documentation</p>
 
           {editTitle ? (
