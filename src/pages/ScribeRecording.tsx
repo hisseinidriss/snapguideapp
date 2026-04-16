@@ -40,64 +40,74 @@ const StepCard = ({ step, index, onUpdate, onRemove }: StepCardProps) => {
     setEditing(false);
   };
 
+  const isEven = index % 2 === 0;
+
   return (
-    <div className="group relative bg-card rounded-xl border shadow-sm overflow-hidden">
-      {/* Step header */}
-      <div className="flex items-start gap-3 p-4 pb-2">
-        <span className="flex items-center justify-center h-7 w-7 rounded-full bg-primary text-primary-foreground text-xs font-bold shrink-0 mt-0.5">
-          {index + 1}
-        </span>
-        <div className="flex-1 min-w-0">
-          {editing ? (
-            <Textarea
-              ref={inputRef}
-              value={val}
-              onChange={e => setVal(e.target.value)}
-              onBlur={commit}
-              onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); commit(); } }}
-              rows={2}
-              className="text-sm font-medium resize-none"
-            />
+    <div className="group relative">
+      {/* Connector line */}
+      <div className="absolute left-6 top-14 bottom-0 w-px bg-gradient-to-b from-primary/40 to-transparent -z-10" />
+
+      <div className={`flex flex-col ${isEven ? 'md:flex-row' : 'md:flex-row-reverse'} gap-5 items-start`}>
+        {/* Number badge + content side */}
+        <div className="flex gap-4 md:w-2/5 w-full">
+          <div className="flex flex-col items-center shrink-0">
+            <span className="flex items-center justify-center h-12 w-12 rounded-2xl bg-gradient-to-br from-primary to-primary/70 text-primary-foreground text-base font-bold shadow-lg shadow-primary/20 ring-4 ring-background">
+              {index + 1}
+            </span>
+          </div>
+          <div className="flex-1 min-w-0 pt-1">
+            {editing ? (
+              <Textarea
+                ref={inputRef}
+                value={val}
+                onChange={e => setVal(e.target.value)}
+                onBlur={commit}
+                onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); commit(); } }}
+                rows={3}
+                className="text-base font-medium resize-none"
+              />
+            ) : (
+              <div className="space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-wider text-primary/80">
+                  Step {index + 1}
+                </p>
+                <p
+                  className="text-base font-semibold text-foreground cursor-pointer hover:text-primary transition-colors leading-relaxed"
+                  onDoubleClick={() => setEditing(true)}
+                  title="Double-click to edit"
+                >
+                  {step.instruction}
+                  <Pencil className="inline-block ml-2 h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                </p>
+                <button
+                  className="text-xs text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity inline-flex items-center gap-1"
+                  onClick={() => onRemove(step.id)}
+                >
+                  <Trash2 className="h-3 w-3" />Remove step
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Screenshot side */}
+        <div className="md:w-3/5 w-full">
+          {step.screenshot_url ? (
+            <div className="rounded-2xl border bg-card shadow-md overflow-hidden hover:shadow-xl transition-shadow">
+              <img
+                src={step.screenshot_url}
+                alt={`Step ${index + 1} screenshot`}
+                className="w-full h-auto"
+                loading="lazy"
+              />
+            </div>
           ) : (
-            <p
-              className="text-sm font-medium cursor-pointer hover:text-primary transition-colors leading-snug"
-              onDoubleClick={() => setEditing(true)}
-              title="Double-click to edit"
-            >
-              {step.instruction}
-              <Pencil className="inline-block ml-1.5 h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-            </p>
+            <div className="rounded-2xl border border-dashed bg-muted/30 flex items-center justify-center h-40 text-xs text-muted-foreground">
+              No screenshot captured
+            </div>
           )}
         </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity hover:text-destructive shrink-0"
-          onClick={() => onRemove(step.id)}
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-        </Button>
       </div>
-
-      {/* Screenshot */}
-      {step.screenshot_url ? (
-        <div className="px-4 pb-4">
-          <div className="rounded-lg border overflow-hidden bg-muted">
-            <img
-              src={step.screenshot_url}
-              alt={`Step ${index + 1} screenshot`}
-              className="w-full h-auto"
-              loading="lazy"
-            />
-          </div>
-        </div>
-      ) : (
-        <div className="px-4 pb-4">
-          <div className="rounded-lg border border-dashed bg-muted/50 flex items-center justify-center h-32 text-xs text-muted-foreground">
-            No screenshot captured
-          </div>
-        </div>
-      )}
     </div>
   );
 };
@@ -248,18 +258,29 @@ const ScribeRecording = () => {
       </header>
 
       {/* Steps list */}
-      <div className="container max-w-3xl mx-auto px-4 py-6 space-y-4">
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">{steps.length} step{steps.length !== 1 ? 's' : ''}</p>
+      <div className="container max-w-5xl mx-auto px-4 py-10">
+        {/* Hero */}
+        <div className="mb-12 text-center">
+          <p className="text-xs font-semibold uppercase tracking-widest text-primary mb-3">Process Documentation</p>
+          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-3">{recording.title}</h2>
+          {recording.description && (
+            <p className="text-muted-foreground max-w-2xl mx-auto">{recording.description}</p>
+          )}
+          <div className="inline-flex items-center gap-2 mt-5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">
+            <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+            {steps.length} step{steps.length !== 1 ? 's' : ''}
+          </div>
         </div>
 
-        {steps.map((step, i) => (
-          <StepCard key={step.id} step={step} index={i} onUpdate={updateStep} onRemove={removeStep} />
-        ))}
+        <div className="space-y-14">
+          {steps.map((step, i) => (
+            <StepCard key={step.id} step={step} index={i} onUpdate={updateStep} onRemove={removeStep} />
+          ))}
+        </div>
 
         {steps.length === 0 && (
-          <div className="text-center py-16 text-muted-foreground">
-            <p className="text-sm">No steps yet. Add steps manually or use the extension to record.</p>
+          <div className="text-center py-20 text-muted-foreground border-2 border-dashed rounded-2xl">
+            <p className="text-sm">No steps yet. Use the browser extension to record your process.</p>
           </div>
         )}
       </div>
