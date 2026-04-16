@@ -392,17 +392,47 @@ const ScribeRecording = () => {
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
         <DialogContent className="sm:max-w-3xl max-h-[85vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Documentation Preview</DialogTitle></DialogHeader>
-          <div className="space-y-6 py-4">
-            <div className="bg-primary/10 rounded-xl p-6">
-              <h2 className="text-xl font-bold text-foreground">{recording.title}</h2>
-              {recording.description && <p className="text-sm text-muted-foreground mt-2">{recording.description}</p>}
-              <p className="text-xs text-muted-foreground mt-3">{steps.length} step{steps.length !== 1 ? 's' : ''}</p>
+
+          {/* Live language switcher */}
+          <div className="flex items-center justify-between gap-2 pb-3 border-b">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Languages className="h-3.5 w-3.5" />
+              <span>Preview language</span>
+              {previewLoading && <Loader2 className="h-3 w-3 animate-spin ml-1" />}
             </div>
-            {steps.map((step, i) => (
+            <div className="inline-flex rounded-lg border bg-muted/40 p-0.5">
+              {([
+                { code: 'en' as const, label: 'English' },
+                { code: 'ar' as const, label: 'العربية' },
+                { code: 'fr' as const, label: 'Français' },
+              ]).map(opt => (
+                <button
+                  key={opt.code}
+                  onClick={() => handlePreviewLangChange(opt.code)}
+                  disabled={previewLoading}
+                  className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                    previewLang === opt.code
+                      ? 'bg-background text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  } disabled:opacity-50`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-6 py-4" dir={isRtl ? 'rtl' : 'ltr'}>
+            <div className="bg-primary/10 rounded-xl p-6">
+              <h2 className="text-xl font-bold text-foreground">{previewTitle}</h2>
+              {previewDescription && <p className="text-sm text-muted-foreground mt-2">{previewDescription}</p>}
+              <p className="text-xs text-muted-foreground mt-3">{previewSteps.length} step{previewSteps.length !== 1 ? 's' : ''}</p>
+            </div>
+            {previewSteps.map((step, i) => (
               <div key={step.id} className="flex gap-4">
                 <div className="flex flex-col items-center shrink-0">
                   <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-sm font-bold">{i + 1}</div>
-                  {i < steps.length - 1 && <div className="w-0.5 flex-1 bg-border mt-2" />}
+                  {i < previewSteps.length - 1 && <div className="w-0.5 flex-1 bg-border mt-2" />}
                 </div>
                 <div className="flex-1 pb-8">
                   <p className="font-semibold text-foreground">{step.instruction}</p>
@@ -411,12 +441,12 @@ const ScribeRecording = () => {
               </div>
             ))}
           </div>
-          <div className="flex justify-end gap-2 pt-2 border-t">
+          <div className="flex flex-wrap justify-end gap-2 pt-2 border-t">
             <Button variant="outline" onClick={() => handleDownloadDocx('en')}><FileType className="mr-2 h-4 w-4" />Word</Button>
             <Button variant="outline" onClick={() => handleDownloadDocx('ar')}><FileType className="mr-2 h-4 w-4" />Word (AR)</Button>
             <Button variant="outline" onClick={() => handleDownloadPdf('en')}><Download className="mr-2 h-4 w-4" />English PDF</Button>
-            <Button variant="outline" onClick={() => handleDownloadPdf('ar')}><Languages className="mr-2 h-4 w-4" />العربية</Button>
-            <Button variant="outline" onClick={() => handleDownloadPdf('fr')}><Languages className="mr-2 h-4 w-4" />Français</Button>
+            <Button variant="outline" onClick={() => handleDownloadPdf('ar')}><Download className="mr-2 h-4 w-4" />العربية</Button>
+            <Button variant="outline" onClick={() => handleDownloadPdf('fr')}><Download className="mr-2 h-4 w-4" />Français</Button>
           </div>
         </DialogContent>
       </Dialog>
