@@ -176,6 +176,40 @@ const ScribeRecording = () => {
   };
 
 
+  const fetchTranslation = useCallback(async (lang: 'ar' | 'fr') => {
+    if (!recording) return null;
+    if (translationCache[lang]) return translationCache[lang];
+    const { data, error } = await supabase.functions.invoke('translate-steps', {
+      body: {
+        title: recording.title,
+        description: recording.description || '',
+        steps: steps.map(s => ({ instruction: s.instruction, notes: s.notes })),
+        targetLanguage: lang,
+      },
+    });
+    if (error) throw error;
+    if (!data || (data as any).error) throw new Error((data as any)?.error || 'Translation failed');
+    setTranslationCache(prev => ({ ...prev, [lang]: data }));
+    return data as { title: string; description: string; steps: Array<{ instruction: string; notes: string | null }> };
+  }, [recording, steps, translationCache]);
+
+  // Re-fetch when source changes — invalidate cache
+  useEffect(() => { setTranslationCache({}); }, [recording?.title, recording?.description, steps]);
+
+  const handlePreviewLangChange = async (lang: 'en' | 'ar' | 'fr') => {
+    setPreviewLang(lang);
+    if (lang === 'en' || translationCache[lang]) return;
+    setPreviewLoading(true);
+    try {
+      await fetchTranslation(lang);
+    } catch (err: any) {
+      toast({ title: "Translation failed", description: err.message, variant: "destructive" });
+      setPreviewLang('en');
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
   const handleDownloadPdf = async (lang: PdfLanguage = 'en') => {
     if (!recording) return;
     if (lang === 'en') {
@@ -185,14 +219,8 @@ const ScribeRecording = () => {
     }
     setTranslating(true);
     try {
-      const { data, error } = await supabase.functions.invoke('translate-steps', {
-        body: {
-          title: recording.title, description: recording.description || '',
-          steps: steps.map(s => ({ instruction: s.instruction, notes: s.notes })),
-          targetLanguage: lang,
-        },
-      });
-      if (error) throw error;
+      const data = await fetchTranslation(lang as 'ar' | 'fr');
+      if (!data) throw new Error("No translation");
       await generateSOPPdf(recording.title, recording.description || '', steps, {
         language: lang, translatedTitle: data.title,
         translatedDescription: data.description, translatedSteps: data.steps,
@@ -212,14 +240,8 @@ const ScribeRecording = () => {
         return;
       }
       setTranslating(true);
-      const { data, error } = await supabase.functions.invoke('translate-steps', {
-        body: {
-          title: recording.title, description: recording.description || '',
-          steps: steps.map(s => ({ instruction: s.instruction, notes: s.notes })),
-          targetLanguage: lang,
-        },
-      });
-      if (error) throw error;
+      const data = await fetchTranslation(lang);
+      if (!data) throw new Error("No translation");
       await generateSOPDocx(recording.title, recording.description || '', steps, {
         language: lang, translatedTitle: data.title,
         translatedDescription: data.description, translatedSteps: data.steps,
@@ -229,6 +251,16 @@ const ScribeRecording = () => {
       toast({ title: "Download failed", description: err.message, variant: "destructive" });
     } finally { setTranslating(false); }
   };
+
+  // Active preview content (translated or original)
+  const activeTranslation = previewLang !== 'en' ? translationCache[previewLang] : null;
+  const previewTitle = activeTranslation?.title ?? recording?.title ?? '';
+  const previewDescription = activeTranslation?.description ?? recording?.description ?? '';
+  const previewSteps = steps.map((s, i) => ({
+    ...s,
+    instruction: activeTranslation?.steps?.[i]?.instruction ?? s.instruction,
+  }));
+  const isRtl = previewLang === 'ar';
 
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center bg-background"><div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" /></div>;
