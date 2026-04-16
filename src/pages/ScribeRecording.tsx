@@ -160,11 +160,6 @@ const ScribeRecording = () => {
     setSteps(prev => prev.filter(s => s.id !== id));
   };
 
-  const addStep = async () => {
-    // Steps are captured by the browser extension
-    return;
-    }
-  };
 
   const handleDownloadPdf = async (lang: PdfLanguage = 'en') => {
     if (!recording) return;
