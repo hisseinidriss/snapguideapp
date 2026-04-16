@@ -79,10 +79,6 @@ const SortableRecordingCard = ({ recording, editingId, editingName, setEditingId
               </h3>
             )}
             <div className="flex items-center gap-2 mt-1">
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-semibold uppercase tracking-wider">
-                <span className="h-1 w-1 rounded-full bg-primary" />
-                {recording.status}
-              </span>
               <p className="text-xs text-muted-foreground">
                 Updated {new Date(recording.updated_at).toLocaleDateString()}
               </p>
