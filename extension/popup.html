@@ -3,56 +3,161 @@
 <head>
   <meta charset="UTF-8">
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { width: 340px; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #fafbfc; color: #1a2b23; }
-    .header { background: #1a6b3c; color: white; padding: 14px 16px; display: flex; align-items: center; gap: 10px; }
-    .header .logo { width: 28px; height: 28px; background: rgba(255,255,255,0.2); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px; }
-    .header h1 { font-size: 15px; font-weight: 600; }
-    .content { padding: 16px; }
-    .setup-section { margin-bottom: 16px; }
-    .setup-section label { display: block; font-size: 12px; font-weight: 600; color: #5a6b62; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
-    select, input { width: 100%; padding: 9px 12px; border: 1px solid #d1d9d4; border-radius: 8px; font-size: 13px; background: white; color: #1a2b23; outline: none; }
-    select:focus, input:focus { border-color: #1a6b3c; box-shadow: 0 0 0 2px rgba(26,107,60,0.15); }
-    .btn { width: 100%; padding: 11px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.15s; }
-    .btn-primary { background: #1a6b3c; color: white; }
-    .btn-primary:hover { background: #155731; }
-    .btn-danger { background: #dc2626; color: white; }
-    .btn-danger:hover { background: #b91c1c; }
-    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-    .status { text-align: center; padding: 12px; margin-bottom: 12px; border-radius: 8px; font-size: 13px; }
-    .status.recording { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
-    .status.idle { background: #f0fdf4; color: #1a6b3c; border: 1px solid #bbf7d0; }
-    .step-count { text-align: center; font-size: 24px; font-weight: 700; color: #1a6b3c; margin: 8px 0; }
-    .step-label { text-align: center; font-size: 12px; color: #5a6b62; margin-bottom: 16px; }
+    body { width: 360px; font-family: 'DM Sans', system-ui, sans-serif; background: #f8faf9; color: #1a2b23; }
+
+    /* Header */
+    .header {
+      background: linear-gradient(135deg, #1a6b3c 0%, #1b5e6b 100%);
+      color: white;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .header img { width: 36px; height: 36px; border-radius: 10px; object-fit: cover; background: rgba(255,255,255,0.15); }
+    .header-text h1 { font-size: 16px; font-weight: 700; letter-spacing: -0.3px; }
+    .header-text p { font-size: 11px; opacity: 0.8; font-weight: 400; margin-top: 1px; }
+
+    /* Content */
+    .content { padding: 18px 20px; }
+
+    .section { margin-bottom: 14px; }
+    .section label {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      color: #6b7f73;
+      margin-bottom: 5px;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+    }
+
+    select, input[type="text"] {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1.5px solid #d4ddd8;
+      border-radius: 10px;
+      font-size: 13px;
+      font-family: 'DM Sans', system-ui, sans-serif;
+      background: white;
+      color: #1a2b23;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    select:focus, input[type="text"]:focus {
+      border-color: #1a6b3c;
+      box-shadow: 0 0 0 3px rgba(26,107,60,0.12);
+    }
+
+    /* Buttons */
+    .btn {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: 'DM Sans', system-ui, sans-serif;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #1a6b3c, #22855a);
+      color: white;
+      box-shadow: 0 2px 8px rgba(26,107,60,0.25);
+    }
+    .btn-primary:hover { background: linear-gradient(135deg, #155731, #1a6b3c); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(26,107,60,0.3); }
+    .btn-danger {
+      background: linear-gradient(135deg, #dc2626, #ef4444);
+      color: white;
+      box-shadow: 0 2px 8px rgba(220,38,38,0.25);
+    }
+    .btn-danger:hover { background: linear-gradient(135deg, #b91c1c, #dc2626); }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
+
+    /* Status */
+    .status-card {
+      text-align: center;
+      padding: 14px;
+      margin-bottom: 14px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .status-card.recording {
+      background: linear-gradient(135deg, #fef2f2, #fff1f2);
+      color: #dc2626;
+      border: 1.5px solid #fecaca;
+    }
+    .status-card.idle {
+      background: linear-gradient(135deg, #f0fdf4, #ecfdf5);
+      color: #1a6b3c;
+      border: 1.5px solid #bbf7d0;
+    }
+
+    .step-count {
+      text-align: center;
+      font-size: 32px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #1a6b3c, #1b5e6b);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin: 6px 0 2px;
+    }
+    .step-label { text-align: center; font-size: 12px; color: #6b7f73; margin-bottom: 16px; font-weight: 500; }
     .recording-title { font-size: 13px; font-weight: 600; text-align: center; margin-bottom: 4px; color: #1a2b23; }
+
+    /* Dot */
     .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
     .dot.red { background: #dc2626; animation: pulse 1.5s infinite; }
     .dot.green { background: #1a6b3c; }
-    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
-    .error { color: #dc2626; font-size: 12px; margin-top: 8px; padding: 8px; background: #fef2f2; border-radius: 6px; }
-    .connect-info { font-size: 11px; color: #8a9b92; margin-top: 12px; text-align: center; }
-    .divider { height: 1px; background: #e5e9e7; margin: 16px 0; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+    .error { color: #dc2626; font-size: 12px; margin-top: 10px; padding: 10px; background: #fef2f2; border-radius: 8px; border: 1px solid #fecaca; }
+
+    .footer-info {
+      font-size: 11px;
+      color: #8a9b92;
+      margin-top: 16px;
+      text-align: center;
+      line-height: 1.5;
+    }
+
+    .divider { height: 1px; background: linear-gradient(to right, transparent, #d4ddd8, transparent); margin: 14px 0; }
+
+    .or-text { text-align: center; font-size: 11px; color: #8a9b92; margin: -6px 0 8px; text-transform: uppercase; letter-spacing: 0.5px; }
   </style>
 </head>
 <body>
   <div class="header">
-    <div class="logo">SG</div>
-    <h1>SnapGuide Scribe</h1>
+    <img src="isdb-logo.jpg" alt="IsDB Logo" />
+    <div class="header-text">
+      <h1>SnapGuide</h1>
+      <p>Process Documentation Recorder</p>
+    </div>
   </div>
 
   <div class="content">
-    <!-- Not connected / Setup -->
+    <!-- Setup View -->
     <div id="setup-view">
-      <div class="setup-section">
+      <div class="section">
         <label>Application</label>
-        <select id="app-select"><option value="">Loading apps...</option></select>
+        <select id="app-select"><option value="">Loading apps…</option></select>
       </div>
-      <div class="setup-section">
+      <div class="section">
         <label>Recording</label>
         <select id="recording-select"><option value="">Select an app first</option></select>
       </div>
-      <div class="setup-section">
-        <label>Or create new recording</label>
+      <div class="divider"></div>
+      <div class="or-text">or create new</div>
+      <div class="section">
         <input id="new-recording-name" type="text" placeholder="e.g. Employee Onboarding" />
       </div>
       <button class="btn btn-primary" id="start-btn" disabled>
@@ -61,16 +166,16 @@
       <div id="error-msg" class="error" style="display:none"></div>
     </div>
 
-    <!-- Recording in progress -->
+    <!-- Recording View -->
     <div id="recording-view" style="display:none">
-      <div class="status recording"><span class="dot red"></span> Recording in progress</div>
+      <div class="status-card recording"><span class="dot red"></span> Recording in progress</div>
       <div class="recording-title" id="rec-title"></div>
       <div class="step-count" id="step-count">0</div>
       <div class="step-label">steps captured</div>
       <button class="btn btn-danger" id="stop-btn">⏹ Stop Recording</button>
     </div>
 
-    <p class="connect-info">Actions are saved to your SnapGuide database in real-time.</p>
+    <p class="footer-info">Actions are saved to your SnapGuide<br>database in real-time.</p>
   </div>
 
   <script src="popup.js"></script>

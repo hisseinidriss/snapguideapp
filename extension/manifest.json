@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "SnapGuide Scribe",
+  "name": "SnapGuide",
   "version": "1.0.0",
   "description": "Record browser actions to generate step-by-step SOPs in SnapGuide",
   "permissions": ["activeTab", "storage", "tabs", "scripting"],
