@@ -20,7 +20,7 @@ import { appsApi } from "@/api/apps";
 import { recordingsApi, recordingStepsApi } from "@/api/recordings";
 import type { ProcessRecording } from "@/types/recording";
 import { useToast } from "@/hooks/use-toast";
-import { generateAppColor } from "@/lib/app-colors";
+
 import { generateCombinedPdf } from "@/lib/pdf-generator";
 
 interface SortableRecordingCardProps {
@@ -38,7 +38,6 @@ interface SortableRecordingCardProps {
 
 const SortableRecordingCard = ({ recording, editingId, editingName, setEditingId, setEditingName, handleRename, handleDelete, navigate, appId, appName }: SortableRecordingCardProps) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: recording.id });
-  const bgColor = generateAppColor(appName);
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
 
   return (
@@ -48,18 +47,15 @@ const SortableRecordingCard = ({ recording, editingId, editingName, setEditingId
       className="group p-5 animate-fade-in hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 border-border/50 bg-card/80 backdrop-blur relative overflow-hidden"
     >
       {/* Color accent stripe */}
-      <div className="absolute left-0 top-0 bottom-0 w-1" style={{ backgroundColor: bgColor }} />
+      <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary" />
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pl-2">
         <div className="flex items-center gap-3 min-w-0 flex-1">
           <button {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-foreground touch-none opacity-0 group-hover:opacity-100 transition-opacity">
             <GripVertical className="h-5 w-5" />
           </button>
-          <div
-            className="h-11 w-11 rounded-xl flex items-center justify-center shrink-0 shadow-sm ring-2 ring-background"
-            style={{ backgroundColor: `${bgColor}20` }}
-          >
-            <FileText className="h-5 w-5" style={{ color: bgColor }} />
+          <div className="h-11 w-11 rounded-xl flex items-center justify-center shrink-0 shadow-sm ring-2 ring-background bg-primary/10">
+            <FileText className="h-5 w-5 text-primary" />
           </div>
           <div className="min-w-0 flex-1">
             {editingId === recording.id ? (
@@ -233,7 +229,6 @@ const AppDetail = () => {
     );
   }
 
-  const appColor = generateAppColor(appName);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
@@ -260,14 +255,11 @@ const AppDetail = () => {
         <div className="mb-10 animate-fade-in">
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-5">
             <div className="flex items-start gap-4">
-              <div
-                className="h-16 w-16 rounded-2xl flex items-center justify-center shadow-lg shrink-0"
-                style={{ backgroundColor: `${appColor}25` }}
-              >
-                <FileText className="h-7 w-7" style={{ color: appColor }} />
+              <div className="h-16 w-16 rounded-2xl flex items-center justify-center shadow-lg shrink-0 bg-primary/10 ring-1 ring-primary/20">
+                <FileText className="h-7 w-7 text-primary" />
               </div>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-widest mb-1.5" style={{ color: appColor }}>
+                <p className="text-xs font-semibold uppercase tracking-widest mb-1.5 text-primary">
                   Application Workspace
                 </p>
                 <h2 className="text-3xl md:text-4xl font-bold tracking-tight">Process Recordings</h2>
@@ -279,11 +271,11 @@ const AppDetail = () => {
             <div className="flex items-center gap-2 flex-wrap">
               {recordings.length > 0 && (
                 <>
-                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-semibold">
-                    <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                  <div className="inline-flex items-center gap-2 px-3.5 py-2 rounded-full bg-primary text-primary-foreground text-sm font-semibold shadow-sm">
+                    <span className="h-1.5 w-1.5 rounded-full bg-primary-foreground animate-pulse" />
                     {recordings.length} recording{recordings.length !== 1 ? 's' : ''}
                   </div>
-                  <Button variant="outline" size="sm" onClick={handleDownloadAll} disabled={downloadingAll} className="rounded-full">
+                  <Button variant="outline" size="sm" onClick={handleDownloadAll} disabled={downloadingAll} className="rounded-full border-primary/40 text-primary hover:bg-primary/10 hover:text-primary">
                     {downloadingAll ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Download className="mr-1.5 h-4 w-4" />}
                     Download All
                   </Button>
@@ -291,7 +283,7 @@ const AppDetail = () => {
               )}
               <Dialog open={open} onOpenChange={setOpen}>
                 <DialogTrigger asChild>
-                  <Button size="sm" className="rounded-full px-5 shadow-md bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70">
+                  <Button size="sm" className="rounded-full px-5 shadow-md bg-primary hover:bg-primary/90 text-primary-foreground">
                     <Plus className="mr-1.5 h-4 w-4" />
                     New Recording
                   </Button>
