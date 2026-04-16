@@ -57,54 +57,65 @@ export async function generateSOPDocx(
   children.push(new Paragraph({
     heading: HeadingLevel.TITLE,
     spacing: { after: 200 },
-    children: [new TextRun({ text: title || 'Standard Operating Procedure', bold: true, size: 48, color: '1A6B3C' })],
+    alignment: align,
+    bidirectional: isRtl,
+    children: [new TextRun({ text: tTitle || 'Standard Operating Procedure', bold: true, size: 48, color: '1A6B3C', rightToLeft: isRtl })],
   }));
 
   // Description
-  if (description) {
+  if (tDesc) {
     children.push(new Paragraph({
       spacing: { after: 200 },
-      children: [new TextRun({ text: description, size: 22, color: '5A6B62' })],
+      alignment: align,
+      bidirectional: isRtl,
+      children: [new TextRun({ text: tDesc, size: 22, color: '5A6B62', rightToLeft: isRtl })],
     }));
   }
 
   // Metadata
+  const metaText = isRtl
+    ? `${new Date().toLocaleDateString('ar')}  •  ${steps.length} خطوة`
+    : `Generated: ${new Date().toLocaleDateString()}  •  ${steps.length} step${steps.length !== 1 ? 's' : ''}`;
   children.push(new Paragraph({
     spacing: { after: 400 },
+    alignment: align,
+    bidirectional: isRtl,
     border: { bottom: { color: 'DFE6E2', space: 4, style: BorderStyle.SINGLE, size: 6 } },
-    children: [new TextRun({
-      text: `Generated: ${new Date().toLocaleDateString()}  •  ${steps.length} step${steps.length !== 1 ? 's' : ''}`,
-      size: 18, color: '8A9B92', italics: true,
-    })],
+    children: [new TextRun({ text: metaText, size: 18, color: '8A9B92', italics: true, rightToLeft: isRtl })],
   }));
 
   // Steps
   for (let i = 0; i < steps.length; i++) {
     const step = steps[i];
+    const tStep = tSteps?.[i];
+    const instruction = tStep?.instruction || step.instruction;
+    const notes = tStep?.notes ?? step.notes;
+    const stepLabel = isRtl ? `الخطوة ${i + 1}` : `Step ${i + 1}`;
+    const noteLabel = isRtl ? 'ملاحظة: ' : 'Note: ';
 
-    // Step heading
     children.push(new Paragraph({
       spacing: { before: 240, after: 120 },
-      children: [
-        new TextRun({ text: `Step ${i + 1}`, bold: true, size: 18, color: '1A6B3C' }),
-      ],
+      alignment: align,
+      bidirectional: isRtl,
+      children: [new TextRun({ text: stepLabel, bold: true, size: 18, color: '1A6B3C', rightToLeft: isRtl })],
     }));
 
-    // Instruction
     children.push(new Paragraph({
       spacing: { after: 120 },
-      children: [new TextRun({ text: step.instruction, bold: true, size: 24, color: '2D3B34' })],
+      alignment: align,
+      bidirectional: isRtl,
+      children: [new TextRun({ text: instruction, bold: true, size: 24, color: '2D3B34', rightToLeft: isRtl })],
     }));
 
-    // Notes
-    if (step.notes) {
+    if (notes) {
       children.push(new Paragraph({
         spacing: { after: 120 },
-        children: [new TextRun({ text: `Note: ${step.notes}`, italics: true, size: 20, color: '6B7280' })],
+        alignment: align,
+        bidirectional: isRtl,
+        children: [new TextRun({ text: `${noteLabel}${notes}`, italics: true, size: 20, color: '6B7280', rightToLeft: isRtl })],
       }));
     }
 
-    // Screenshot
     if (step.screenshot_url) {
       const img = await fetchImageBuffer(step.screenshot_url);
       if (img) {
@@ -119,7 +130,7 @@ export async function generateSOPDocx(
             type: getImageType(step.screenshot_url) as any,
             data: img.data,
             transformation: { width: w, height: h },
-            altText: { title: `Step ${i + 1}`, description: step.instruction, name: `step-${i + 1}` },
+            altText: { title: stepLabel, description: instruction, name: `step-${i + 1}` },
           })],
         }));
       }
@@ -140,5 +151,6 @@ export async function generateSOPDocx(
   });
 
   const blob = await Packer.toBlob(doc);
-  saveAs(blob, `${(title || 'SOP').replace(/\s+/g, '-').toLowerCase()}.docx`);
+  const suffix = lang === 'ar' ? '-ar' : '';
+  saveAs(blob, `${(tTitle || 'SOP').replace(/\s+/g, '-').toLowerCase()}${suffix}.docx`);
 }
