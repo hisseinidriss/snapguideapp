@@ -360,7 +360,8 @@ const ScribeRecording = () => {
             ))}
           </div>
           <div className="flex justify-end gap-2 pt-2 border-t">
-            <Button variant="outline" onClick={() => handleDownloadPdf('en')}><Download className="mr-2 h-4 w-4" />English</Button>
+            <Button variant="outline" onClick={handleDownloadDocx}><FileType className="mr-2 h-4 w-4" />Word</Button>
+            <Button variant="outline" onClick={() => handleDownloadPdf('en')}><Download className="mr-2 h-4 w-4" />English PDF</Button>
             <Button variant="outline" onClick={() => handleDownloadPdf('ar')}><Languages className="mr-2 h-4 w-4" />العربية</Button>
             <Button variant="outline" onClick={() => handleDownloadPdf('fr')}><Languages className="mr-2 h-4 w-4" />Français</Button>
           </div>
