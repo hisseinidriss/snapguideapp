@@ -129,6 +129,9 @@ const ScribeRecording = () => {
   const [descVal, setDescVal] = useState("");
   const [previewOpen, setPreviewOpen] = useState(false);
   const [translating, setTranslating] = useState(false);
+  const [previewLang, setPreviewLang] = useState<'en' | 'ar' | 'fr'>('en');
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [translationCache, setTranslationCache] = useState<Record<string, { title: string; description: string; steps: Array<{ instruction: string; notes: string | null }> }>>({});
 
   useEffect(() => {
     if (!appId || !recordingId) return;
