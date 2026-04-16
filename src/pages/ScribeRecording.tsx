@@ -259,13 +259,53 @@ const ScribeRecording = () => {
 
       {/* Steps list */}
       <div className="container max-w-5xl mx-auto px-4 py-10">
-        {/* Hero */}
-        <div className="mb-12 text-center">
+        {/* Hero - Editable */}
+        <div className="mb-12 text-center group/hero">
           <p className="text-xs font-semibold uppercase tracking-widest text-primary mb-3">Process Documentation</p>
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-3">{recording.title}</h2>
-          {recording.description && (
-            <p className="text-muted-foreground max-w-2xl mx-auto">{recording.description}</p>
+
+          {editTitle ? (
+            <Input
+              value={titleVal}
+              onChange={e => setTitleVal(e.target.value)}
+              onBlur={() => { updateRecording({ title: titleVal || "Untitled" }); setEditTitle(false); }}
+              onKeyDown={e => { if (e.key === 'Enter') { updateRecording({ title: titleVal || "Untitled" }); setEditTitle(false); } }}
+              autoFocus
+              placeholder="Enter a title…"
+              className="text-3xl md:text-4xl font-bold text-center h-auto py-2 mb-3 max-w-2xl mx-auto"
+            />
+          ) : (
+            <h2
+              className="text-3xl md:text-4xl font-bold text-foreground mb-3 cursor-pointer hover:text-primary transition-colors inline-flex items-center gap-2 group/title"
+              onClick={() => setEditTitle(true)}
+              title="Click to edit title"
+            >
+              {recording.title}
+              <Pencil className="h-4 w-4 text-muted-foreground opacity-0 group-hover/title:opacity-100 transition-opacity" />
+            </h2>
           )}
+
+          {editDesc ? (
+            <Textarea
+              value={descVal}
+              onChange={e => setDescVal(e.target.value)}
+              onBlur={() => { updateRecording({ description: descVal }); setEditDesc(false); }}
+              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); updateRecording({ description: descVal }); setEditDesc(false); } }}
+              autoFocus
+              placeholder="Add a description that will appear in the PDF…"
+              rows={2}
+              className="text-base text-center max-w-2xl mx-auto resize-none"
+            />
+          ) : (
+            <p
+              className="text-muted-foreground max-w-2xl mx-auto cursor-pointer hover:text-primary transition-colors inline-flex items-center gap-2 group/desc"
+              onClick={() => setEditDesc(true)}
+              title="Click to edit description"
+            >
+              {recording.description || <span className="italic opacity-70">Click to add a description…</span>}
+              <Pencil className="h-3 w-3 text-muted-foreground opacity-0 group-hover/desc:opacity-100 transition-opacity shrink-0" />
+            </p>
+          )}
+
           <div className="inline-flex items-center gap-2 mt-5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">
             <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
             {steps.length} step{steps.length !== 1 ? 's' : ''}
