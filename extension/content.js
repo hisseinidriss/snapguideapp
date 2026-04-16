@@ -85,24 +85,7 @@ function highlightElement(el) {
     transition: none;
   `;
 
-  // Add a small label
-  const label = document.createElement("div");
-  label.style.cssText = `
-    position: absolute;
-    top: -22px;
-    left: -3px;
-    background: #e53e3e;
-    color: #fff;
-    font-size: 10px;
-    font-family: system-ui, sans-serif;
-    font-weight: 600;
-    padding: 2px 6px;
-    border-radius: 3px 3px 0 0;
-    white-space: nowrap;
-    line-height: 14px;
-  `;
-  label.textContent = "▶ Click";
-  overlay.appendChild(label);
+  // Red border only — no label text
 
   document.documentElement.appendChild(overlay);
 
