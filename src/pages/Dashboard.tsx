@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Plus, Globe, MoreVertical, Trash2, ArrowRight, Pencil, ImagePlus, LayoutGrid, List, Download } from "lucide-react";
+import isdbLogo from "@/assets/isdb-logo.jpg";
 import { Label } from "@/components/ui/label";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -124,9 +125,7 @@ const Dashboard = () => {
       <header className="border-b bg-card">
         <div className="container flex h-16 items-center justify-between px-4">
           <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-sm">SG</span>
-            </div>
+            <img src={isdbLogo} alt="IsDB Logo" className="h-8 w-8 rounded-lg object-cover" />
             <h1 className="text-lg font-semibold">SnapGuide</h1>
           </div>
 
