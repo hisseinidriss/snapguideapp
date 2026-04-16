@@ -200,14 +200,31 @@ const ScribeRecording = () => {
     } finally { setTranslating(false); }
   };
 
-  const handleDownloadDocx = async () => {
+  const handleDownloadDocx = async (lang: 'en' | 'ar' = 'en') => {
     if (!recording) return;
     try {
-      await generateSOPDocx(recording.title, recording.description || '', steps);
+      if (lang === 'en') {
+        await generateSOPDocx(recording.title, recording.description || '', steps);
+        toast({ title: "Word document downloaded" });
+        return;
+      }
+      setTranslating(true);
+      const { data, error } = await supabase.functions.invoke('translate-steps', {
+        body: {
+          title: recording.title, description: recording.description || '',
+          steps: steps.map(s => ({ instruction: s.instruction, notes: s.notes })),
+          targetLanguage: lang,
+        },
+      });
+      if (error) throw error;
+      await generateSOPDocx(recording.title, recording.description || '', steps, {
+        language: lang, translatedTitle: data.title,
+        translatedDescription: data.description, translatedSteps: data.steps,
+      });
       toast({ title: "Word document downloaded" });
     } catch (err: any) {
       toast({ title: "Download failed", description: err.message, variant: "destructive" });
-    }
+    } finally { setTranslating(false); }
   };
 
   if (loading) {
