@@ -4,6 +4,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import {
   ArrowLeft, Pencil, Trash2, Download, Plus, Languages, Loader2, FileText,
 } from "lucide-react";
+import isdbLogo from "@/assets/isdb-logo.jpg";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -216,6 +217,7 @@ const ScribeRecording = () => {
           <Button variant="ghost" size="icon" asChild>
             <Link to={`/app/${appId}`}><ArrowLeft className="h-4 w-4" /></Link>
           </Button>
+          <img src={isdbLogo} alt="IsDB Logo" className="h-8 w-8 rounded-lg object-cover" />
           <div className="flex-1 min-w-0">
             {editHeaderTitle ? (
               <Input value={titleVal} onChange={e => setTitleVal(e.target.value)}
