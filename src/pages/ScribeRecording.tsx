@@ -264,20 +264,24 @@ const ScribeRecording = () => {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel className="text-xs">Word Document</DropdownMenuLabel>
-                <DropdownMenuItem onClick={handleDownloadDocx}>
+                <DropdownMenuItem onClick={() => handleDownloadDocx('en')}>
                   <FileType className="mr-2 h-4 w-4 text-primary" />
-                  Download as .docx
+                  English (.docx)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleDownloadDocx('ar')}>
+                  <FileType className="mr-2 h-4 w-4 text-primary" />
+                  العربية (.docx)
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuLabel className="text-xs">PDF</DropdownMenuLabel>
                 <DropdownMenuItem onClick={() => handleDownloadPdf('en')}>
-                  <span className="mr-2">🇬🇧</span> English
+                  English
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handleDownloadPdf('ar')}>
-                  <span className="mr-2">🇸🇦</span> العربية
+                  العربية
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handleDownloadPdf('fr')}>
-                  <span className="mr-2">🇫🇷</span> Français
+                  Français
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
