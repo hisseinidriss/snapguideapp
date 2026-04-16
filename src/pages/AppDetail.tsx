@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Plus, MoreVertical, HelpCircle, GripVertical, FileText, Download, Loader2 } from "lucide-react";
+import isdbLogo from "@/assets/isdb-logo.jpg";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -211,6 +212,7 @@ const AppDetail = () => {
             <Button variant="ghost" size="icon" asChild>
               <Link to="/"><ArrowLeft className="h-4 w-4" /></Link>
             </Button>
+            <img src={isdbLogo} alt="IsDB Logo" className="h-8 w-8 rounded-lg object-cover" />
             <div>
               <h1 className="text-sm font-semibold">{appName}</h1>
               <p className="text-xs text-muted-foreground">{appUrl || "No URL configured"}</p>
