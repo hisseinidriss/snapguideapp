@@ -47,18 +47,15 @@ const SortableRecordingCard = ({ recording, editingId, editingName, setEditingId
       className="group p-5 animate-fade-in hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 border-border/50 bg-card/80 backdrop-blur relative overflow-hidden"
     >
       {/* Color accent stripe */}
-      <div className="absolute left-0 top-0 bottom-0 w-1" style={{ backgroundColor: bgColor }} />
+      <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary" />
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pl-2">
         <div className="flex items-center gap-3 min-w-0 flex-1">
           <button {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-foreground touch-none opacity-0 group-hover:opacity-100 transition-opacity">
             <GripVertical className="h-5 w-5" />
           </button>
-          <div
-            className="h-11 w-11 rounded-xl flex items-center justify-center shrink-0 shadow-sm ring-2 ring-background"
-            style={{ backgroundColor: `${bgColor}20` }}
-          >
-            <FileText className="h-5 w-5" style={{ color: bgColor }} />
+          <div className="h-11 w-11 rounded-xl flex items-center justify-center shrink-0 shadow-sm ring-2 ring-background bg-primary/10">
+            <FileText className="h-5 w-5 text-primary" />
           </div>
           <div className="min-w-0 flex-1">
             {editingId === recording.id ? (
