@@ -160,19 +160,6 @@ const ScribeRecording = () => {
     setSteps(prev => prev.filter(s => s.id !== id));
   };
 
-  const addStep = async () => {
-    if (!recordingId) return;
-    const { data, error } = await recordingStepsApi.create({
-      recording_id: recordingId,
-      sort_order: steps.length,
-      action_type: 'click',
-      instruction: 'New step - describe the action',
-    });
-    if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
-    if (data) {
-      setSteps(prev => [...prev, data as unknown as ProcessRecordingStep]);
-    }
-  };
 
   const handleDownloadPdf = async (lang: PdfLanguage = 'en') => {
     if (!recording) return;
@@ -264,7 +251,6 @@ const ScribeRecording = () => {
       <div className="container max-w-3xl mx-auto px-4 py-6 space-y-4">
         <div className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground">{steps.length} step{steps.length !== 1 ? 's' : ''}</p>
-          <Button onClick={addStep} size="sm" variant="outline"><Plus className="mr-1 h-3 w-3" />Add Step</Button>
         </div>
 
         {steps.map((step, i) => (
