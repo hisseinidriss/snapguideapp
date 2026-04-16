@@ -200,14 +200,31 @@ const ScribeRecording = () => {
     } finally { setTranslating(false); }
   };
 
-  const handleDownloadDocx = async () => {
+  const handleDownloadDocx = async (lang: 'en' | 'ar' = 'en') => {
     if (!recording) return;
     try {
-      await generateSOPDocx(recording.title, recording.description || '', steps);
+      if (lang === 'en') {
+        await generateSOPDocx(recording.title, recording.description || '', steps);
+        toast({ title: "Word document downloaded" });
+        return;
+      }
+      setTranslating(true);
+      const { data, error } = await supabase.functions.invoke('translate-steps', {
+        body: {
+          title: recording.title, description: recording.description || '',
+          steps: steps.map(s => ({ instruction: s.instruction, notes: s.notes })),
+          targetLanguage: lang,
+        },
+      });
+      if (error) throw error;
+      await generateSOPDocx(recording.title, recording.description || '', steps, {
+        language: lang, translatedTitle: data.title,
+        translatedDescription: data.description, translatedSteps: data.steps,
+      });
       toast({ title: "Word document downloaded" });
     } catch (err: any) {
       toast({ title: "Download failed", description: err.message, variant: "destructive" });
-    }
+    } finally { setTranslating(false); }
   };
 
   if (loading) {
@@ -247,20 +264,24 @@ const ScribeRecording = () => {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel className="text-xs">Word Document</DropdownMenuLabel>
-                <DropdownMenuItem onClick={handleDownloadDocx}>
+                <DropdownMenuItem onClick={() => handleDownloadDocx('en')}>
                   <FileType className="mr-2 h-4 w-4 text-primary" />
-                  Download as .docx
+                  English (.docx)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleDownloadDocx('ar')}>
+                  <FileType className="mr-2 h-4 w-4 text-primary" />
+                  العربية (.docx)
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuLabel className="text-xs">PDF</DropdownMenuLabel>
                 <DropdownMenuItem onClick={() => handleDownloadPdf('en')}>
-                  <span className="mr-2">🇬🇧</span> English
+                  English
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handleDownloadPdf('ar')}>
-                  <span className="mr-2">🇸🇦</span> العربية
+                  العربية
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handleDownloadPdf('fr')}>
-                  <span className="mr-2">🇫🇷</span> Français
+                  Français
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -360,7 +381,8 @@ const ScribeRecording = () => {
             ))}
           </div>
           <div className="flex justify-end gap-2 pt-2 border-t">
-            <Button variant="outline" onClick={handleDownloadDocx}><FileType className="mr-2 h-4 w-4" />Word</Button>
+            <Button variant="outline" onClick={() => handleDownloadDocx('en')}><FileType className="mr-2 h-4 w-4" />Word</Button>
+            <Button variant="outline" onClick={() => handleDownloadDocx('ar')}><FileType className="mr-2 h-4 w-4" />Word (AR)</Button>
             <Button variant="outline" onClick={() => handleDownloadPdf('en')}><Download className="mr-2 h-4 w-4" />English PDF</Button>
             <Button variant="outline" onClick={() => handleDownloadPdf('ar')}><Languages className="mr-2 h-4 w-4" />العربية</Button>
             <Button variant="outline" onClick={() => handleDownloadPdf('fr')}><Languages className="mr-2 h-4 w-4" />Français</Button>
