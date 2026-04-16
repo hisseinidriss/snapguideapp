@@ -256,14 +256,11 @@ const AppDetail = () => {
         <div className="mb-10 animate-fade-in">
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-5">
             <div className="flex items-start gap-4">
-              <div
-                className="h-16 w-16 rounded-2xl flex items-center justify-center shadow-lg shrink-0"
-                style={{ backgroundColor: `${appColor}25` }}
-              >
-                <FileText className="h-7 w-7" style={{ color: appColor }} />
+              <div className="h-16 w-16 rounded-2xl flex items-center justify-center shadow-lg shrink-0 bg-primary/10 ring-1 ring-primary/20">
+                <FileText className="h-7 w-7 text-primary" />
               </div>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-widest mb-1.5" style={{ color: appColor }}>
+                <p className="text-xs font-semibold uppercase tracking-widest mb-1.5 text-primary">
                   Application Workspace
                 </p>
                 <h2 className="text-3xl md:text-4xl font-bold tracking-tight">Process Recordings</h2>
