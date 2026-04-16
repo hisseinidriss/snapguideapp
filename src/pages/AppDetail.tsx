@@ -233,63 +233,97 @@ const AppDetail = () => {
     );
   }
 
+  const appColor = generateAppColor(appName);
+
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b bg-card">
-        <div className="container flex h-14 items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" asChild>
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
+      {/* Frosted glass header */}
+      <header className="sticky top-0 z-20 border-b border-border/40 bg-card/70 backdrop-blur-xl">
+        <div className="container flex h-16 items-center justify-between gap-4 px-4">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" asChild className="rounded-full">
               <Link to="/"><ArrowLeft className="h-4 w-4" /></Link>
             </Button>
-            <img src={isdbLogo} alt="IsDB Logo" className="h-8 w-8 rounded-lg object-cover" />
-            <div>
-              <h1 className="text-sm font-semibold">{appName}</h1>
-              <p className="text-xs text-muted-foreground">{appUrl || "No URL configured"}</p>
+            <img src={isdbLogo} alt="IsDB Logo" className="h-9 w-9 rounded-xl object-cover ring-2 ring-primary/10" />
+            <div className="min-w-0">
+              <h1 className="text-base font-bold tracking-tight truncate">{appName}</h1>
+              <p className="text-[10px] text-muted-foreground -mt-0.5 uppercase tracking-wider truncate">
+                {appUrl || "No URL configured"}
+              </p>
             </div>
           </div>
         </div>
       </header>
 
-      <main className="container py-8 px-4">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-semibold">Recordings</h2>
-          <div className="flex items-center gap-2">
-            {recordings.length > 0 && (
-              <Button variant="outline" size="sm" onClick={handleDownloadAll} disabled={downloadingAll}>
-                {downloadingAll ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Download className="mr-1.5 h-4 w-4" />}
-                Download All
-              </Button>
-            )}
-            <Dialog open={open} onOpenChange={setOpen}>
-              <DialogTrigger asChild>
-                <Button size="sm">
-                  <Plus className="mr-1.5 h-4 w-4" />
-                  New Recording
-                </Button>
-              </DialogTrigger>
-            <DialogContent>
-              <DialogHeader><DialogTitle>Create a new recording</DialogTitle></DialogHeader>
-              <div className="space-y-4 pt-2">
-                <div className="space-y-2">
-                  <Label>Recording Name</Label>
-                  <Input placeholder="e.g. Employee Onboarding Process" value={recordingName} onChange={(e) => setRecordingName(e.target.value)} />
-                </div>
-                <Button onClick={handleCreateRecording} className="w-full" disabled={!recordingName.trim()}>Create Recording</Button>
+      <main className="container py-10 px-4">
+        {/* Hero */}
+        <div className="mb-10 animate-fade-in">
+          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-5">
+            <div className="flex items-start gap-4">
+              <div
+                className="h-16 w-16 rounded-2xl flex items-center justify-center shadow-lg shrink-0"
+                style={{ backgroundColor: `${appColor}25` }}
+              >
+                <FileText className="h-7 w-7" style={{ color: appColor }} />
               </div>
-            </DialogContent>
-           </Dialog>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-widest mb-1.5" style={{ color: appColor }}>
+                  Application Workspace
+                </p>
+                <h2 className="text-3xl md:text-4xl font-bold tracking-tight">Process Recordings</h2>
+                <p className="text-muted-foreground mt-2 max-w-xl">
+                  Browse, organize, and export step-by-step documentation captured for <span className="font-semibold text-foreground">{appName}</span>.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              {recordings.length > 0 && (
+                <>
+                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-semibold">
+                    <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                    {recordings.length} recording{recordings.length !== 1 ? 's' : ''}
+                  </div>
+                  <Button variant="outline" size="sm" onClick={handleDownloadAll} disabled={downloadingAll} className="rounded-full">
+                    {downloadingAll ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Download className="mr-1.5 h-4 w-4" />}
+                    Download All
+                  </Button>
+                </>
+              )}
+              <Dialog open={open} onOpenChange={setOpen}>
+                <DialogTrigger asChild>
+                  <Button size="sm" className="rounded-full px-5 shadow-md bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70">
+                    <Plus className="mr-1.5 h-4 w-4" />
+                    New Recording
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader><DialogTitle>Create a new recording</DialogTitle></DialogHeader>
+                  <div className="space-y-4 pt-2">
+                    <div className="space-y-2">
+                      <Label>Recording Name</Label>
+                      <Input placeholder="e.g. Employee Onboarding Process" value={recordingName} onChange={(e) => setRecordingName(e.target.value)} />
+                    </div>
+                    <Button onClick={handleCreateRecording} className="w-full" disabled={!recordingName.trim()}>Create Recording</Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
         </div>
 
         {recordings.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-24 text-center animate-fade-in">
-            <div className="h-16 w-16 rounded-2xl bg-accent/10 flex items-center justify-center mb-6">
-              <HelpCircle className="h-8 w-8 text-accent" />
+          <div className="flex flex-col items-center justify-center py-24 text-center animate-fade-in border-2 border-dashed border-border/60 rounded-3xl bg-card/40">
+            <div className="h-20 w-20 rounded-3xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center mb-6 ring-8 ring-primary/5">
+              <HelpCircle className="h-9 w-9 text-primary" />
             </div>
-            <h2 className="text-2xl font-semibold mb-2">No recordings yet</h2>
+            <h2 className="text-2xl font-bold mb-2">No recordings yet</h2>
             <p className="text-muted-foreground max-w-md mb-6">
-              Create your first recording to start documenting processes step by step.
+              Use the SnapGuide browser extension to capture your first process step by step.
             </p>
+            <Button onClick={() => setOpen(true)} className="rounded-full px-6 shadow-md">
+              <Plus className="mr-2 h-4 w-4" />
+              Create Recording
+            </Button>
           </div>
         ) : (
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
