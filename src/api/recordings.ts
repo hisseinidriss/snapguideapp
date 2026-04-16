@@ -31,9 +31,28 @@ export const recordingsApi = {
   },
 
   delete: async (id: string): Promise<ApiResult<null>> => {
+    // Remove all screenshots for this recording from storage (folder = recording id)
+    try {
+      const { data: files } = await supabase.storage.from("recording-screenshots").list(id);
+      if (files && files.length > 0) {
+        const paths = files.map((f) => `${id}/${f.name}`);
+        await supabase.storage.from("recording-screenshots").remove(paths);
+      }
+    } catch (e) {
+      console.warn("Failed to clean recording screenshots:", e);
+    }
     const { error } = await supabase.from("process_recordings").delete().eq("id", id);
     return { data: null, error: error ? { message: error.message } : null };
   },
+};
+
+// Extract storage path (e.g. "<recording_id>/step-1.png") from a public screenshot URL
+const extractScreenshotPath = (url?: string | null): string | null => {
+  if (!url) return null;
+  const marker = "/recording-screenshots/";
+  const idx = url.indexOf(marker);
+  if (idx === -1) return null;
+  return url.slice(idx + marker.length).split("?")[0];
 };
 
 export const recordingStepsApi = {
@@ -58,6 +77,20 @@ export const recordingStepsApi = {
   },
 
   delete: async (id: string): Promise<ApiResult<null>> => {
+    // Look up the step's screenshot first so we can remove the file from storage
+    try {
+      const { data: step } = await supabase
+        .from("process_recording_steps")
+        .select("screenshot_url")
+        .eq("id", id)
+        .single();
+      const path = extractScreenshotPath(step?.screenshot_url);
+      if (path) {
+        await supabase.storage.from("recording-screenshots").remove([path]);
+      }
+    } catch (e) {
+      console.warn("Failed to clean step screenshot:", e);
+    }
     const { error } = await supabase.from("process_recording_steps").delete().eq("id", id);
     return { data: null, error: error ? { message: error.message } : null };
   },
