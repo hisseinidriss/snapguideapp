@@ -1,16 +1,12 @@
-// ScribeRecording - step editor for a single recording
-import { useState, useEffect, useCallback } from "react";
+// ScribeRecording - simplified step viewer (Scribe-style)
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import {
-  ArrowLeft, Pencil, Trash2, GripVertical,
-  FileText, Download, Plus, StickyNote, Image as ImageIcon, Languages, Loader2,
+  ArrowLeft, Pencil, Trash2, Download, Plus, Languages, Loader2, FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
@@ -22,58 +18,91 @@ import { useToast } from "@/hooks/use-toast";
 import { generateSOPPdf, type PdfLanguage } from "@/lib/pdf-generator";
 import type { ProcessRecording, ProcessRecordingStep } from "@/types/recording";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, useSensors,
-  type DragEndEvent, DragOverlay, type DragStartEvent,
-} from "@dnd-kit/core";
-import {
-  arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 
-interface SortableStepProps {
+/* ── Step Card ── */
+interface StepCardProps {
   step: ProcessRecordingStep;
   index: number;
-  isSelected: boolean;
-  onSelect: () => void;
+  onUpdate: (id: string, updates: Partial<ProcessRecordingStep>) => void;
+  onRemove: (id: string) => void;
 }
 
-const SortableStep = ({ step, index, isSelected, onSelect }: SortableStepProps) => {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: step.id });
-  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 };
+const StepCard = ({ step, index, onUpdate, onRemove }: StepCardProps) => {
+  const [editing, setEditing] = useState(false);
+  const [val, setVal] = useState(step.instruction);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  const actionColors: Record<string, string> = {
-    click: 'bg-blue-100 text-blue-700',
-    type: 'bg-amber-100 text-amber-700',
-    select: 'bg-purple-100 text-purple-700',
-    navigate: 'bg-emerald-100 text-emerald-700',
-    scroll: 'bg-gray-100 text-gray-700',
-    hover: 'bg-pink-100 text-pink-700',
+  useEffect(() => { setVal(step.instruction); }, [step.instruction]);
+  useEffect(() => { if (editing) inputRef.current?.focus(); }, [editing]);
+
+  const commit = () => {
+    if (val.trim() && val !== step.instruction) onUpdate(step.id, { instruction: val });
+    setEditing(false);
   };
 
   return (
-    <div ref={setNodeRef} style={style} onClick={onSelect}
-      className={`p-3 rounded-lg border cursor-pointer transition-colors ${isSelected ? "border-primary/30 bg-primary/5" : "border-transparent hover:bg-muted"}`}
-    >
-      <div className="flex items-start gap-2">
-        <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing mt-1 touch-none">
-          <GripVertical className="h-3.5 w-3.5 text-muted-foreground" />
-        </div>
-        <span className="text-xs font-mono text-muted-foreground mt-0.5 w-5 text-center shrink-0">{index + 1}</span>
+    <div className="group relative bg-card rounded-xl border shadow-sm overflow-hidden">
+      {/* Step header */}
+      <div className="flex items-start gap-3 p-4 pb-2">
+        <span className="flex items-center justify-center h-7 w-7 rounded-full bg-primary text-primary-foreground text-xs font-bold shrink-0 mt-0.5">
+          {index + 1}
+        </span>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium truncate">{step.instruction}</p>
-          <div className="flex items-center gap-2 mt-1">
-            <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${actionColors[step.action_type] || ''}`}>{step.action_type}</Badge>
-            {step.screenshot_url && <ImageIcon className="h-3 w-3 text-muted-foreground" />}
-            {step.notes && <StickyNote className="h-3 w-3 text-muted-foreground" />}
+          {editing ? (
+            <Textarea
+              ref={inputRef}
+              value={val}
+              onChange={e => setVal(e.target.value)}
+              onBlur={commit}
+              onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); commit(); } }}
+              rows={2}
+              className="text-sm font-medium resize-none"
+            />
+          ) : (
+            <p
+              className="text-sm font-medium cursor-pointer hover:text-primary transition-colors leading-snug"
+              onDoubleClick={() => setEditing(true)}
+              title="Double-click to edit"
+            >
+              {step.instruction}
+              <Pencil className="inline-block ml-1.5 h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+            </p>
+          )}
+        </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity hover:text-destructive shrink-0"
+          onClick={() => onRemove(step.id)}
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+
+      {/* Screenshot */}
+      {step.screenshot_url ? (
+        <div className="px-4 pb-4">
+          <div className="rounded-lg border overflow-hidden bg-muted">
+            <img
+              src={step.screenshot_url}
+              alt={`Step ${index + 1} screenshot`}
+              className="w-full h-auto"
+              loading="lazy"
+            />
           </div>
         </div>
-      </div>
+      ) : (
+        <div className="px-4 pb-4">
+          <div className="rounded-lg border border-dashed bg-muted/50 flex items-center justify-center h-32 text-xs text-muted-foreground">
+            No screenshot captured
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
+/* ── Main Page ── */
 const ScribeRecording = () => {
   const { appId, recordingId } = useParams<{ appId: string; recordingId: string }>();
   const navigate = useNavigate();
@@ -81,19 +110,13 @@ const ScribeRecording = () => {
 
   const [recording, setRecording] = useState<ProcessRecording | null>(null);
   const [steps, setSteps] = useState<ProcessRecordingStep[]>([]);
-  const [selectedStepId, setSelectedStepId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [editTitle, setEditTitle] = useState(false);
   const [editDesc, setEditDesc] = useState(false);
   const [titleVal, setTitleVal] = useState("");
   const [descVal, setDescVal] = useState("");
   const [previewOpen, setPreviewOpen] = useState(false);
-  const [activeId, setActiveId] = useState<string | null>(null);
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
-  );
+  const [translating, setTranslating] = useState(false);
 
   useEffect(() => {
     if (!appId || !recordingId) return;
@@ -108,27 +131,10 @@ const ScribeRecording = () => {
         setDescVal(recRes.data.description || "");
       }
       setSteps((stepsRes.data || []) as unknown as ProcessRecordingStep[]);
-      if (stepsRes.data?.length) setSelectedStepId(stepsRes.data[0].id);
       setLoading(false);
     };
     load();
   }, [appId, recordingId]);
-
-  const persistOrder = useCallback(async (newSteps: ProcessRecordingStep[]) => {
-    await Promise.all(newSteps.map((s, i) => recordingStepsApi.update(s.id, { sort_order: i })));
-  }, []);
-
-  const handleDragEnd = async (event: DragEndEvent) => {
-    setActiveId(null);
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-    const oldIdx = steps.findIndex(s => s.id === active.id);
-    const newIdx = steps.findIndex(s => s.id === over.id);
-    if (oldIdx === -1 || newIdx === -1) return;
-    const newSteps = arrayMove(steps, oldIdx, newIdx);
-    setSteps(newSteps);
-    await persistOrder(newSteps);
-  };
 
   const updateRecording = async (updates: Partial<ProcessRecording>) => {
     if (!recordingId) return;
@@ -151,10 +157,7 @@ const ScribeRecording = () => {
 
   const removeStep = async (id: string) => {
     await recordingStepsApi.delete(id);
-    const newSteps = steps.filter(s => s.id !== id);
-    setSteps(newSteps);
-    if (selectedStepId === id) setSelectedStepId(newSteps[0]?.id || null);
-    await persistOrder(newSteps);
+    setSteps(prev => prev.filter(s => s.id !== id));
   };
 
   const addStep = async () => {
@@ -167,68 +170,53 @@ const ScribeRecording = () => {
     });
     if (error) { toast({ title: "Error", description: error.message, variant: "destructive" }); return; }
     if (data) {
-      const newStep = data as unknown as ProcessRecordingStep;
-      setSteps(prev => [...prev, newStep]);
-      setSelectedStepId(newStep.id);
+      setSteps(prev => [...prev, data as unknown as ProcessRecordingStep]);
     }
   };
 
-  const [translating, setTranslating] = useState(false);
-
   const handleDownloadPdf = async (lang: PdfLanguage = 'en') => {
     if (!recording) return;
-
     if (lang === 'en') {
       await generateSOPPdf(recording.title, recording.description || '', steps);
-      toast({ title: "PDF downloaded", description: "SOP document has been saved." });
+      toast({ title: "PDF downloaded" });
       return;
     }
-
-    // Translate via edge function
     setTranslating(true);
     try {
       const { data, error } = await supabase.functions.invoke('translate-steps', {
         body: {
-          title: recording.title,
-          description: recording.description || '',
+          title: recording.title, description: recording.description || '',
           steps: steps.map(s => ({ instruction: s.instruction, notes: s.notes })),
           targetLanguage: lang,
         },
       });
-
       if (error) throw error;
-
       await generateSOPPdf(recording.title, recording.description || '', steps, {
-        language: lang,
-        translatedTitle: data.title,
-        translatedDescription: data.description,
-        translatedSteps: data.steps,
+        language: lang, translatedTitle: data.title,
+        translatedDescription: data.description, translatedSteps: data.steps,
       });
-
-      const langName = lang === 'ar' ? 'Arabic' : 'French';
-      toast({ title: "PDF downloaded", description: `${langName} SOP document has been saved.` });
+      toast({ title: "PDF downloaded" });
     } catch (err: any) {
-      toast({ title: "Translation failed", description: err.message || "Could not translate. Try again.", variant: "destructive" });
-    } finally {
-      setTranslating(false);
-    }
+      toast({ title: "Translation failed", description: err.message, variant: "destructive" });
+    } finally { setTranslating(false); }
   };
 
-  const selectedStep = steps.find(s => s.id === selectedStepId);
-
   if (loading) {
-    return (<div className="min-h-screen flex items-center justify-center bg-background"><div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" /></div>);
+    return <div className="min-h-screen flex items-center justify-center bg-background"><div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" /></div>;
   }
 
   if (!recording) {
-    return (<div className="min-h-screen flex items-center justify-center bg-background"><div className="text-center"><h2 className="text-xl font-semibold mb-2">Recording not found</h2><Button variant="ghost" asChild><Link to={`/app/${appId}`}>Go back</Link></Button></div></div>);
+    return <div className="min-h-screen flex items-center justify-center bg-background"><div className="text-center"><h2 className="text-xl font-semibold mb-2">Recording not found</h2><Button variant="ghost" asChild><Link to={`/app/${appId}`}>Go back</Link></Button></div></div>;
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <header className="border-b bg-card shrink-0">
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="border-b bg-card sticky top-0 z-10">
         <div className="container flex h-14 items-center gap-3 px-4">
-          <Button variant="ghost" size="icon" asChild><Link to={`/app/${appId}`}><ArrowLeft className="h-4 w-4" /></Link></Button>
+          <Button variant="ghost" size="icon" asChild>
+            <Link to={`/app/${appId}`}><ArrowLeft className="h-4 w-4" /></Link>
+          </Button>
           <div className="flex-1 min-w-0">
             {editTitle ? (
               <Input value={titleVal} onChange={e => setTitleVal(e.target.value)}
@@ -236,7 +224,8 @@ const ScribeRecording = () => {
                 onKeyDown={e => { if (e.key === 'Enter') { updateRecording({ title: titleVal }); setEditTitle(false); } }}
                 className="h-8 text-sm font-semibold" autoFocus />
             ) : (
-              <h1 className="text-sm font-semibold truncate cursor-pointer hover:text-primary transition-colors" onClick={() => setEditTitle(true)}>
+              <h1 className="text-sm font-semibold truncate cursor-pointer hover:text-primary transition-colors"
+                onClick={() => setEditTitle(true)}>
                 {recording.title}<Pencil className="inline-block ml-1.5 h-3 w-3 text-muted-foreground" />
               </h1>
             )}
@@ -246,7 +235,8 @@ const ScribeRecording = () => {
                 onKeyDown={e => { if (e.key === 'Enter') { updateRecording({ description: descVal }); setEditDesc(false); } }}
                 className="h-6 text-xs mt-0.5" placeholder="Add a description…" autoFocus />
             ) : (
-              <p className="text-xs text-muted-foreground cursor-pointer hover:text-primary transition-colors truncate" onClick={() => setEditDesc(true)}>
+              <p className="text-xs text-muted-foreground cursor-pointer hover:text-primary transition-colors truncate"
+                onClick={() => setEditDesc(true)}>
                 {descVal || "Add a description…"}<Pencil className="inline-block ml-1 h-2.5 w-2.5" />
               </p>
             )}
@@ -258,75 +248,45 @@ const ScribeRecording = () => {
             <Select onValueChange={(v) => handleDownloadPdf(v as PdfLanguage)} disabled={translating}>
               <SelectTrigger className="h-8 w-auto gap-1.5 text-sm">
                 {translating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
-                <span className="hidden sm:inline">{translating ? 'Translating…' : 'Download PDF'}</span>
+                <span className="hidden sm:inline">{translating ? 'Translating…' : 'PDF'}</span>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="en">🇬🇧 English</SelectItem>
-                <SelectItem value="ar">🇸🇦 العربية (Arabic)</SelectItem>
-                <SelectItem value="fr">🇫🇷 Français (French)</SelectItem>
+                <SelectItem value="ar">🇸🇦 العربية</SelectItem>
+                <SelectItem value="fr">🇫🇷 Français</SelectItem>
               </SelectContent>
             </Select>
           </div>
         </div>
       </header>
 
-      <div className="flex-1 flex overflow-hidden">
-        <div className="w-72 border-r bg-card overflow-y-auto shrink-0 flex-col hidden lg:flex">
-          <div className="p-3 border-b"><Button onClick={addStep} size="sm" className="w-full"><Plus className="mr-1 h-3 w-3" />Add Step</Button></div>
-          <div className="flex-1 overflow-y-auto p-2 space-y-1">
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={(e: DragStartEvent) => setActiveId(e.active.id as string)} onDragEnd={handleDragEnd}>
-              <SortableContext items={steps.map(s => s.id)} strategy={verticalListSortingStrategy}>
-                {steps.map((step, i) => (<SortableStep key={step.id} step={step} index={i} isSelected={selectedStepId === step.id} onSelect={() => setSelectedStepId(step.id)} />))}
-              </SortableContext>
-              <DragOverlay>
-                {activeId && steps.find(s => s.id === activeId) ? (
-                  <div className="p-2.5 rounded-lg bg-card border shadow-lg opacity-90"><p className="text-xs font-medium truncate">{steps.find(s => s.id === activeId)?.instruction}</p></div>
-                ) : null}
-              </DragOverlay>
-            </DndContext>
-            {steps.length === 0 && (<p className="text-xs text-muted-foreground text-center py-8">No steps yet. Add steps manually to document the process.</p>)}
-          </div>
+      {/* Steps list */}
+      <div className="container max-w-3xl mx-auto px-4 py-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-muted-foreground">{steps.length} step{steps.length !== 1 ? 's' : ''}</p>
+          <Button onClick={addStep} size="sm" variant="outline"><Plus className="mr-1 h-3 w-3" />Add Step</Button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6">
-          {selectedStep ? (
-            <div className="max-w-2xl mx-auto space-y-6 animate-fade-in">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold">Step {steps.indexOf(selectedStep) + 1} of {steps.length}</h2>
-                <Button variant="ghost" size="sm" className="text-destructive" onClick={() => removeStep(selectedStep.id)}><Trash2 className="mr-1 h-3 w-3" />Remove</Button>
-              </div>
-              <div className="space-y-2">
-                <Label>Action Type</Label>
-                <Select value={selectedStep.action_type} onValueChange={v => updateStep(selectedStep.id, { action_type: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="click">Click</SelectItem><SelectItem value="type">Type</SelectItem><SelectItem value="select">Select</SelectItem>
-                    <SelectItem value="navigate">Navigate</SelectItem><SelectItem value="scroll">Scroll</SelectItem><SelectItem value="hover">Hover</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2"><Label>Instruction</Label><Textarea value={selectedStep.instruction} onChange={e => updateStep(selectedStep.id, { instruction: e.target.value })} placeholder='e.g. Click "Submit" button' rows={2} /></div>
-              <div className="space-y-2"><Label>Notes <span className="text-muted-foreground font-normal">(optional)</span></Label><Textarea value={selectedStep.notes || ""} onChange={e => updateStep(selectedStep.id, { notes: e.target.value || null })} placeholder="Additional context or tips for this step" rows={2} /></div>
-              <div className="space-y-2"><Label>CSS Selector <span className="text-muted-foreground font-normal">(optional)</span></Label><Input value={selectedStep.selector || ""} onChange={e => updateStep(selectedStep.id, { selector: e.target.value })} placeholder="#submit-btn" className="font-mono text-sm" /></div>
-              <div className="space-y-2"><Label>Target URL <span className="text-muted-foreground font-normal">(optional)</span></Label><Input value={selectedStep.target_url || ""} onChange={e => updateStep(selectedStep.id, { target_url: e.target.value })} placeholder="/page or https://app.com/page" className="font-mono text-sm" /></div>
-              {selectedStep.screenshot_url && (
-                <div className="space-y-2"><Label>Screenshot</Label><div className="rounded-lg border overflow-hidden bg-muted"><img src={selectedStep.screenshot_url} alt={`Step ${steps.indexOf(selectedStep) + 1} screenshot`} className="w-full h-auto" /></div></div>
-              )}
-            </div>
-          ) : (
-            <div className="flex items-center justify-center h-full text-muted-foreground text-sm"><p>Select a step to edit or add a new step.</p></div>
-          )}
-        </div>
+        {steps.map((step, i) => (
+          <StepCard key={step.id} step={step} index={i} onUpdate={updateStep} onRemove={removeStep} />
+        ))}
+
+        {steps.length === 0 && (
+          <div className="text-center py-16 text-muted-foreground">
+            <p className="text-sm">No steps yet. Add steps manually or use the extension to record.</p>
+          </div>
+        )}
       </div>
 
+      {/* Preview Dialog */}
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
         <DialogContent className="sm:max-w-3xl max-h-[85vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Documentation Preview</DialogTitle></DialogHeader>
           <div className="space-y-6 py-4">
             <div className="bg-primary/10 rounded-xl p-6">
               <h2 className="text-xl font-bold text-foreground">{recording.title}</h2>
-              {recording.description && (<p className="text-sm text-muted-foreground mt-2">{recording.description}</p>)}
-              <p className="text-xs text-muted-foreground mt-3">{steps.length} step{steps.length !== 1 ? 's' : ''} · Generated {new Date().toLocaleDateString()}</p>
+              {recording.description && <p className="text-sm text-muted-foreground mt-2">{recording.description}</p>}
+              <p className="text-xs text-muted-foreground mt-3">{steps.length} step{steps.length !== 1 ? 's' : ''}</p>
             </div>
             {steps.map((step, i) => (
               <div key={step.id} className="flex gap-4">
@@ -336,12 +296,10 @@ const ScribeRecording = () => {
                 </div>
                 <div className="flex-1 pb-8">
                   <p className="font-semibold text-foreground">{step.instruction}</p>
-                  {step.notes && (<p className="text-sm text-muted-foreground mt-1 italic">{step.notes}</p>)}
-                  {step.screenshot_url && (<div className="mt-3 rounded-lg border overflow-hidden bg-muted max-w-md"><img src={step.screenshot_url} alt={`Step ${i + 1}`} className="w-full h-auto" /></div>)}
+                  {step.screenshot_url && <div className="mt-3 rounded-lg border overflow-hidden bg-muted max-w-md"><img src={step.screenshot_url} alt={`Step ${i + 1}`} className="w-full h-auto" /></div>}
                 </div>
               </div>
             ))}
-            {steps.length === 0 && (<p className="text-center text-muted-foreground py-8">No steps recorded yet.</p>)}
           </div>
           <div className="flex justify-end gap-2 pt-2 border-t">
             <Button variant="outline" onClick={() => handleDownloadPdf('en')}><Download className="mr-2 h-4 w-4" />English</Button>
