@@ -258,18 +258,29 @@ const ScribeRecording = () => {
       </header>
 
       {/* Steps list */}
-      <div className="container max-w-3xl mx-auto px-4 py-6 space-y-4">
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">{steps.length} step{steps.length !== 1 ? 's' : ''}</p>
+      <div className="container max-w-5xl mx-auto px-4 py-10">
+        {/* Hero */}
+        <div className="mb-12 text-center">
+          <p className="text-xs font-semibold uppercase tracking-widest text-primary mb-3">Process Documentation</p>
+          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-3">{recording.title}</h2>
+          {recording.description && (
+            <p className="text-muted-foreground max-w-2xl mx-auto">{recording.description}</p>
+          )}
+          <div className="inline-flex items-center gap-2 mt-5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">
+            <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+            {steps.length} step{steps.length !== 1 ? 's' : ''}
+          </div>
         </div>
 
-        {steps.map((step, i) => (
-          <StepCard key={step.id} step={step} index={i} onUpdate={updateStep} onRemove={removeStep} />
-        ))}
+        <div className="space-y-14">
+          {steps.map((step, i) => (
+            <StepCard key={step.id} step={step} index={i} onUpdate={updateStep} onRemove={removeStep} />
+          ))}
+        </div>
 
         {steps.length === 0 && (
-          <div className="text-center py-16 text-muted-foreground">
-            <p className="text-sm">No steps yet. Add steps manually or use the extension to record.</p>
+          <div className="text-center py-20 text-muted-foreground border-2 border-dashed rounded-2xl">
+            <p className="text-sm">No steps yet. Use the browser extension to record your process.</p>
           </div>
         )}
       </div>
