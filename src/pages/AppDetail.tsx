@@ -38,7 +38,6 @@ interface SortableRecordingCardProps {
 
 const SortableRecordingCard = ({ recording, editingId, editingName, setEditingId, setEditingName, handleRename, handleDelete, navigate, appId, appName }: SortableRecordingCardProps) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: recording.id });
-  const bgColor = generateAppColor(appName);
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
 
   return (
