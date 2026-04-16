@@ -121,26 +121,30 @@ const Dashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b bg-card">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
+      {/* Frosted glass header */}
+      <header className="sticky top-0 z-20 border-b border-border/40 bg-card/70 backdrop-blur-xl">
         <div className="container flex h-16 items-center justify-between px-4">
           <div className="flex items-center gap-3">
-            <img src={isdbLogo} alt="IsDB Logo" className="h-8 w-8 rounded-lg object-cover" />
-            <h1 className="text-lg font-semibold">SnapGuide</h1>
+            <img src={isdbLogo} alt="IsDB Logo" className="h-9 w-9 rounded-xl object-cover ring-2 ring-primary/10" />
+            <div>
+              <h1 className="text-lg font-bold tracking-tight">SnapGuide</h1>
+              <p className="text-[10px] text-muted-foreground -mt-0.5 uppercase tracking-wider">Process Documentation</p>
+            </div>
           </div>
 
           <div className="flex gap-2 items-center">
             <Button
               variant="outline"
               size="sm"
-              className="px-4 shadow-sm"
+              className="px-4 shadow-sm rounded-full"
               onClick={() => {
-                fetch("/snapguide-scribe.zip")
+                fetch("/snapguide-extension.zip")
                   .then(r => { if (!r.ok) throw new Error("Download failed"); return r.blob(); })
                   .then(blob => {
                     const a = document.createElement("a");
                     a.href = URL.createObjectURL(blob);
-                    a.download = "snapguide-scribe.zip";
+                    a.download = "snapguide-extension.zip";
                     a.click();
                     URL.revokeObjectURL(a.href);
                   })
@@ -152,7 +156,7 @@ const Dashboard = () => {
             </Button>
             <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger asChild>
-                <Button size="sm" className="px-4 shadow-sm">
+                <Button size="sm" className="px-4 shadow-md rounded-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70">
                   <Plus className="mr-1.5 h-4 w-4" />
                   New App
                 </Button>
@@ -194,33 +198,56 @@ const Dashboard = () => {
         </div>
       </header>
 
-      <main className="container py-8 px-4">
+      <main className="container py-10 px-4">
+        {/* Hero */}
+        {!loading && (
+          <div className="mb-10 animate-fade-in">
+            <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-widest text-primary mb-2">Workspace</p>
+                <h2 className="text-3xl md:text-4xl font-bold tracking-tight">Your Applications</h2>
+                <p className="text-muted-foreground mt-2 max-w-xl">
+                  Document business processes for each app — capture steps with the extension, edit, and export polished SOPs.
+                </p>
+              </div>
+              {apps.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-semibold">
+                    <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                    {apps.length} app{apps.length !== 1 ? 's' : ''}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {loading ? (
           <div className="flex items-center justify-center py-24">
             <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
           </div>
         ) : apps.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-center animate-fade-in">
-            <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
-              <Globe className="h-8 w-8 text-primary" />
+            <div className="h-20 w-20 rounded-3xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center mb-6 ring-8 ring-primary/5">
+              <Globe className="h-9 w-9 text-primary" />
             </div>
-            <h2 className="text-2xl font-semibold mb-2">No apps yet</h2>
+            <h2 className="text-2xl font-bold mb-2">No apps yet</h2>
             <p className="text-muted-foreground max-w-md mb-6">
               Create your first application to start documenting processes with SnapGuide.
             </p>
-            <Button onClick={() => setOpen(true)}>
+            <Button onClick={() => setOpen(true)} className="rounded-full px-6 shadow-md">
               <Plus className="mr-2 h-4 w-4" />
               Add Your First App
             </Button>
           </div>
         ) : (
           <div>
-            <div className="flex justify-end mb-4">
-              <div className="flex items-center border rounded-md overflow-hidden">
+            <div className="flex justify-end mb-5">
+              <div className="flex items-center border rounded-full overflow-hidden bg-card shadow-sm">
                 <Button
                   variant={viewMode === "grid" ? "default" : "ghost"}
                   size="icon"
-                  className="h-8 w-8 rounded-none"
+                  className="h-8 w-8 rounded-full"
                   onClick={() => { setViewMode("grid"); localStorage.setItem("snapguide_view_mode", "grid"); }}
                 >
                   <LayoutGrid className="h-4 w-4" />
@@ -228,7 +255,7 @@ const Dashboard = () => {
                 <Button
                   variant={viewMode === "list" ? "default" : "ghost"}
                   size="icon"
-                  className="h-8 w-8 rounded-none"
+                  className="h-8 w-8 rounded-full"
                   onClick={() => { setViewMode("list"); localStorage.setItem("snapguide_view_mode", "list"); }}
                 >
                   <List className="h-4 w-4" />
@@ -237,90 +264,121 @@ const Dashboard = () => {
             </div>
 
             {viewMode === "grid" ? (
-              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-                {apps.map((app, i) => (
-                  <Card key={app.id} className="p-5 hover:shadow-md transition-shadow animate-fade-in overflow-hidden relative" style={{ animationDelay: `${i * 50}ms` }}>
-                    <div className="absolute inset-x-0 top-0 h-2 rounded-t-lg" style={{ backgroundColor: generateAppColor(app.name) }} />
-                    <div className="flex items-start justify-between mb-3 pt-1">
-                      {app.icon_url ? (
-                        <img src={app.icon_url} alt={app.name} className="h-10 w-10 rounded-lg object-cover" />
-                      ) : (
-                        <div className="h-10 w-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: generateAppColor(app.name) }}>
-                          <span className="font-bold" style={{ color: generateAppAccent(app.name) }}>{app.name.charAt(0).toUpperCase()}</span>
+              <div className="grid gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                {apps.map((app, i) => {
+                  const color = generateAppColor(app.name);
+                  return (
+                    <Card
+                      key={app.id}
+                      className="group relative p-6 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 animate-fade-in overflow-hidden border-border/50 bg-card/80 backdrop-blur"
+                      style={{ animationDelay: `${i * 50}ms` }}
+                    >
+                      {/* Color accent glow */}
+                      <div
+                        className="absolute -top-12 -right-12 h-32 w-32 rounded-full opacity-20 group-hover:opacity-40 transition-opacity blur-2xl"
+                        style={{ backgroundColor: color }}
+                      />
+                      <div className="relative">
+                        <div className="flex items-start justify-between mb-4">
+                          {app.icon_url ? (
+                            <img src={app.icon_url} alt={app.name} className="h-12 w-12 rounded-2xl object-cover shadow-md ring-2 ring-background" />
+                          ) : (
+                            <div
+                              className="h-12 w-12 rounded-2xl flex items-center justify-center shadow-md ring-2 ring-background"
+                              style={{ backgroundColor: color }}
+                            >
+                              <span className="font-bold text-lg" style={{ color: generateAppAccent(app.name) }}>
+                                {app.name.charAt(0).toUpperCase()}
+                              </span>
+                            </div>
+                          )}
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => openEdit(app)}>
+                                <Pencil className="mr-2 h-4 w-4" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(app.id)}>
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
-                      )}
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => openEdit(app)}>
-                            <Pencil className="mr-2 h-4 w-4" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(app.id)}>
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                    <h3 className="font-semibold mb-1">{app.name}</h3>
-                    {app.url && <p className="text-xs text-muted-foreground mb-2 truncate">{app.url}</p>}
-                    <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{app.description || "No description"}</p>
-                    <Button variant="ghost" size="sm" asChild style={{ color: generateAppAccent(app.name) }}>
-                      <Link to={`/app/${app.id}`}>
-                        Open
-                        <ArrowRight className="ml-1 h-3 w-3" />
-                      </Link>
-                    </Button>
-                  </Card>
-                ))}
+                        <h3 className="font-bold text-lg mb-1 tracking-tight">{app.name}</h3>
+                        {app.url && <p className="text-xs text-muted-foreground mb-2 truncate flex items-center gap-1"><Globe className="h-3 w-3" />{app.url}</p>}
+                        <p className="text-sm text-muted-foreground mb-5 line-clamp-2 min-h-[2.5rem]">{app.description || "No description provided"}</p>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          asChild
+                          className="rounded-full -ml-2 group/btn"
+                          style={{ color: generateAppAccent(app.name) }}
+                        >
+                          <Link to={`/app/${app.id}`}>
+                            Open workspace
+                            <ArrowRight className="ml-1 h-3.5 w-3.5 group-hover/btn:translate-x-1 transition-transform" />
+                          </Link>
+                        </Button>
+                      </div>
+                    </Card>
+                  );
+                })}
               </div>
             ) : (
-              <div className="space-y-2">
-                {apps.map((app, i) => (
-                  <Card key={app.id} className="p-4 hover:shadow-md transition-shadow animate-fade-in flex items-center gap-4" style={{ animationDelay: `${i * 50}ms`, borderLeft: `4px solid ${generateAppColor(app.name)}` }}>
-                    {app.icon_url ? (
-                      <img src={app.icon_url} alt={app.name} className="h-9 w-9 rounded-lg object-cover shrink-0" />
-                    ) : (
-                      <div className="h-9 w-9 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: generateAppColor(app.name) }}>
-                        <span className="font-bold text-sm" style={{ color: generateAppAccent(app.name) }}>{app.name.charAt(0).toUpperCase()}</span>
+              <div className="space-y-2.5">
+                {apps.map((app, i) => {
+                  const color = generateAppColor(app.name);
+                  return (
+                    <Card
+                      key={app.id}
+                      className="group p-4 hover:shadow-lg hover:bg-card transition-all animate-fade-in flex items-center gap-4 border-border/50 bg-card/70 backdrop-blur"
+                      style={{ animationDelay: `${i * 50}ms`, borderLeft: `4px solid ${color}` }}
+                    >
+                      {app.icon_url ? (
+                        <img src={app.icon_url} alt={app.name} className="h-10 w-10 rounded-xl object-cover shrink-0 shadow-sm" />
+                      ) : (
+                        <div className="h-10 w-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm" style={{ backgroundColor: color }}>
+                          <span className="font-bold text-sm" style={{ color: generateAppAccent(app.name) }}>{app.name.charAt(0).toUpperCase()}</span>
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-sm">{app.name}</h3>
+                        <p className="text-xs text-muted-foreground truncate">{app.url || app.description || "No description"}</p>
                       </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-sm">{app.name}</h3>
-                      <p className="text-xs text-muted-foreground truncate">{app.url || app.description || "No description"}</p>
-                    </div>
-                    <div className="flex items-center gap-1 shrink-0">
-                      <Button variant="ghost" size="sm" asChild style={{ color: generateAppAccent(app.name) }}>
-                        <Link to={`/app/${app.id}`}>
-                          Open
-                          <ArrowRight className="ml-1 h-3 w-3" />
-                        </Link>
-                      </Button>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => openEdit(app)}>
-                            <Pencil className="mr-2 h-4 w-4" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(app.id)}>
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </Card>
-                ))}
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Button variant="ghost" size="sm" asChild className="rounded-full" style={{ color: generateAppAccent(app.name) }}>
+                          <Link to={`/app/${app.id}`}>
+                            Open
+                            <ArrowRight className="ml-1 h-3 w-3" />
+                          </Link>
+                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => openEdit(app)}>
+                              <Pencil className="mr-2 h-4 w-4" />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(app.id)}>
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </Card>
+                  );
+                })}
               </div>
             )}
           </div>

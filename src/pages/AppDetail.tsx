@@ -39,17 +39,29 @@ interface SortableRecordingCardProps {
 const SortableRecordingCard = ({ recording, editingId, editingName, setEditingId, setEditingName, handleRename, handleDelete, navigate, appId, appName }: SortableRecordingCardProps) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: recording.id });
   const bgColor = generateAppColor(appName);
-  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1, borderLeft: `4px solid ${bgColor}` };
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
 
   return (
-    <Card ref={setNodeRef} style={style} className="p-4 animate-fade-in">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+    <Card
+      ref={setNodeRef}
+      style={style}
+      className="group p-5 animate-fade-in hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 border-border/50 bg-card/80 backdrop-blur relative overflow-hidden"
+    >
+      {/* Color accent stripe */}
+      <div className="absolute left-0 top-0 bottom-0 w-1" style={{ backgroundColor: bgColor }} />
+
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pl-2">
         <div className="flex items-center gap-3 min-w-0 flex-1">
-          <button {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground touch-none">
+          <button {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-foreground touch-none opacity-0 group-hover:opacity-100 transition-opacity">
             <GripVertical className="h-5 w-5" />
           </button>
-          <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
-          <div className="min-w-0">
+          <div
+            className="h-11 w-11 rounded-xl flex items-center justify-center shrink-0 shadow-sm ring-2 ring-background"
+            style={{ backgroundColor: `${bgColor}20` }}
+          >
+            <FileText className="h-5 w-5" style={{ color: bgColor }} />
+          </div>
+          <div className="min-w-0 flex-1">
             {editingId === recording.id ? (
               <Input
                 autoFocus
@@ -60,36 +72,53 @@ const SortableRecordingCard = ({ recording, editingId, editingName, setEditingId
                   if (e.key === "Enter") handleRename(recording.id);
                   if (e.key === "Escape") setEditingId(null);
                 }}
-                className="h-8 text-sm font-medium"
+                className="h-8 text-base font-semibold"
               />
             ) : (
               <h3
-                className="font-medium truncate cursor-pointer hover:text-primary transition-colors"
+                className="font-semibold text-base truncate cursor-pointer hover:text-primary transition-colors"
                 onDoubleClick={() => { setEditingId(recording.id); setEditingName(recording.title); }}
               >
                 {recording.title}
               </h3>
             )}
-            <p className="text-sm text-muted-foreground">
-              {recording.status} · Updated {new Date(recording.updated_at).toLocaleDateString()}
-            </p>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-semibold uppercase tracking-wider">
+                <span className="h-1 w-1 rounded-full bg-primary" />
+                {recording.status}
+              </span>
+              <p className="text-xs text-muted-foreground">
+                Updated {new Date(recording.updated_at).toLocaleDateString()}
+              </p>
+            </div>
           </div>
         </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8">
-              <MoreVertical className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => navigate(`/app/${appId}/recording/${recording.id}`)}>
-              Edit Recording
-            </DropdownMenuItem>
-            <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => handleDelete(recording.id)}>
-              Delete Recording
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="flex items-center gap-1 shrink-0">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="rounded-full text-primary hover:text-primary"
+            onClick={() => navigate(`/app/${appId}/recording/${recording.id}`)}
+          >
+            Open
+            <FileText className="ml-1 h-3.5 w-3.5" />
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => navigate(`/app/${appId}/recording/${recording.id}`)}>
+                Edit Recording
+              </DropdownMenuItem>
+              <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => handleDelete(recording.id)}>
+                Delete Recording
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
     </Card>
   );
