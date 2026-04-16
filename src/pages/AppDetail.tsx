@@ -20,7 +20,7 @@ import { appsApi } from "@/api/apps";
 import { recordingsApi, recordingStepsApi } from "@/api/recordings";
 import type { ProcessRecording } from "@/types/recording";
 import { useToast } from "@/hooks/use-toast";
-import { generateAppColor } from "@/lib/app-colors";
+
 import { generateCombinedPdf } from "@/lib/pdf-generator";
 
 interface SortableRecordingCardProps {
