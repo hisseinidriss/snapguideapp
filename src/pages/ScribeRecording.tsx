@@ -251,7 +251,6 @@ const ScribeRecording = () => {
       <div className="container max-w-3xl mx-auto px-4 py-6 space-y-4">
         <div className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground">{steps.length} step{steps.length !== 1 ? 's' : ''}</p>
-          <Button onClick={addStep} size="sm" variant="outline"><Plus className="mr-1 h-3 w-3" />Add Step</Button>
         </div>
 
         {steps.map((step, i) => (
