@@ -338,10 +338,6 @@ const ScribeRecording = () => {
             </p>
           )}
 
-          <div className="inline-flex items-center gap-2 mt-5 px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">
-            <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-            {steps.length} step{steps.length !== 1 ? 's' : ''}
-          </div>
         </div>
 
         <div className="space-y-14">
