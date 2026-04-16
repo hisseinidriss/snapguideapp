@@ -202,6 +202,16 @@ const ScribeRecording = () => {
     } finally { setTranslating(false); }
   };
 
+  const handleDownloadDocx = async () => {
+    if (!recording) return;
+    try {
+      await generateSOPDocx(recording.title, recording.description || '', steps);
+      toast({ title: "Word document downloaded" });
+    } catch (err: any) {
+      toast({ title: "Download failed", description: err.message, variant: "destructive" });
+    }
+  };
+
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center bg-background"><div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" /></div>;
   }
@@ -220,44 +230,42 @@ const ScribeRecording = () => {
           </Button>
           <img src={isdbLogo} alt="IsDB Logo" className="h-8 w-8 rounded-lg object-cover" />
           <div className="flex-1 min-w-0">
-            {editHeaderTitle ? (
-              <Input value={titleVal} onChange={e => setTitleVal(e.target.value)}
-                onBlur={() => { updateRecording({ title: titleVal }); setEditHeaderTitle(false); }}
-                onKeyDown={e => { if (e.key === 'Enter') { updateRecording({ title: titleVal }); setEditHeaderTitle(false); } }}
-                className="h-8 text-sm font-semibold" autoFocus />
-            ) : (
-              <h1 className="text-sm font-semibold truncate cursor-pointer hover:text-primary transition-colors"
-                onClick={() => setEditHeaderTitle(true)}>
-                {recording.title}<Pencil className="inline-block ml-1.5 h-3 w-3 text-muted-foreground" />
-              </h1>
-            )}
-            {editHeaderDesc ? (
-              <Input value={descVal} onChange={e => setDescVal(e.target.value)}
-                onBlur={() => { updateRecording({ description: descVal }); setEditHeaderDesc(false); }}
-                onKeyDown={e => { if (e.key === 'Enter') { updateRecording({ description: descVal }); setEditHeaderDesc(false); } }}
-                className="h-6 text-xs mt-0.5" placeholder="Add a description…" autoFocus />
-            ) : (
-              <p className="text-xs text-muted-foreground cursor-pointer hover:text-primary transition-colors truncate"
-                onClick={() => setEditHeaderDesc(true)}>
-                {descVal || "Add a description…"}<Pencil className="inline-block ml-1 h-2.5 w-2.5" />
-              </p>
-            )}
+            <h1 className="text-sm font-semibold truncate">{recording.title}</h1>
+            <p className="text-xs text-muted-foreground truncate">
+              {recording.description || "No description"}
+            </p>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" className="h-8" onClick={() => setPreviewOpen(true)}>
               <FileText className="mr-1.5 h-3.5 w-3.5" /><span className="hidden sm:inline">Preview</span>
             </Button>
-            <Select onValueChange={(v) => handleDownloadPdf(v as PdfLanguage)} disabled={translating}>
-              <SelectTrigger className="h-8 w-auto gap-1.5 text-sm">
-                {translating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
-                <span className="hidden sm:inline">{translating ? 'Translating…' : 'PDF'}</span>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="en">🇬🇧 English</SelectItem>
-                <SelectItem value="ar">🇸🇦 العربية</SelectItem>
-                <SelectItem value="fr">🇫🇷 Français</SelectItem>
-              </SelectContent>
-            </Select>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="sm" className="h-8 gap-1.5" disabled={translating}>
+                  {translating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+                  <span className="hidden sm:inline">{translating ? 'Translating…' : 'Download'}</span>
+                  <ChevronDown className="h-3 w-3 opacity-70" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel className="text-xs">Word Document</DropdownMenuLabel>
+                <DropdownMenuItem onClick={handleDownloadDocx}>
+                  <FileType className="mr-2 h-4 w-4 text-blue-600" />
+                  Download as .docx
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel className="text-xs">PDF</DropdownMenuLabel>
+                <DropdownMenuItem onClick={() => handleDownloadPdf('en')}>
+                  <span className="mr-2">🇬🇧</span> English
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleDownloadPdf('ar')}>
+                  <span className="mr-2">🇸🇦</span> العربية
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleDownloadPdf('fr')}>
+                  <span className="mr-2">🇫🇷</span> Français
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </header>
