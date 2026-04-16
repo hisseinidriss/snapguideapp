@@ -272,11 +272,11 @@ const AppDetail = () => {
             <div className="flex items-center gap-2 flex-wrap">
               {recordings.length > 0 && (
                 <>
-                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-semibold">
-                    <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                  <div className="inline-flex items-center gap-2 px-3.5 py-2 rounded-full bg-primary text-primary-foreground text-sm font-semibold shadow-sm">
+                    <span className="h-1.5 w-1.5 rounded-full bg-primary-foreground animate-pulse" />
                     {recordings.length} recording{recordings.length !== 1 ? 's' : ''}
                   </div>
-                  <Button variant="outline" size="sm" onClick={handleDownloadAll} disabled={downloadingAll} className="rounded-full">
+                  <Button variant="outline" size="sm" onClick={handleDownloadAll} disabled={downloadingAll} className="rounded-full border-primary/40 text-primary hover:bg-primary/10 hover:text-primary">
                     {downloadingAll ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Download className="mr-1.5 h-4 w-4" />}
                     Download All
                   </Button>
@@ -284,7 +284,7 @@ const AppDetail = () => {
               )}
               <Dialog open={open} onOpenChange={setOpen}>
                 <DialogTrigger asChild>
-                  <Button size="sm" className="rounded-full px-5 shadow-md bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70">
+                  <Button size="sm" className="rounded-full px-5 shadow-md bg-primary hover:bg-primary/90 text-primary-foreground">
                     <Plus className="mr-1.5 h-4 w-4" />
                     New Recording
                   </Button>
