@@ -32,11 +32,25 @@ function getImageType(url: string): 'png' | 'jpg' | 'gif' | 'bmp' {
   return 'png';
 }
 
+export type DocxLanguage = 'en' | 'ar';
+
 export async function generateSOPDocx(
   title: string,
   description: string,
   steps: ProcessRecordingStep[],
+  options?: {
+    language?: DocxLanguage;
+    translatedTitle?: string;
+    translatedDescription?: string;
+    translatedSteps?: { instruction: string; notes?: string }[];
+  },
 ): Promise<void> {
+  const lang = options?.language || 'en';
+  const isRtl = lang === 'ar';
+  const tTitle = options?.translatedTitle || title;
+  const tDesc = options?.translatedDescription ?? description;
+  const tSteps = options?.translatedSteps;
+  const align = isRtl ? AlignmentType.RIGHT : AlignmentType.LEFT;
   const children: Paragraph[] = [];
 
   // Title
