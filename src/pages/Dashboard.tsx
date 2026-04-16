@@ -17,7 +17,7 @@ import { appsApi } from "@/api/apps";
 import { useAuth } from "@/contexts/AuthContext";
 import type { App } from "@/types/app";
 import { useToast } from "@/hooks/use-toast";
-import { generateAppColor, generateAppAccent } from "@/lib/app-colors";
+
 
 const Dashboard = () => {
   const [apps, setApps] = useState<App[]>([]);
