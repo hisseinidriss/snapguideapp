@@ -123,6 +123,8 @@ const ScribeRecording = () => {
   const [loading, setLoading] = useState(true);
   const [editTitle, setEditTitle] = useState(false);
   const [editDesc, setEditDesc] = useState(false);
+  const [editHeaderTitle, setEditHeaderTitle] = useState(false);
+  const [editHeaderDesc, setEditHeaderDesc] = useState(false);
   const [titleVal, setTitleVal] = useState("");
   const [descVal, setDescVal] = useState("");
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -215,25 +217,25 @@ const ScribeRecording = () => {
             <Link to={`/app/${appId}`}><ArrowLeft className="h-4 w-4" /></Link>
           </Button>
           <div className="flex-1 min-w-0">
-            {editTitle ? (
+            {editHeaderTitle ? (
               <Input value={titleVal} onChange={e => setTitleVal(e.target.value)}
-                onBlur={() => { updateRecording({ title: titleVal }); setEditTitle(false); }}
-                onKeyDown={e => { if (e.key === 'Enter') { updateRecording({ title: titleVal }); setEditTitle(false); } }}
+                onBlur={() => { updateRecording({ title: titleVal }); setEditHeaderTitle(false); }}
+                onKeyDown={e => { if (e.key === 'Enter') { updateRecording({ title: titleVal }); setEditHeaderTitle(false); } }}
                 className="h-8 text-sm font-semibold" autoFocus />
             ) : (
               <h1 className="text-sm font-semibold truncate cursor-pointer hover:text-primary transition-colors"
-                onClick={() => setEditTitle(true)}>
+                onClick={() => setEditHeaderTitle(true)}>
                 {recording.title}<Pencil className="inline-block ml-1.5 h-3 w-3 text-muted-foreground" />
               </h1>
             )}
-            {editDesc ? (
+            {editHeaderDesc ? (
               <Input value={descVal} onChange={e => setDescVal(e.target.value)}
-                onBlur={() => { updateRecording({ description: descVal }); setEditDesc(false); }}
-                onKeyDown={e => { if (e.key === 'Enter') { updateRecording({ description: descVal }); setEditDesc(false); } }}
+                onBlur={() => { updateRecording({ description: descVal }); setEditHeaderDesc(false); }}
+                onKeyDown={e => { if (e.key === 'Enter') { updateRecording({ description: descVal }); setEditHeaderDesc(false); } }}
                 className="h-6 text-xs mt-0.5" placeholder="Add a description…" autoFocus />
             ) : (
               <p className="text-xs text-muted-foreground cursor-pointer hover:text-primary transition-colors truncate"
-                onClick={() => setEditDesc(true)}>
+                onClick={() => setEditHeaderDesc(true)}>
                 {descVal || "Add a description…"}<Pencil className="inline-block ml-1 h-2.5 w-2.5" />
               </p>
             )}
