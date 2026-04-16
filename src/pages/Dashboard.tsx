@@ -365,8 +365,7 @@ const Dashboard = () => {
                         </DropdownMenu>
                       </div>
                     </Card>
-                  );
-                })}
+                ))}
               </div>
             )}
           </div>
