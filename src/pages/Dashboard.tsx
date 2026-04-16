@@ -156,7 +156,7 @@ const Dashboard = () => {
             </Button>
             <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger asChild>
-                <Button size="sm" className="px-4 shadow-md rounded-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70">
+                <Button size="sm" className="px-4 shadow-md rounded-full bg-primary hover:bg-primary/90 text-primary-foreground">
                   <Plus className="mr-1.5 h-4 w-4" />
                   New App
                 </Button>
@@ -212,8 +212,8 @@ const Dashboard = () => {
               </div>
               {apps.length > 0 && (
                 <div className="flex items-center gap-2">
-                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-semibold">
-                    <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                  <div className="inline-flex items-center gap-2 px-3.5 py-2 rounded-full bg-primary text-primary-foreground text-sm font-semibold shadow-sm">
+                    <span className="h-1.5 w-1.5 rounded-full bg-primary-foreground animate-pulse" />
                     {apps.length} app{apps.length !== 1 ? 's' : ''}
                   </div>
                 </div>
@@ -265,99 +265,87 @@ const Dashboard = () => {
 
             {viewMode === "grid" ? (
               <div className="grid gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-                {apps.map((app, i) => {
-                  const color = generateAppColor(app.name);
-                  return (
-                    <Card
-                      key={app.id}
-                      className="group relative p-6 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 animate-fade-in overflow-hidden border-border/50 bg-card/80 backdrop-blur"
-                      style={{ animationDelay: `${i * 50}ms` }}
-                    >
-                      {/* Color accent glow */}
-                      <div
-                        className="absolute -top-12 -right-12 h-32 w-32 rounded-full opacity-20 group-hover:opacity-40 transition-opacity blur-2xl"
-                        style={{ backgroundColor: color }}
-                      />
-                      <div className="relative">
-                        <div className="flex items-start justify-between mb-4">
-                          {app.icon_url ? (
-                            <img src={app.icon_url} alt={app.name} className="h-12 w-12 rounded-2xl object-cover shadow-md ring-2 ring-background" />
-                          ) : (
-                            <div
-                              className="h-12 w-12 rounded-2xl flex items-center justify-center shadow-md ring-2 ring-background"
-                              style={{ backgroundColor: color }}
-                            >
-                              <span className="font-bold text-lg" style={{ color: generateAppAccent(app.name) }}>
-                                {app.name.charAt(0).toUpperCase()}
-                              </span>
-                            </div>
-                          )}
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => openEdit(app)}>
-                                <Pencil className="mr-2 h-4 w-4" />
-                                Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(app.id)}>
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                        <h3 className="font-bold text-lg mb-1 tracking-tight">{app.name}</h3>
-                        {app.url && <p className="text-xs text-muted-foreground mb-2 truncate flex items-center gap-1"><Globe className="h-3 w-3" />{app.url}</p>}
-                        <p className="text-sm text-muted-foreground mb-5 line-clamp-2 min-h-[2.5rem]">{app.description || "No description provided"}</p>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          asChild
-                          className="rounded-full -ml-2 group/btn"
-                          style={{ color: generateAppAccent(app.name) }}
-                        >
-                          <Link to={`/app/${app.id}`}>
-                            Open workspace
-                            <ArrowRight className="ml-1 h-3.5 w-3.5 group-hover/btn:translate-x-1 transition-transform" />
-                          </Link>
-                        </Button>
+                {apps.map((app, i) => (
+                  <Card
+                    key={app.id}
+                    className="group relative p-6 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 animate-fade-in overflow-hidden border-border/50 bg-card/80 backdrop-blur"
+                    style={{ animationDelay: `${i * 50}ms` }}
+                  >
+                    {/* Primary green glow */}
+                    <div className="absolute -top-12 -right-12 h-32 w-32 rounded-full bg-primary opacity-10 group-hover:opacity-20 transition-opacity blur-2xl" />
+                    <div className="relative">
+                      <div className="flex items-start justify-between mb-4">
+                        {app.icon_url ? (
+                          <img src={app.icon_url} alt={app.name} className="h-12 w-12 rounded-2xl object-cover shadow-md ring-2 ring-background" />
+                        ) : (
+                          <div className="h-12 w-12 rounded-2xl flex items-center justify-center shadow-md ring-2 ring-background bg-primary/10">
+                            <span className="font-bold text-lg text-primary">
+                              {app.name.charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                        )}
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => openEdit(app)}>
+                              <Pencil className="mr-2 h-4 w-4" />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(app.id)}>
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
-                    </Card>
-                  );
-                })}
+                      <h3 className="font-bold text-lg mb-1 tracking-tight">{app.name}</h3>
+                      {app.url && <p className="text-xs text-muted-foreground mb-2 truncate flex items-center gap-1"><Globe className="h-3 w-3" />{app.url}</p>}
+                      <p className="text-sm text-muted-foreground mb-5 line-clamp-2 min-h-[2.5rem]">{app.description || "No description provided"}</p>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        asChild
+                        className="rounded-full -ml-2 group/btn text-primary hover:text-primary hover:bg-primary/10"
+                      >
+                        <Link to={`/app/${app.id}`}>
+                          Open workspace
+                          <ArrowRight className="ml-1 h-3.5 w-3.5 group-hover/btn:translate-x-1 transition-transform" />
+                        </Link>
+                      </Button>
+                    </div>
+                  </Card>
+                ))}
               </div>
             ) : (
               <div className="space-y-2.5">
-                {apps.map((app, i) => {
-                  const color = generateAppColor(app.name);
-                  return (
-                    <Card
-                      key={app.id}
-                      className="group p-4 hover:shadow-lg hover:bg-card transition-all animate-fade-in flex items-center gap-4 border-border/50 bg-card/70 backdrop-blur"
-                      style={{ animationDelay: `${i * 50}ms`, borderLeft: `4px solid ${color}` }}
-                    >
-                      {app.icon_url ? (
-                        <img src={app.icon_url} alt={app.name} className="h-10 w-10 rounded-xl object-cover shrink-0 shadow-sm" />
-                      ) : (
-                        <div className="h-10 w-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm" style={{ backgroundColor: color }}>
-                          <span className="font-bold text-sm" style={{ color: generateAppAccent(app.name) }}>{app.name.charAt(0).toUpperCase()}</span>
-                        </div>
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-sm">{app.name}</h3>
-                        <p className="text-xs text-muted-foreground truncate">{app.url || app.description || "No description"}</p>
+                {apps.map((app, i) => (
+                  <Card
+                    key={app.id}
+                    className="group p-4 hover:shadow-lg hover:bg-card transition-all animate-fade-in flex items-center gap-4 border-border/50 bg-card/70 backdrop-blur border-l-4 border-l-primary"
+                    style={{ animationDelay: `${i * 50}ms` }}
+                  >
+                    {app.icon_url ? (
+                      <img src={app.icon_url} alt={app.name} className="h-10 w-10 rounded-xl object-cover shrink-0 shadow-sm" />
+                    ) : (
+                      <div className="h-10 w-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm bg-primary/10">
+                        <span className="font-bold text-sm text-primary">{app.name.charAt(0).toUpperCase()}</span>
                       </div>
-                      <div className="flex items-center gap-1 shrink-0">
-                        <Button variant="ghost" size="sm" asChild className="rounded-full" style={{ color: generateAppAccent(app.name) }}>
-                          <Link to={`/app/${app.id}`}>
-                            Open
-                            <ArrowRight className="ml-1 h-3 w-3" />
-                          </Link>
-                        </Button>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-sm">{app.name}</h3>
+                      <p className="text-xs text-muted-foreground truncate">{app.url || app.description || "No description"}</p>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Button variant="ghost" size="sm" asChild className="rounded-full text-primary hover:text-primary hover:bg-primary/10">
+                        <Link to={`/app/${app.id}`}>
+                          Open
+                          <ArrowRight className="ml-1 h-3 w-3" />
+                        </Link>
+                      </Button>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon" className="h-8 w-8">
