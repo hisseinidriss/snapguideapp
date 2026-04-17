@@ -207,7 +207,7 @@ const Dashboard = () => {
                 <p className="text-xs font-semibold uppercase tracking-widest text-primary mb-2">Workspace</p>
                 <h2 className="text-3xl md:text-4xl font-bold tracking-tight">Your Applications</h2>
                 <p className="text-muted-foreground mt-2 max-w-xl">
-                  Document business processes for each app — capture steps with the extension, edit, and export polished SOPs.
+                  Turn any application into step-by-step guided processes in minutes. Capture, edit, and deploy interactive walkthroughs effortlessly.
                 </p>
               </div>
               {apps.length > 0 && (
