@@ -395,7 +395,7 @@ const ScribeRecording = () => {
 
         <div className="space-y-14">
           {steps.map((step, i) => (
-            <StepCard key={step.id} step={step} index={i} onUpdate={updateStep} onRemove={removeStep} />
+            <StepCard key={step.id} step={step} index={i} onUpdate={updateStep} onRemove={removeStep} onAnnotate={setAnnotateStep} />
           ))}
         </div>
 
