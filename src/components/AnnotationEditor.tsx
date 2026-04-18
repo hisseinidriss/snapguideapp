@@ -150,7 +150,7 @@ export default function AnnotationEditor({
     if (!pos) return;
     if (drawing.type === "arrow") {
       setDrawing({ ...drawing, points: [drawing.points[0], drawing.points[1], pos.x, pos.y] });
-    } else {
+    } else if (drawing.type === "rect" || drawing.type === "blur") {
       setDrawing({ ...drawing, width: pos.x - drawing.x, height: pos.y - drawing.y });
     }
   };
