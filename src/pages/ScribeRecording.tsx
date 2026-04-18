@@ -20,6 +20,7 @@ import { generateSOPPdf, type PdfLanguage } from "@/lib/pdf-generator";
 import { generateSOPDocx } from "@/lib/docx-generator";
 import type { ProcessRecording, ProcessRecordingStep } from "@/types/recording";
 import { supabase } from "@/integrations/supabase/client";
+import AnnotationEditor from "@/components/AnnotationEditor";
 
 /* ── Step Card ── */
 interface StepCardProps {
@@ -27,6 +28,7 @@ interface StepCardProps {
   index: number;
   onUpdate: (id: string, updates: Partial<ProcessRecordingStep>) => void;
   onRemove: (id: string) => void;
+  onAnnotate: (step: ProcessRecordingStep) => void;
 }
 
 const StepCard = ({ step, index, onUpdate, onRemove }: StepCardProps) => {
