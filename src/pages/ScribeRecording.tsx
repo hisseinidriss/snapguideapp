@@ -468,6 +468,20 @@ const ScribeRecording = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {annotateStep && (
+        <AnnotationEditor
+          open={!!annotateStep}
+          onOpenChange={(v) => { if (!v) setAnnotateStep(null); }}
+          imageUrl={annotateStep.screenshot_url!}
+          recordingId={recordingId!}
+          stepNumber={annotateStep.sort_order + 1}
+          onSaved={(newUrl) => {
+            updateStep(annotateStep.id, { screenshot_url: newUrl, notes: "Annotated" });
+            setAnnotateStep(null);
+          }}
+        />
+      )}
     </div>
   );
 };
