@@ -1,80 +1,71 @@
 
 
-## Auto-Redact Sensitive Data in Screenshots
+## Screenshot Annotation Editor
 
-Detect and blur PII (emails, names, credit cards, API keys, phone numbers, etc.) in captured screenshots before they're saved to storage.
+In-app editor that lets users draw **arrows, rectangles, blur regions, and text callouts** directly on captured screenshots. Edits are flattened into a new PNG and replace the screenshot in storage.
 
 ### Approach
 
-Use **Lovable AI (Gemini 2.5 Flash)** with vision capability to detect bounding boxes of sensitive regions, then blur those regions server-side using an edge function before uploading to storage.
+Build a canvas-based annotation modal opened from each step in `ScribeRecording.tsx`. Use `react-konva` (Konva.js + React bindings) for fast, layered drawing on top of the screenshot. On save, export the stage to a PNG, upload to the existing `recording-screenshots` bucket (overwriting the step's image), and refresh the step.
 
 ### Architecture
 
-```text
-Extension captures screenshot
+```
+[Step card] → "Annotate" button
         ↓
-Edge function: redact-screenshot
-  1. Send image to Gemini 2.5 Flash (vision)
-  2. Ask for bounding boxes of PII regions
-  3. Apply blur to those regions (canvas/image lib)
-  4. Return redacted image
+<AnnotationEditor> modal
+  • <Stage> with image as base layer
+  • Toolbar: Select | Arrow | Rect | Blur | Text | Color | Undo | Clear
+  • <Layer> of shapes (Konva nodes, draggable, transformable)
+        ↓ Save
+  stage.toDataURL()
         ↓
-Upload redacted image to storage
+  Upload PNG → recording-screenshots/<recId>/step-<n>.png  (upsert)
         ↓
-Save step with redacted screenshot_url
+  Update step row with cache-busted URL → re-render
 ```
 
-### Implementation Plan
+### Implementation
 
-**1. New edge function: `supabase/functions/redact-screenshot/index.ts`**
-- Accepts: `{ image: base64, recording_id, step_number }`
-- Calls Gemini 2.5 Flash via Lovable AI gateway with structured tool-call to return PII bounding boxes (`[{x, y, width, height, type}]` in normalized 0–1 coords)
-- Uses Deno's `ImageScript` library to load PNG, apply pixelation/blur over each region, re-encode
-- Uploads redacted image to `recording-screenshots` bucket
-- Returns public URL
+**1. Install dependencies**
+- `konva` + `react-konva`
 
-**2. App settings — toggle per-app**
-- Add `auto_redact` boolean column to `apps` table (default `true`)
-- Add toggle UI in `AppDetail.tsx` settings area (label: "Auto-redact sensitive data in screenshots")
+**2. New component: `src/components/AnnotationEditor.tsx`**
+- Props: `open`, `onOpenChange`, `imageUrl`, `recordingId`, `stepNumber`, `onSaved(newUrl)`
+- Loads the image via `useImage` hook, fits to max 1100×700 stage with letterbox
+- Tool state: `select | arrow | rect | blur | text`
+- Drawing model: array of shape objects (`{ id, type, ...props }`) — single source of truth
+- Mouse handlers: pointer-down to start, pointer-move to size, pointer-up to commit
+- **Arrow**: `<Arrow>` with `pointerLength={14} pointerWidth={14}`, configurable color, 4 px stroke
+- **Rect**: `<Rect>` stroke only, 4 px, no fill
+- **Blur**: `<Rect>` with `filters={[Konva.Filters.Blur]} blurRadius={20}` cached over the image area (via group with `clipFunc` so blur only sees pixels under it). Implementation note: the blur layer renders a duplicate of the base image clipped to the rect bounds with blur filter applied — gives true blur of underlying pixels, not a solid box.
+- **Text callout**: double-click to edit inline using a positioned `<textarea>` overlay; renders as `<Text>` with optional `<Rect>` background (rounded, semi-transparent)
+- **Transformer**: clicking a shape attaches `<Transformer>` for resize/rotate/move
+- **Toolbar**: shadcn `Button` group with `lucide-react` icons (`MousePointer2`, `ArrowUpRight`, `Square`, `Droplet`, `Type`, `Undo2`, `Trash2`)
+- **Color swatches**: 6 preset colors using semantic-friendly hex (red, amber, primary green, blue, white, black) — drawn shapes use selected color
+- **Undo**: pop last shape from array (Ctrl/Cmd+Z too)
+- **Save**: hide transformer → `stage.toDataURL({ pixelRatio: 2 })` → blob → `supabase.storage.upload(..., { upsert: true })` → call `onSaved` with `?v=Date.now()` cache-busted URL
+- **Cancel**: close without writing
 
-**3. Update extension `background.js`**
-- Before uploading screenshot directly, if `auto_redact` enabled (fetch app setting once per recording start), call `redact-screenshot` edge function instead
-- Fallback: if redaction fails, upload original (with console warning) — don't block the recording
+**3. Wire into `ScribeRecording.tsx`**
+- Add `Annotate` button (with `Pencil`/`Edit3` icon from lucide) on each `StepCard` that has a screenshot, positioned as overlay button on hover (top-right of image)
+- Local state `annotateStep: ProcessRecordingStep | null` controls modal
+- After save, update local steps state with new screenshot URL (cache-busted) — no full reload
 
-**4. Update web UI step view (`ScribeRecording.tsx`)**
-- Add small "Re-redact" / "Restore original" button per step (optional, nice-to-have, included in scope)
-- Show a small shield badge on screenshots that were auto-redacted
-
-### What gets detected
-
-Prompt the model to identify and return boxes for:
-- Email addresses
-- Person names (full names)
-- Credit/debit card numbers
-- API keys, tokens, secrets
-- Phone numbers
-- Physical addresses
-- National IDs / SSN-like numbers
-- Account/IBAN numbers
-
-### Technical notes
-
-- **Cost**: ~1 vision call per captured step. Gemini 2.5 Flash is cheap; toggle lets users disable.
-- **Latency**: adds ~1–2 s per step capture. Acceptable since capture is async.
-- **Blur method**: heavy box blur (radius ~25 px) using ImageScript — irreversible.
-- **Privacy-by-default**: redaction happens server-side, original screenshot is never stored.
+**4. Storage**
+- Reuses existing `recording-screenshots` bucket — same path scheme `recordingId/step-N.png`, `upsert: true`
+- Step number derived from `step.sort_order + 1` (matches extension naming)
+- No new edge function needed; client uploads directly via Supabase JS
 
 ### Files to create / change
 
-- **New**: `supabase/functions/redact-screenshot/index.ts`
-- **Migration**: add `auto_redact` boolean to `apps` (default true)
-- **Edit**: `extension/background.js` — route uploads through redact function when enabled
-- **Edit**: `src/pages/AppDetail.tsx` — settings toggle
-- **Edit**: `src/pages/ScribeRecording.tsx` — redacted badge on screenshots
-- **Edit**: `src/types/app.ts` — add `auto_redact` field
+- **New**: `src/components/AnnotationEditor.tsx`
+- **Edit**: `src/pages/ScribeRecording.tsx` — add Annotate trigger + state + onSaved handler
+- **Add deps**: `konva`, `react-konva`, `use-image`
 
 ### Out of scope (can add later)
-- Manual redaction editor (draw your own blur boxes)
-- Face/photo blurring
-- Whitelist of allowed values (e.g. "don't redact my own name")
+- Numbered step pins (1, 2, 3 markers)
+- Crop / rotate base image
+- Undo across saves (server-side history)
+- Mobile touch gestures beyond basic drawing
 
