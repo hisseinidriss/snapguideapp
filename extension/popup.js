@@ -80,12 +80,20 @@ $("start-btn").addEventListener("click", async () => {
     existingSteps = await supaGet("process_recording_steps", `recording_id=eq.${recId}&select=id`);
   } catch(e) {}
 
+  // Read app's auto_redact setting (default true)
+  let autoRedact = true;
+  try {
+    const appRow = apps.find(a => a.id === appId);
+    if (appRow && typeof appRow.auto_redact === "boolean") autoRedact = appRow.auto_redact;
+  } catch(e) {}
+
   await chrome.storage.local.set({
     sg_recording: true,
     sg_recording_id: recId,
     sg_recording_title: recTitle,
     sg_app_id: appId,
     sg_step_count: existingSteps.length || 0,
+    sg_auto_redact: autoRedact,
   });
 
   // Notify all tabs to start capturing
