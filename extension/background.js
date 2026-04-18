@@ -17,10 +17,11 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 });
 
 async function handleCaptureStep(data) {
-  const state = await chrome.storage.local.get(["sg_recording", "sg_recording_id", "sg_step_count"]);
+  const state = await chrome.storage.local.get(["sg_recording", "sg_recording_id", "sg_step_count", "sg_app_id", "sg_auto_redact"]);
   if (!state.sg_recording || !state.sg_recording_id) return { error: "Not recording" };
 
   const stepCount = (state.sg_step_count || 0) + 1;
+  const autoRedact = state.sg_auto_redact !== false; // default ON
 
   const step = {
     recording_id: state.sg_recording_id,
@@ -38,19 +39,51 @@ async function handleCaptureStep(data) {
 
   // Upload screenshot if provided as data URL
   if (data.screenshot_data) {
-    try {
-      const blob = dataURLtoBlob(data.screenshot_data);
-      const path = `${state.sg_recording_id}/step-${stepCount}.png`;
-      const uploadRes = await fetch(`${SUPABASE_URL}/storage/v1/object/recording-screenshots/${path}`, {
-        method: "POST",
-        headers: { "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}`, "Content-Type": blob.type, "x-upsert": "true" },
-        body: blob
-      });
-      if (uploadRes.ok) {
-        step.screenshot_url = `${SUPABASE_URL}/storage/v1/object/public/recording-screenshots/${path}`;
+    let uploaded = false;
+
+    // Try auto-redact path first if enabled
+    if (autoRedact) {
+      try {
+        const redactRes = await fetch(`${SUPABASE_URL}/functions/v1/redact-screenshot`, {
+          method: "POST",
+          headers: { "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            image: data.screenshot_data,
+            recording_id: state.sg_recording_id,
+            step_number: stepCount,
+          }),
+        });
+        if (redactRes.ok) {
+          const json = await redactRes.json();
+          if (json.screenshot_url) {
+            step.screenshot_url = json.screenshot_url;
+            step.notes = json.redacted ? `Auto-redacted ${json.regions} sensitive region(s)` : (step.notes || null);
+            uploaded = true;
+          }
+        } else {
+          console.warn("Redaction failed, falling back to direct upload:", await redactRes.text());
+        }
+      } catch (e) {
+        console.warn("Redaction call failed, falling back:", e);
       }
-    } catch (e) {
-      console.error("Screenshot upload failed:", e);
+    }
+
+    // Fallback: direct upload of original
+    if (!uploaded) {
+      try {
+        const blob = dataURLtoBlob(data.screenshot_data);
+        const path = `${state.sg_recording_id}/step-${stepCount}.png`;
+        const uploadRes = await fetch(`${SUPABASE_URL}/storage/v1/object/recording-screenshots/${path}`, {
+          method: "POST",
+          headers: { "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}`, "Content-Type": blob.type, "x-upsert": "true" },
+          body: blob
+        });
+        if (uploadRes.ok) {
+          step.screenshot_url = `${SUPABASE_URL}/storage/v1/object/public/recording-screenshots/${path}`;
+        }
+      } catch (e) {
+        console.error("Screenshot upload failed:", e);
+      }
     }
   }
 

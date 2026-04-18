@@ -1,1 +1,4 @@
 project_id = "hubuhcerqyijytmxqesr"
+
+[functions.redact-screenshot]
+verify_jwt = false
