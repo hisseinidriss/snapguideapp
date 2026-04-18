@@ -31,7 +31,7 @@ interface StepCardProps {
   onAnnotate: (step: ProcessRecordingStep) => void;
 }
 
-const StepCard = ({ step, index, onUpdate, onRemove }: StepCardProps) => {
+const StepCard = ({ step, index, onUpdate, onRemove, onAnnotate }: StepCardProps) => {
   const [editing, setEditing] = useState(false);
   const [val, setVal] = useState(step.instruction);
   const inputRef = useRef<HTMLTextAreaElement>(null);
