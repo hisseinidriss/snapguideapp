@@ -317,6 +317,26 @@ const AppDetail = () => {
           </div>
         </div>
 
+        {/* Privacy settings */}
+        <div className="mb-8 animate-fade-in">
+          <Card className="p-4 flex items-start gap-3 bg-card/60 backdrop-blur border-border/50">
+            <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+              <Shield className="h-5 w-5 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between gap-3">
+                <Label htmlFor="auto-redact" className="text-sm font-semibold cursor-pointer">
+                  Auto-redact sensitive data in screenshots
+                </Label>
+                <Switch id="auto-redact" checked={autoRedact} onCheckedChange={handleToggleRedact} />
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                AI scans each captured screenshot and blurs emails, names, phone numbers, card numbers, API keys and other PII before saving.
+              </p>
+            </div>
+          </Card>
+        </div>
+
         {recordings.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-center animate-fade-in border-2 border-dashed border-border/60 rounded-3xl bg-card/40">
             <div className="h-20 w-20 rounded-3xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center mb-6 ring-8 ring-primary/5">
