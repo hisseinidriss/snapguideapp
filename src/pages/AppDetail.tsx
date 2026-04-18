@@ -1,7 +1,8 @@
 // AppDetail - shows recordings (Scribe documents) for an application
 import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Plus, MoreVertical, HelpCircle, GripVertical, FileText, Download, Loader2 } from "lucide-react";
+import { ArrowLeft, Plus, MoreVertical, HelpCircle, GripVertical, FileText, Download, Loader2, Shield } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import isdbLogo from "@/assets/isdb-logo.jpg";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
@@ -122,6 +123,7 @@ const AppDetail = () => {
   const { toast } = useToast();
   const [appName, setAppName] = useState("");
   const [appUrl, setAppUrl] = useState("");
+  const [autoRedact, setAutoRedact] = useState(true);
   const [recordings, setRecordings] = useState<ProcessRecording[]>([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
@@ -129,6 +131,18 @@ const AppDetail = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
   const [downloadingAll, setDownloadingAll] = useState(false);
+
+  const handleToggleRedact = async (next: boolean) => {
+    if (!appId) return;
+    setAutoRedact(next);
+    const { error } = await appsApi.update(appId, { auto_redact: next } as any);
+    if (error) {
+      setAutoRedact(!next);
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: next ? "Auto-redact enabled" : "Auto-redact disabled", description: next ? "Sensitive data will be blurred in new screenshots." : "Screenshots will be saved without redaction." });
+    }
+  };
 
   const handleDownloadAll = async () => {
     if (!recordings.length) return;
@@ -156,7 +170,11 @@ const AppDetail = () => {
         appsApi.get(appId),
         recordingsApi.list(appId),
       ]);
-      if (appRes.data) { setAppName(appRes.data.name); setAppUrl(appRes.data.url || ""); }
+      if (appRes.data) {
+        setAppName(appRes.data.name);
+        setAppUrl(appRes.data.url || "");
+        setAutoRedact((appRes.data as any).auto_redact !== false);
+      }
       setRecordings((recordingsRes.data || []) as unknown as ProcessRecording[]);
       setLoading(false);
     };
@@ -297,6 +315,26 @@ const AppDetail = () => {
               </Dialog>
             </div>
           </div>
+        </div>
+
+        {/* Privacy settings */}
+        <div className="mb-8 animate-fade-in">
+          <Card className="p-4 flex items-start gap-3 bg-card/60 backdrop-blur border-border/50">
+            <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+              <Shield className="h-5 w-5 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between gap-3">
+                <Label htmlFor="auto-redact" className="text-sm font-semibold cursor-pointer">
+                  Auto-redact sensitive data in screenshots
+                </Label>
+                <Switch id="auto-redact" checked={autoRedact} onCheckedChange={handleToggleRedact} />
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                AI scans each captured screenshot and blurs emails, names, phone numbers, card numbers, API keys and other PII before saving.
+              </p>
+            </div>
+          </Card>
         </div>
 
         {recordings.length === 0 ? (

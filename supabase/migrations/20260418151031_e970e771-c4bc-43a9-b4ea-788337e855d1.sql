@@ -1,0 +1,1 @@
+ALTER TABLE public.apps ADD COLUMN IF NOT EXISTS auto_redact boolean NOT NULL DEFAULT true;
