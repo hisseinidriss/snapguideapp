@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import {
-  ArrowLeft, Pencil, Trash2, Download, Languages, Loader2, FileText, FileType, ChevronDown,
+  ArrowLeft, Pencil, Trash2, Download, Languages, Loader2, FileText, FileType, ChevronDown, Edit3,
 } from "lucide-react";
 import isdbLogo from "@/assets/isdb-logo.jpg";
 import { Button } from "@/components/ui/button";
