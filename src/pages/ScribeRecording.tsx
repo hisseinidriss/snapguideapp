@@ -97,13 +97,22 @@ const StepCard = ({ step, index, onUpdate, onRemove, onAnnotate }: StepCardProps
         {/* Screenshot side */}
         <div className="md:w-3/5 w-full">
           {step.screenshot_url ? (
-            <div className="relative rounded-2xl border bg-card shadow-md overflow-hidden hover:shadow-xl transition-shadow">
+            <div className="relative rounded-2xl border bg-card shadow-md overflow-hidden hover:shadow-xl transition-shadow group/shot">
               {step.notes?.startsWith("Auto-redacted") && (
                 <div className="absolute top-2 right-2 z-10 inline-flex items-center gap-1 px-2 py-1 rounded-full bg-primary/90 text-primary-foreground text-[10px] font-semibold shadow backdrop-blur" title={step.notes}>
                   <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
                   Redacted
                 </div>
               )}
+              <button
+                type="button"
+                onClick={() => onAnnotate(step)}
+                className="absolute top-2 left-2 z-10 inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-background/90 hover:bg-primary hover:text-primary-foreground text-foreground text-xs font-semibold shadow backdrop-blur opacity-0 group-hover/shot:opacity-100 transition-opacity"
+                title="Annotate screenshot"
+              >
+                <Edit3 className="h-3.5 w-3.5" />
+                Annotate
+              </button>
               <img
                 src={step.screenshot_url}
                 alt={`Step ${index + 1} screenshot`}
