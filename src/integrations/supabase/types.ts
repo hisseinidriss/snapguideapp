@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       apps: {
         Row: {
+          auto_redact: boolean
           created_at: string
           description: string | null
           diagnostics_enabled: boolean
@@ -27,6 +28,7 @@ export type Database = {
           url: string | null
         }
         Insert: {
+          auto_redact?: boolean
           created_at?: string
           description?: string | null
           diagnostics_enabled?: boolean
@@ -38,6 +40,7 @@ export type Database = {
           url?: string | null
         }
         Update: {
+          auto_redact?: boolean
           created_at?: string
           description?: string | null
           diagnostics_enabled?: boolean
