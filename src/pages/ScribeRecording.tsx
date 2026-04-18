@@ -149,6 +149,7 @@ const ScribeRecording = () => {
   const [previewLang, setPreviewLang] = useState<'en' | 'ar' | 'fr'>('en');
   const [previewLoading, setPreviewLoading] = useState(false);
   const [translationCache, setTranslationCache] = useState<Record<string, { title: string; description: string; steps: Array<{ instruction: string; notes: string | null }> }>>({});
+  const [annotateStep, setAnnotateStep] = useState<ProcessRecordingStep | null>(null);
 
   useEffect(() => {
     if (!appId || !recordingId) return;
