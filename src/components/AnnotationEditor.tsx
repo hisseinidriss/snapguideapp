@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import {
   MousePointer2, ArrowUpRight, Square, Droplet, Type, Undo2, Trash2, Loader2,
 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { http, fileToDataUrl } from "@/api/http";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
@@ -191,15 +191,12 @@ export default function AnnotationEditor({
       // Export at original image resolution
       const pixelRatio = (1 / scale) * 1; // restore to native pixels
       const dataUrl = stage.toDataURL({ pixelRatio, mimeType: "image/png" });
-      const blob = await (await fetch(dataUrl)).blob();
-      const path = `${recordingId}/step-${stepNumber}.png`;
-      const { error } = await supabase.storage
-        .from("recording-screenshots")
-        .upload(path, blob, { upsert: true, contentType: "image/png" });
-      if (error) throw error;
-      const { data: pub } = supabase.storage.from("recording-screenshots").getPublicUrl(path);
-      const url = `${pub.publicUrl}?v=${Date.now()}`;
-      onSaved(url);
+      const { data, error } = await http.post<{ screenshot_url: string }>(
+        "/upload-screenshot",
+        { recording_id: recordingId, step_number: stepNumber, image: dataUrl }
+      );
+      if (error || !data) throw new Error(error?.message || "Upload failed");
+      onSaved(data.screenshot_url);
       toast({ title: "Annotations saved" });
       onOpenChange(false);
     } catch (err: any) {
