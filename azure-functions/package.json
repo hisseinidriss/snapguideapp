@@ -1,0 +1,20 @@
+{
+  "name": "snapguide-api",
+  "version": "1.0.0",
+  "description": "SnapGuide backend API on Azure Functions (Node.js v4 programming model)",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "func start",
+    "test": "echo \"no tests\""
+  },
+  "dependencies": {
+    "@azure/functions": "^4.5.0",
+    "@azure/storage-blob": "^12.24.0",
+    "openai": "^4.67.3",
+    "pg": "^8.13.0",
+    "uuid": "^10.0.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

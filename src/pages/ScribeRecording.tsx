@@ -19,7 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import { generateSOPPdf, type PdfLanguage } from "@/lib/pdf-generator";
 import { generateSOPDocx } from "@/lib/docx-generator";
 import type { ProcessRecording, ProcessRecordingStep } from "@/types/recording";
-import { supabase } from "@/integrations/supabase/client";
+import { http } from "@/api/http";
 import AnnotationEditor from "@/components/AnnotationEditor";
 
 /* ── Step Card ── */
@@ -197,18 +197,19 @@ const ScribeRecording = () => {
   const fetchTranslation = useCallback(async (lang: 'ar' | 'fr') => {
     if (!recording) return null;
     if (translationCache[lang]) return translationCache[lang];
-    const { data, error } = await supabase.functions.invoke('translate-steps', {
-      body: {
-        title: recording.title,
-        description: recording.description || '',
-        steps: steps.map(s => ({ instruction: s.instruction, notes: s.notes })),
-        targetLanguage: lang,
-      },
+    const { data, error } = await http.post<{
+      title: string;
+      description: string;
+      steps: Array<{ instruction: string; notes: string | null }>;
+    }>('/translate-steps', {
+      title: recording.title,
+      description: recording.description || '',
+      steps: steps.map(s => ({ instruction: s.instruction, notes: s.notes })),
+      targetLanguage: lang,
     });
-    if (error) throw error;
-    if (!data || (data as any).error) throw new Error((data as any)?.error || 'Translation failed');
+    if (error || !data) throw new Error(error?.message || 'Translation failed');
     setTranslationCache(prev => ({ ...prev, [lang]: data }));
-    return data as { title: string; description: string; steps: Array<{ instruction: string; notes: string | null }> };
+    return data;
   }, [recording, steps, translationCache]);
 
   // Re-fetch when source changes — invalidate cache
