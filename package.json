@@ -58,7 +58,7 @@
     "input-otp": "^1.4.2",
     "jspdf": "^4.2.0",
     "jszip": "^3.10.1",
-    "konva": "^10.2.5",
+    "konva": "9.3.20",
     "lucide-react": "^0.462.0",
     "mammoth": "^1.12.0",
     "next-themes": "^0.3.0",
