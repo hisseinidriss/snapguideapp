@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 env:
-  AZURE_FUNCTIONAPP_NAME: snapguide-api          # change to match your Function App
+  AZURE_FUNCTIONAPP_NAME: snapeguide             # your Function App name
   AZURE_FUNCTIONAPP_PACKAGE_PATH: "azure-functions"
   NODE_VERSION: "20.x"
 
