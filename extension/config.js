@@ -1,7 +1,7 @@
 // SnapGuide extension — backend configuration
 // Points the extension at the Azure Functions API.
 // To override (e.g. for local dev), set chrome.storage.local.sg_api_base to a full URL.
-const SG_DEFAULT_API_BASE = "https://walkthru-api-hnhpfhg6e7erhvf0.uaenorth-01.azurewebsites.net/api";
+const SG_DEFAULT_API_BASE = "https://snapeguide-h2bwezemhrhagzfy.uaenorth-01.azurewebsites.net/api";
 
 async function sgApiBase() {
   try {
