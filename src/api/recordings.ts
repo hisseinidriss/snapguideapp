@@ -20,6 +20,18 @@ export const recordingsApi = {
   },
 
   delete: (id: string) => http.del<null>(`/recordings/${id}`),
+
+  generateNarration: (recording_id: string) =>
+    http.post<{ recording_id: string; steps: Array<{ id: string; narration: string; narration_url: string; narration_duration_ms: number }> }>(
+      "/generate-narration",
+      { recording_id }
+    ),
+
+  renderVideo: (recording_id: string) =>
+    http.post<{ recording_id: string; video_url: string }>(
+      "/render-recording-video",
+      { recording_id }
+    ),
 };
 
 export const recordingStepsApi = {

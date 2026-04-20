@@ -9,3 +9,5 @@ require("./functions/upload-app-icon");
 require("./functions/translate-steps");
 require("./functions/redact-screenshot");
 require("./functions/screenshot-file");
+require("./functions/generate-narration");
+require("./functions/render-recording-video");

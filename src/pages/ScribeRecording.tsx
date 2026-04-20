@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import {
-  ArrowLeft, Pencil, Trash2, Download, Languages, Loader2, FileText, FileType, ChevronDown, Edit3, ArrowUp, ArrowDown,
+  ArrowLeft, Pencil, Trash2, Download, Languages, Loader2, FileText, FileType, ChevronDown, Edit3, ArrowUp, ArrowDown, Video, Sparkles,
 } from "lucide-react";
 import isdbLogo from "@/assets/isdb-logo.jpg";
 import { Button } from "@/components/ui/button";
@@ -172,6 +172,8 @@ const ScribeRecording = () => {
   const [previewLoading, setPreviewLoading] = useState(false);
   const [translationCache, setTranslationCache] = useState<Record<string, { title: string; description: string; steps: Array<{ instruction: string; notes: string | null }> }>>({});
   const [annotateStep, setAnnotateStep] = useState<ProcessRecordingStep | null>(null);
+  const [videoBusy, setVideoBusy] = useState(false);
+  const pollRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!appId || !recordingId) return;
@@ -234,6 +236,82 @@ const ScribeRecording = () => {
   const removeStep = async (id: string) => {
     await recordingStepsApi.delete(id);
     setSteps(prev => prev.filter(s => s.id !== id));
+  };
+
+  // Poll recording row while video is being prepared
+  const startPolling = useCallback(() => {
+    if (!recordingId) return;
+    if (pollRef.current) window.clearInterval(pollRef.current);
+    pollRef.current = window.setInterval(async () => {
+      const { data } = await recordingsApi.get(recordingId);
+      if (!data) return;
+      setRecording(prev => prev ? { ...prev, ...data } as ProcessRecording : data as ProcessRecording);
+      const status = (data as any).video_status;
+      if (status === "ready" || status === "failed") {
+        if (pollRef.current) window.clearInterval(pollRef.current);
+        pollRef.current = null;
+        setVideoBusy(false);
+        if (status === "ready") {
+          toast({ title: "Video ready", description: "Your AI-narrated walkthrough is ready to download." });
+        } else {
+          toast({
+            title: "Video generation failed",
+            description: (data as any).video_error || "Unknown error",
+            variant: "destructive",
+          });
+        }
+      }
+    }, 3000);
+  }, [recordingId, toast]);
+
+  useEffect(() => {
+    return () => { if (pollRef.current) window.clearInterval(pollRef.current); };
+  }, []);
+
+  // Resume polling automatically if we land on a recording mid-render
+  useEffect(() => {
+    const status = recording?.video_status;
+    if (status === "narrating" || status === "rendering") {
+      setVideoBusy(true);
+      startPolling();
+    }
+  }, [recording?.video_status, startPolling]);
+
+  const handleGenerateVideo = async () => {
+    if (!recordingId || !recording) return;
+    if (!steps.length || !steps.every(s => s.screenshot_url)) {
+      toast({
+        title: "Cannot generate video",
+        description: "Every step needs a screenshot first.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setVideoBusy(true);
+    setRecording(prev => prev ? { ...prev, video_status: "narrating", video_error: null } : prev);
+    toast({ title: "Generating narration", description: "This may take a minute…" });
+
+    const narr = await recordingsApi.generateNarration(recordingId);
+    if (narr.error) {
+      setVideoBusy(false);
+      setRecording(prev => prev ? { ...prev, video_status: "failed", video_error: narr.error!.message } : prev);
+      toast({ title: "Narration failed", description: narr.error.message, variant: "destructive" });
+      return;
+    }
+
+    setRecording(prev => prev ? { ...prev, video_status: "rendering" } : prev);
+    toast({ title: "Rendering MP4", description: "Stitching screenshots and audio…" });
+    startPolling();
+
+    // Fire-and-forget render; polling will pick up the final status.
+    recordingsApi.renderVideo(recordingId).then(({ error }) => {
+      if (error) {
+        setVideoBusy(false);
+        if (pollRef.current) { window.clearInterval(pollRef.current); pollRef.current = null; }
+        setRecording(prev => prev ? { ...prev, video_status: "failed", video_error: error.message } : prev);
+        toast({ title: "Render failed", description: error.message, variant: "destructive" });
+      }
+    });
   };
 
 
@@ -351,6 +429,33 @@ const ScribeRecording = () => {
             <Button variant="outline" size="sm" className="h-8" onClick={() => setPreviewOpen(true)}>
               <FileText className="mr-1.5 h-3.5 w-3.5" /><span className="hidden sm:inline">Preview</span>
             </Button>
+
+            {recording.video_status === "ready" && recording.video_url ? (
+              <Button size="sm" variant="outline" className="h-8 gap-1.5" asChild>
+                <a href={recording.video_url} download={`${recording.title || 'walkthrough'}.mp4`}>
+                  <Video className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Download MP4</span>
+                </a>
+              </Button>
+            ) : (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 gap-1.5"
+                onClick={handleGenerateVideo}
+                disabled={videoBusy}
+                title="Generate AI-narrated walkthrough video"
+              >
+                {videoBusy
+                  ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  : <Sparkles className="h-3.5 w-3.5" />}
+                <span className="hidden sm:inline">
+                  {recording.video_status === "narrating" ? "Narrating…"
+                    : recording.video_status === "rendering" ? "Rendering…"
+                    : "AI Video"}
+                </span>
+              </Button>
+            )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button size="sm" className="h-8 gap-1.5" disabled={translating}>

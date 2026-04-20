@@ -202,6 +202,9 @@ export type Database = {
           id: string
           input_value: string | null
           instruction: string
+          narration_duration_ms: number | null
+          narration_text: string | null
+          narration_url: string | null
           notes: string | null
           recording_id: string
           screenshot_url: string | null
@@ -218,6 +221,9 @@ export type Database = {
           id?: string
           input_value?: string | null
           instruction?: string
+          narration_duration_ms?: number | null
+          narration_text?: string | null
+          narration_url?: string | null
           notes?: string | null
           recording_id: string
           screenshot_url?: string | null
@@ -234,6 +240,9 @@ export type Database = {
           id?: string
           input_value?: string | null
           instruction?: string
+          narration_duration_ms?: number | null
+          narration_text?: string | null
+          narration_url?: string | null
           notes?: string | null
           recording_id?: string
           screenshot_url?: string | null
@@ -262,6 +271,9 @@ export type Database = {
           title: string
           tour_id: string | null
           updated_at: string
+          video_error: string | null
+          video_status: string
+          video_url: string | null
         }
         Insert: {
           app_id: string
@@ -272,6 +284,9 @@ export type Database = {
           title?: string
           tour_id?: string | null
           updated_at?: string
+          video_error?: string | null
+          video_status?: string
+          video_url?: string | null
         }
         Update: {
           app_id?: string
@@ -282,6 +297,9 @@ export type Database = {
           title?: string
           tour_id?: string | null
           updated_at?: string
+          video_error?: string | null
+          video_status?: string
+          video_url?: string | null
         }
         Relationships: [
           {
