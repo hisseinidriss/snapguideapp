@@ -1,15 +1,11 @@
 // ElevenLabs TTS helper.
-// Returns MP3 buffer + duration (ms) computed via ffprobe.
+// Returns MP3 buffer + duration (ms). Duration probe is lazy/optional —
+// if ffprobe is unavailable on the host, we fall back to a length estimate
+// instead of crashing the module load (which would 404 every route).
 const path = require("path");
 const os = require("os");
 const fs = require("fs/promises");
 const { randomUUID } = require("crypto");
-const ffmpegPath = require("@ffmpeg-installer/ffmpeg").path;
-const ffprobePath = require("@ffprobe-installer/ffprobe").path;
-const ffmpeg = require("fluent-ffmpeg");
-
-ffmpeg.setFfmpegPath(ffmpegPath);
-ffmpeg.setFfprobePath(ffprobePath);
 
 const DEFAULT_VOICE_ID = process.env.ELEVENLABS_VOICE_ID || "JBFqnCBsd6RMkjVDRZzb"; // George
 const MODEL_ID = process.env.ELEVENLABS_MODEL_ID || "eleven_multilingual_v2";
@@ -20,14 +16,14 @@ function getKey() {
   return key;
 }
 
-function probeDurationMs(filePath) {
-  return new Promise((resolve, reject) => {
-    ffmpeg.ffprobe(filePath, (err, meta) => {
-      if (err) return reject(err);
-      const seconds = meta?.format?.duration || 0;
-      resolve(Math.round(seconds * 1000));
-    });
-  });
+async function tryProbeDurationMs(filePath, fallbackText) {
+  try {
+    const { probeDurationMs } = require("./ffmpeg");
+    return await probeDurationMs(filePath);
+  } catch {
+    // Estimate ~14 chars/sec speech rate.
+    return Math.max(1500, Math.round(((fallbackText || "").length / 14) * 1000));
+  }
 }
 
 /**
@@ -66,15 +62,11 @@ async function synthesize(text, voiceId) {
   const ab = await res.arrayBuffer();
   const buffer = Buffer.from(ab);
 
-  // Probe duration via temp file
   const tmp = path.join(os.tmpdir(), `tts-${randomUUID()}.mp3`);
   await fs.writeFile(tmp, buffer);
   let durationMs = 0;
   try {
-    durationMs = await probeDurationMs(tmp);
-  } catch {
-    // Fallback estimate: ~14 chars/sec speech rate
-    durationMs = Math.max(1500, Math.round((text.length / 14) * 1000));
+    durationMs = await tryProbeDurationMs(tmp, text);
   } finally {
     await fs.unlink(tmp).catch(() => {});
   }
