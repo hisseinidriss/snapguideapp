@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf';
 import type { ProcessRecordingStep } from '@/types/recording';
 import { buildApiUrl } from '@/api/http';
+import { generateHtmlSOPPdf } from './pdf-html-renderer';
 
 export type PdfLanguage = 'en' | 'ar' | 'fr';
 
@@ -17,9 +18,21 @@ export async function generateSOPPdf(
   steps: ProcessRecordingStep[],
   options: PdfOptions = {}
 ): Promise<void> {
-  const lang = options.language || 'en';
-  const isRTL = lang === 'ar';
+  const lang: PdfLanguage = options.language || 'en';
 
+  // Arabic and French use the HTML renderer because jsPDF's built-in font
+  // (Helvetica) cannot render Arabic glyphs at all and mangles French
+  // diacritics. Routing through the browser gets us proper shaping + RTL.
+  if (lang === 'ar' || lang === 'fr') {
+    return generateHtmlSOPPdf(title, description, steps, {
+      language: lang,
+      translatedTitle: options.translatedTitle,
+      translatedDescription: options.translatedDescription,
+      translatedSteps: options.translatedSteps,
+    });
+  }
+
+  const isRTL = false;
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
@@ -41,7 +54,7 @@ export async function generateSOPPdf(
   doc.setFontSize(18);
   doc.setFont('helvetica', 'bold');
 
-  const headerLabel = lang === 'ar' ? 'إجراء التشغيل القياسي' : lang === 'fr' ? 'Procédure Opératoire Standard' : 'Standard Operating Procedure';
+  const headerLabel = 'Standard Operating Procedure';
   doc.text(pdfTitle || headerLabel, textX, 20, { align: textAlign });
   y = 42;
 
@@ -64,9 +77,9 @@ export async function generateSOPPdf(
   // Metadata
   doc.setTextColor(138, 155, 146);
   doc.setFontSize(8);
-  const genLabel = lang === 'ar' ? 'تم الإنشاء' : lang === 'fr' ? 'Généré le' : 'Generated';
-  const stepLabel = lang === 'ar' ? 'خطوة' : lang === 'fr' ? 'étape' : 'step';
-  doc.text(`${genLabel}: ${new Date().toLocaleDateString()} • ${steps.length} ${stepLabel}${steps.length !== 1 && lang === 'en' ? 's' : ''}`, textX, y, { align: textAlign });
+  const genLabel = 'Generated';
+  const stepLabel = 'step';
+  doc.text(`${genLabel}: ${new Date().toLocaleDateString()} • ${steps.length} ${stepLabel}${steps.length !== 1 ? 's' : ''}`, textX, y, { align: textAlign });
   y += 10;
 
   // Divider
@@ -109,7 +122,7 @@ export async function generateSOPPdf(
       doc.setTextColor(107, 114, 128);
       doc.setFontSize(9);
       doc.setFont('helvetica', 'italic');
-      const notePrefix = lang === 'ar' ? 'ملاحظة: ' : lang === 'fr' ? 'Note : ' : 'Note: ';
+      const notePrefix = 'Note: ';
       const noteLines = doc.splitTextToSize(`${notePrefix}${notes}`, contentW - 16);
       doc.text(noteLines, stepTextX, y, { align: textAlign });
       y += noteLines.length * 4 + 2;
