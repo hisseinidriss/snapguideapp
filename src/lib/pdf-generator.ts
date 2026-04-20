@@ -56,7 +56,7 @@ export async function generateSOPPdf(
   doc.setFontSize(18);
   doc.setFont('helvetica', 'bold');
 
-  const headerLabel = lang === 'ar' ? 'إجراء التشغيل القياسي' : lang === 'fr' ? 'Procédure Opératoire Standard' : 'Standard Operating Procedure';
+  const headerLabel = 'Standard Operating Procedure';
   doc.text(pdfTitle || headerLabel, textX, 20, { align: textAlign });
   y = 42;
 
