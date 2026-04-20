@@ -33,6 +33,8 @@ export async function generateSOPPdf(
   }
 
   const isRTL = false;
+  // Re-widen so legacy ar/fr branches below still typecheck (they're now dead code).
+  const langAny: string = lang;
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
