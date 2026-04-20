@@ -79,9 +79,9 @@ export async function generateSOPPdf(
   // Metadata
   doc.setTextColor(138, 155, 146);
   doc.setFontSize(8);
-  const genLabel = lang === 'ar' ? 'تم الإنشاء' : lang === 'fr' ? 'Généré le' : 'Generated';
-  const stepLabel = lang === 'ar' ? 'خطوة' : lang === 'fr' ? 'étape' : 'step';
-  doc.text(`${genLabel}: ${new Date().toLocaleDateString()} • ${steps.length} ${stepLabel}${steps.length !== 1 && lang === 'en' ? 's' : ''}`, textX, y, { align: textAlign });
+  const genLabel = 'Generated';
+  const stepLabel = 'step';
+  doc.text(`${genLabel}: ${new Date().toLocaleDateString()} • ${steps.length} ${stepLabel}${steps.length !== 1 ? 's' : ''}`, textX, y, { align: textAlign });
   y += 10;
 
   // Divider
