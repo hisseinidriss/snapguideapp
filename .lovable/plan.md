@@ -1,12 +1,20 @@
 
-## Fix workflow secret name
+## Investigate bundle/repo size
 
-**Problem:** workflow references `AZURE_STATIC_WEB_APPS_API_TOKEN_DELIGHTFUL_MEADOW_0A198DD1E` but your repo secret is named `AZURE_STATIC_WEB_APPS_API_TOKEN` (per your screenshot). The deploy fails because the token resolves to empty.
+I can't run shell commands in plan mode, so I need to switch to default mode to actually measure folder sizes. Here's what I'll do once approved:
 
-**Fix:** update both `azure_static_web_apps_api_token` references in `.github/workflows/azure-static-web-apps-delightful-meadow-0a198dd1e.yml` (lines 38 and 55) to use `${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}`.
+### Steps
+1. Run `du -sh */ .[!.]*/ 2>/dev/null | sort -h` at repo root to rank top-level folders by size.
+2. Drill into the largest ones (likely `node_modules`, `azure-functions`, `extension`, `public`, `dist` if present) with `du -sh */ | sort -h`.
+3. List the 20 largest individual files: `find . -type f -not -path './node_modules/*' -not -path './.git/*' -printf '%s %p\n' | sort -n | tail -20`.
+4. Run a production build (`npm run build`) and report the `dist/` size + per-chunk breakdown from Vite's output (this is what actually gets uploaded to Azure SWA — the 250 MB limit applies to `dist/`, not the repo).
+5. Summarize: which folders are biggest, which files dominate `dist/`, and concrete fixes (lazy-load `pdfjs-dist` ~10 MB, `konva` ~1.5 MB, `docx` ~1 MB; ensure `azure-functions/` and `extension/` aren't in the SWA upload).
 
-**Also recommended (optional cleanup):**
-- In GitHub → Settings → Secrets, delete the orphaned `AZURE_STATIC_WEB_APPS_API_TOKEN_CALM_FIELD_0CE2A1C00` secret since the calm-field SWA and its workflow are gone.
-- Confirm the value stored in `AZURE_STATIC_WEB_APPS_API_TOKEN` is the deployment token from the **delightful-meadow** SWA resource in Azure (Portal → Static Web App → Overview → Manage deployment token). If it's from a different SWA, the deploy will succeed but push to the wrong site.
+### Deliverable
+A short report with:
+- Top 5 folders by size
+- Top 10 largest files
+- `dist/` total + chunk breakdown
+- Specific recommendations ranked by impact
 
-**No other changes needed** — the rest of the workflow (build, dist upload, skip_app_build) is correct.
+No code changes in this step — purely diagnostic.
