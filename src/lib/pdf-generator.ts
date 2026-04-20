@@ -124,7 +124,7 @@ export async function generateSOPPdf(
       doc.setTextColor(107, 114, 128);
       doc.setFontSize(9);
       doc.setFont('helvetica', 'italic');
-      const notePrefix = lang === 'ar' ? 'ملاحظة: ' : lang === 'fr' ? 'Note : ' : 'Note: ';
+      const notePrefix = 'Note: ';
       const noteLines = doc.splitTextToSize(`${notePrefix}${notes}`, contentW - 16);
       doc.text(noteLines, stepTextX, y, { align: textAlign });
       y += noteLines.length * 4 + 2;
