@@ -1,23 +1,30 @@
-// SnapGuide Scribe - Background service worker
-const SUPABASE_URL = "https://hubuhcerqyijytmxqesr.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh1YnVoY2VycXlpanl0bXhxZXNyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2NDMxNDgsImV4cCI6MjA5MTIxOTE0OH0.2ryjODkjIpdpzAzAPqGhnrDM3ynL0D58Ob8mzdffxRk";
-
-const headers = {
-  "apikey": SUPABASE_KEY,
-  "Authorization": `Bearer ${SUPABASE_KEY}`,
-  "Content-Type": "application/json",
-  "Prefer": "return=representation"
-};
+// SnapGuide Scribe — Background service worker (Azure API backend)
+importScripts("config.js");
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type === "SG_CAPTURE_STEP") {
-    handleCaptureStep(msg.data).then(sendResponse).catch(e => sendResponse({ error: e.message }));
+    handleCaptureStep(msg.data)
+      .then(sendResponse)
+      .catch((e) => sendResponse({ error: e.message }));
     return true; // async
+  }
+  if (msg.type === "SG_CAPTURE_SCREENSHOT") {
+    chrome.tabs
+      .captureVisibleTab(null, { format: "png" })
+      .then((dataUrl) => sendResponse({ screenshot: dataUrl }))
+      .catch((e) => sendResponse({ error: e.message }));
+    return true;
   }
 });
 
 async function handleCaptureStep(data) {
-  const state = await chrome.storage.local.get(["sg_recording", "sg_recording_id", "sg_step_count", "sg_app_id", "sg_auto_redact"]);
+  const state = await chrome.storage.local.get([
+    "sg_recording",
+    "sg_recording_id",
+    "sg_step_count",
+    "sg_app_id",
+    "sg_auto_redact",
+  ]);
   if (!state.sg_recording || !state.sg_recording_id) return { error: "Not recording" };
 
   const stepCount = (state.sg_step_count || 0) + 1;
@@ -44,81 +51,62 @@ async function handleCaptureStep(data) {
     // Try auto-redact path first if enabled
     if (autoRedact) {
       try {
-        const redactRes = await fetch(`${SUPABASE_URL}/functions/v1/redact-screenshot`, {
+        const json = await sgApi("/redact-screenshot", {
           method: "POST",
-          headers: { "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}`, "Content-Type": "application/json" },
           body: JSON.stringify({
             image: data.screenshot_data,
             recording_id: state.sg_recording_id,
             step_number: stepCount,
           }),
         });
-        if (redactRes.ok) {
-          const json = await redactRes.json();
-          if (json.screenshot_url) {
-            step.screenshot_url = json.screenshot_url;
-            step.notes = json.redacted ? `Auto-redacted ${json.regions} sensitive region(s)` : (step.notes || null);
-            uploaded = true;
-          }
-        } else {
-          console.warn("Redaction failed, falling back to direct upload:", await redactRes.text());
+        if (json && json.screenshot_url) {
+          step.screenshot_url = json.screenshot_url;
+          step.notes = json.redacted
+            ? `Auto-redacted ${json.regions} sensitive region(s)`
+            : step.notes || null;
+          uploaded = true;
         }
       } catch (e) {
-        console.warn("Redaction call failed, falling back:", e);
+        console.warn("Redaction failed, falling back to direct upload:", e.message);
       }
     }
 
-    // Fallback: direct upload of original
+    // Fallback: direct upload via /upload-screenshot
     if (!uploaded) {
       try {
-        const blob = dataURLtoBlob(data.screenshot_data);
-        const path = `${state.sg_recording_id}/step-${stepCount}.png`;
-        const uploadRes = await fetch(`${SUPABASE_URL}/storage/v1/object/recording-screenshots/${path}`, {
+        const up = await sgApi("/upload-screenshot", {
           method: "POST",
-          headers: { "apikey": SUPABASE_KEY, "Authorization": `Bearer ${SUPABASE_KEY}`, "Content-Type": blob.type, "x-upsert": "true" },
-          body: blob
+          body: JSON.stringify({
+            image: data.screenshot_data,
+            recording_id: state.sg_recording_id,
+            step_number: stepCount,
+            filename: `step-${stepCount}.png`,
+          }),
         });
-        if (uploadRes.ok) {
-          step.screenshot_url = `${SUPABASE_URL}/storage/v1/object/public/recording-screenshots/${path}`;
+        if (up && up.screenshot_url) {
+          step.screenshot_url = up.screenshot_url;
         }
       } catch (e) {
-        console.error("Screenshot upload failed:", e);
+        console.error("Screenshot upload failed:", e.message);
       }
     }
   }
 
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/process_recording_steps`, {
-    method: "POST", headers, body: JSON.stringify(step)
-  });
-
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(err);
+  // Create the step
+  try {
+    await sgApi("/recording-steps", {
+      method: "POST",
+      body: JSON.stringify(step),
+    });
+  } catch (e) {
+    throw new Error("Failed to save step: " + e.message);
   }
 
   await chrome.storage.local.set({ sg_step_count: stepCount });
 
-  // Notify popup
-  chrome.runtime.sendMessage({ type: "SG_STEP_ADDED", count: stepCount }).catch(() => {});
+  chrome.runtime
+    .sendMessage({ type: "SG_STEP_ADDED", count: stepCount })
+    .catch(() => {});
 
   return { success: true, count: stepCount };
 }
-
-function dataURLtoBlob(dataURL) {
-  const parts = dataURL.split(",");
-  const mime = parts[0].match(/:(.*?);/)[1];
-  const raw = atob(parts[1]);
-  const arr = new Uint8Array(raw.length);
-  for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
-  return new Blob([arr], { type: mime });
-}
-
-// Capture visible tab screenshot when requested
-chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-  if (msg.type === "SG_CAPTURE_SCREENSHOT") {
-    chrome.tabs.captureVisibleTab(null, { format: "png" }).then(dataUrl => {
-      sendResponse({ screenshot: dataUrl });
-    }).catch(e => sendResponse({ error: e.message }));
-    return true;
-  }
-});
