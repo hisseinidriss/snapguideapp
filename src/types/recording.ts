@@ -1,5 +1,7 @@
 // Type definitions for the SnapGuide Scribe recording feature
 
+export type VideoStatus = 'idle' | 'narrating' | 'rendering' | 'ready' | 'failed';
+
 export interface ProcessRecording {
   id: string;
   app_id: string;
@@ -7,6 +9,9 @@ export interface ProcessRecording {
   title: string;
   description: string | null;
   status: string;
+  video_url?: string | null;
+  video_status?: VideoStatus;
+  video_error?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -24,6 +29,9 @@ export interface ProcessRecordingStep {
   element_text: string | null;
   element_tag: string | null;
   input_value: string | null;
+  narration_text?: string | null;
+  narration_url?: string | null;
+  narration_duration_ms?: number | null;
   created_at: string;
   updated_at: string;
 }
