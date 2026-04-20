@@ -18,7 +18,7 @@ export async function generateSOPPdf(
   steps: ProcessRecordingStep[],
   options: PdfOptions = {}
 ): Promise<void> {
-  const lang = options.language || 'en';
+  const lang: PdfLanguage = options.language || 'en';
 
   // Arabic and French use the HTML renderer because jsPDF's built-in font
   // (Helvetica) cannot render Arabic glyphs at all and mangles French
