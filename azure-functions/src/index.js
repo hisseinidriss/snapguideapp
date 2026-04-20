@@ -8,3 +8,4 @@ require("./functions/upload-screenshot");
 require("./functions/upload-app-icon");
 require("./functions/translate-steps");
 require("./functions/redact-screenshot");
+require("./functions/screenshot-file");
