@@ -429,6 +429,33 @@ const ScribeRecording = () => {
             <Button variant="outline" size="sm" className="h-8" onClick={() => setPreviewOpen(true)}>
               <FileText className="mr-1.5 h-3.5 w-3.5" /><span className="hidden sm:inline">Preview</span>
             </Button>
+
+            {recording.video_status === "ready" && recording.video_url ? (
+              <Button size="sm" variant="outline" className="h-8 gap-1.5" asChild>
+                <a href={recording.video_url} download={`${recording.title || 'walkthrough'}.mp4`}>
+                  <Video className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Download MP4</span>
+                </a>
+              </Button>
+            ) : (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 gap-1.5"
+                onClick={handleGenerateVideo}
+                disabled={videoBusy}
+                title="Generate AI-narrated walkthrough video"
+              >
+                {videoBusy
+                  ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  : <Sparkles className="h-3.5 w-3.5" />}
+                <span className="hidden sm:inline">
+                  {recording.video_status === "narrating" ? "Narrating…"
+                    : recording.video_status === "rendering" ? "Rendering…"
+                    : "AI Video"}
+                </span>
+              </Button>
+            )}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button size="sm" className="h-8 gap-1.5" disabled={translating}>
