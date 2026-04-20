@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Stage, Layer, Image as KImage, Rect, Arrow, Text, Transformer, Group } from "react-konva";
 import Konva from "konva";
-import useImage from "use-image";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
@@ -9,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import {
   MousePointer2, ArrowUpRight, Square, Droplet, Type, Undo2, Trash2, Loader2,
 } from "lucide-react";
-import { http, fileToDataUrl } from "@/api/http";
+import { http } from "@/api/http";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
@@ -31,6 +30,13 @@ type Shape = ArrowShape | RectShape | BlurShape | TextShape;
 const COLORS = ["#ef4444", "#f59e0b", "#1a6b3c", "#3b82f6", "#ffffff", "#000000"];
 const MAX_W = 1100;
 const MAX_H = 700;
+const RAW_BASE = (import.meta.env.VITE_API_BASE_URL ?? "").trim();
+const API_BASE = RAW_BASE.replace(/\/$/, "");
+
+function buildApiUrl(path: string) {
+  const normalized = path.startsWith("/") ? path : `/${path}`;
+  return `${API_BASE}/api${normalized.replace(/^\/api/, "")}`;
+}
 
 interface Props {
   open: boolean;
@@ -45,8 +51,8 @@ export default function AnnotationEditor({
   open, onOpenChange, imageUrl, recordingId, stepNumber, onSaved,
 }: Props) {
   const { toast } = useToast();
-  // Load with crossOrigin so the canvas isn't tainted (needed for toDataURL)
-  const [image] = useImage(imageUrl, "anonymous");
+  const [loadedImage, setLoadedImage] = useState<HTMLImageElement | null>(null);
+  const [imageError, setImageError] = useState<string | null>(null);
   const [tool, setTool] = useState<Tool>("arrow");
   const [color, setColor] = useState<string>(COLORS[0]);
   const [shapes, setShapes] = useState<Shape[]>([]);
@@ -58,6 +64,66 @@ export default function AnnotationEditor({
   const stageRef = useRef<Konva.Stage>(null);
   const transformerRef = useRef<Konva.Transformer>(null);
   const shapeRefs = useRef<Record<string, Konva.Node>>({});
+  const objectUrlRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!open || !imageUrl) return;
+
+    let cancelled = false;
+    const controller = new AbortController();
+
+    setLoadedImage(null);
+    setImageError(null);
+
+    const load = async () => {
+      try {
+        const proxyUrl = buildApiUrl(`/screenshot-file?url=${encodeURIComponent(imageUrl)}`);
+        const res = await fetch(proxyUrl, {
+          signal: controller.signal,
+          cache: "no-store",
+        });
+
+        if (!res.ok) {
+          throw new Error(`Failed to load screenshot (${res.status})`);
+        }
+
+        const blob = await res.blob();
+        if (!blob.size) throw new Error("Screenshot file is empty");
+
+        const objectUrl = URL.createObjectURL(blob);
+        objectUrlRef.current = objectUrl;
+
+        const img = new window.Image();
+        img.crossOrigin = "anonymous";
+        img.onload = () => {
+          if (cancelled) return;
+          setLoadedImage(img);
+          setImageError(null);
+        };
+        img.onerror = () => {
+          if (cancelled) return;
+          setImageError("Failed to decode screenshot");
+          setLoadedImage(null);
+        };
+        img.src = objectUrl;
+      } catch (err: any) {
+        if (cancelled || err?.name === "AbortError") return;
+        setImageError(err?.message || "Failed to load screenshot");
+        setLoadedImage(null);
+      }
+    };
+
+    load();
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+      if (objectUrlRef.current) {
+        URL.revokeObjectURL(objectUrlRef.current);
+        objectUrlRef.current = null;
+      }
+    };
+  }, [open, imageUrl]);
 
   // Reset on open / image change
   useEffect(() => {
@@ -73,10 +139,14 @@ export default function AnnotationEditor({
 
   // Compute fitted stage dimensions
   const { stageW, stageH, scale } = useMemo(() => {
-    if (!image) return { stageW: MAX_W, stageH: MAX_H, scale: 1 };
-    const s = Math.min(MAX_W / image.width, MAX_H / image.height, 1);
-    return { stageW: Math.round(image.width * s), stageH: Math.round(image.height * s), scale: s };
-  }, [image]);
+    if (!loadedImage) return { stageW: MAX_W, stageH: MAX_H, scale: 1 };
+    const s = Math.min(MAX_W / loadedImage.width, MAX_H / loadedImage.height, 1);
+    return {
+      stageW: Math.round(loadedImage.width * s),
+      stageH: Math.round(loadedImage.height * s),
+      scale: s,
+    };
+  }, [loadedImage]);
 
   // Attach transformer to selected
   useEffect(() => {
@@ -119,7 +189,6 @@ export default function AnnotationEditor({
     if (!pos) return;
 
     if (tool === "select") {
-      // Click empty area → deselect
       if (e.target === stage || e.target.attrs.id === "bg-image") setSelectedId(null);
       return;
     }
@@ -157,7 +226,6 @@ export default function AnnotationEditor({
 
   const onMouseUp = () => {
     if (!drawing) return;
-    // Normalize negative width/height
     let toCommit = drawing;
     if (drawing.type === "rect" || drawing.type === "blur") {
       const x = drawing.width < 0 ? drawing.x + drawing.width : drawing.x;
@@ -181,15 +249,13 @@ export default function AnnotationEditor({
 
   const handleSave = async () => {
     const stage = stageRef.current;
-    if (!stage || !image) return;
+    if (!stage || !loadedImage) return;
     setSaving(true);
     setSelectedId(null);
-    // Wait a tick for transformer to detach
     await new Promise(r => setTimeout(r, 50));
 
     try {
-      // Export at original image resolution
-      const pixelRatio = (1 / scale) * 1; // restore to native pixels
+      const pixelRatio = 1 / scale;
       const dataUrl = stage.toDataURL({ pixelRatio, mimeType: "image/png" });
       const { data, error } = await http.post<{ screenshot_url: string }>(
         "/upload-screenshot",
@@ -206,7 +272,6 @@ export default function AnnotationEditor({
     }
   };
 
-  // Inline text editor positioning
   const editingTextShape = shapes.find(s => s.id === editingTextId && s.type === "text") as TextShape | undefined;
 
   const tools: { id: Tool; icon: any; label: string }[] = [
@@ -224,7 +289,6 @@ export default function AnnotationEditor({
           <DialogTitle>Annotate screenshot</DialogTitle>
         </DialogHeader>
 
-        {/* Toolbar */}
         <div className="flex flex-wrap items-center gap-2 border rounded-lg p-2 bg-muted/30">
           <div className="flex items-center gap-1">
             {tools.map(t => (
@@ -272,11 +336,17 @@ export default function AnnotationEditor({
           </div>
         </div>
 
-        {/* Stage */}
         <div className="flex-1 overflow-auto bg-muted/20 rounded-lg p-2 flex items-center justify-center">
-          {!image ? (
+          {!loadedImage && !imageError ? (
             <div className="flex items-center gap-2 text-muted-foreground py-20">
               <Loader2 className="h-4 w-4 animate-spin" /> Loading image…
+            </div>
+          ) : imageError ? (
+            <div className="flex flex-col items-center gap-3 text-center text-muted-foreground py-20 px-6">
+              <p>{imageError}</p>
+              <Button type="button" variant="outline" onClick={() => window.open(imageUrl, "_blank", "noopener,noreferrer")}>
+                Open original image
+              </Button>
             </div>
           ) : (
             <div className="relative" style={{ width: stageW, height: stageH }}>
@@ -292,18 +362,16 @@ export default function AnnotationEditor({
                 onTouchEnd={onMouseUp}
                 style={{ cursor: tool === "select" ? "default" : "crosshair" }}
               >
-                {/* Base image layer */}
                 <Layer listening={true}>
                   <KImage
                     id="bg-image"
-                    image={image}
+                    image={loadedImage}
                     width={stageW}
                     height={stageH}
                     onClick={() => setSelectedId(null)}
                   />
                 </Layer>
 
-                {/* Blur layer — clipped duplicates of base image */}
                 <Layer listening={false}>
                   {shapes.filter(s => s.type === "blur").map(s => {
                     const b = s as BlurShape;
@@ -316,7 +384,7 @@ export default function AnnotationEditor({
                         clipHeight={b.height}
                       >
                         <KImage
-                          image={image}
+                          image={loadedImage}
                           width={stageW}
                           height={stageH}
                           filters={[Konva.Filters.Blur]}
@@ -330,7 +398,6 @@ export default function AnnotationEditor({
                   })}
                 </Layer>
 
-                {/* Shapes layer */}
                 <Layer>
                   {shapes.map(s => {
                     const common = {
@@ -376,10 +443,13 @@ export default function AnnotationEditor({
                           cornerRadius={4}
                           onTransformEnd={(e) => {
                             const node = e.target as Konva.Rect;
-                            const sx = node.scaleX(), sy = node.scaleY();
-                            node.scaleX(1); node.scaleY(1);
+                            const sx = node.scaleX();
+                            const sy = node.scaleY();
+                            node.scaleX(1);
+                            node.scaleY(1);
                             updateShape(s.id, {
-                              x: node.x(), y: node.y(),
+                              x: node.x(),
+                              y: node.y(),
                               width: Math.max(5, node.width() * sx),
                               height: Math.max(5, node.height() * sy),
                             } as any);
@@ -388,7 +458,6 @@ export default function AnnotationEditor({
                       );
                     }
                     if (s.type === "blur") {
-                      // invisible hit-rect for selection/move/resize of blur regions
                       return (
                         <Rect
                           key={s.id}
@@ -403,10 +472,13 @@ export default function AnnotationEditor({
                           fill="rgba(0,0,0,0.001)"
                           onTransformEnd={(e) => {
                             const node = e.target as Konva.Rect;
-                            const sx = node.scaleX(), sy = node.scaleY();
-                            node.scaleX(1); node.scaleY(1);
+                            const sx = node.scaleX();
+                            const sy = node.scaleY();
+                            node.scaleX(1);
+                            node.scaleY(1);
                             updateShape(s.id, {
-                              x: node.x(), y: node.y(),
+                              x: node.x(),
+                              y: node.y(),
                               width: Math.max(5, node.width() * sx),
                               height: Math.max(5, node.height() * sy),
                             } as any);
@@ -435,7 +507,6 @@ export default function AnnotationEditor({
                     return null;
                   })}
 
-                  {/* Live drawing preview */}
                   {drawing?.type === "arrow" && (
                     <Arrow
                       points={drawing.points}
@@ -476,7 +547,6 @@ export default function AnnotationEditor({
                 </Layer>
               </Stage>
 
-              {/* Inline text editor */}
               {editingTextShape && (
                 <textarea
                   autoFocus
@@ -515,7 +585,7 @@ export default function AnnotationEditor({
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={saving || !image}>
+          <Button onClick={handleSave} disabled={saving || !loadedImage}>
             {saving ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving…</> : "Save annotations"}
           </Button>
         </DialogFooter>
