@@ -19,8 +19,20 @@ export async function generateSOPPdf(
   options: PdfOptions = {}
 ): Promise<void> {
   const lang = options.language || 'en';
-  const isRTL = lang === 'ar';
 
+  // Arabic and French use the HTML renderer because jsPDF's built-in font
+  // (Helvetica) cannot render Arabic glyphs at all and mangles French
+  // diacritics. Routing through the browser gets us proper shaping + RTL.
+  if (lang === 'ar' || lang === 'fr') {
+    return generateHtmlSOPPdf(title, description, steps, {
+      language: lang,
+      translatedTitle: options.translatedTitle,
+      translatedDescription: options.translatedDescription,
+      translatedSteps: options.translatedSteps,
+    });
+  }
+
+  const isRTL = false;
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
