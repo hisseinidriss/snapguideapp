@@ -12,6 +12,12 @@ function url(path: string) {
   return `${API_BASE}/api${path.replace(/^\/api/, "")}`;
 }
 
+// Public helper for callers (e.g. PDF generator) that need the absolute API URL
+// without going through the JSON request() helper.
+export function buildApiUrl(path: string) {
+  return url(path);
+}
+
 async function request<T>(
   method: string,
   path: string,
