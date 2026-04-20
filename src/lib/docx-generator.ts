@@ -8,18 +8,32 @@ import type { ProcessRecordingStep } from '@/types/recording';
 async function fetchImageBuffer(url: string): Promise<{ data: ArrayBuffer; width: number; height: number } | null> {
   try {
     const res = await fetch(url);
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.warn('[docx] image fetch failed', res.status, url);
+      return null;
+    }
     const blob = await res.blob();
     const data = await blob.arrayBuffer();
-    const dims = await new Promise<{ width: number; height: number }>((resolve, reject) => {
+    // Probe dimensions from the in-memory blob (no CORS needed — same-origin object URL).
+    const dims = await new Promise<{ width: number; height: number }>((resolve) => {
+      const objectUrl = URL.createObjectURL(blob);
       const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
-      img.onerror = reject;
-      img.src = URL.createObjectURL(blob);
+      img.onload = () => {
+        const w = img.naturalWidth || 800;
+        const h = img.naturalHeight || 600;
+        URL.revokeObjectURL(objectUrl);
+        resolve({ width: w, height: h });
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(objectUrl);
+        // Fallback to a sensible default rather than dropping the image entirely.
+        resolve({ width: 800, height: 600 });
+      };
+      img.src = objectUrl;
     });
     return { data, ...dims };
-  } catch {
+  } catch (e) {
+    console.warn('[docx] image fetch error', url, e);
     return null;
   }
 }
