@@ -10,8 +10,10 @@
     "AZURE_STORAGE_CONNECTION_STRING": "DefaultEndpointsProtocol=https;AccountName=...;AccountKey=...;EndpointSuffix=core.windows.net",
     "STORAGE_PUBLIC_BASE_URL": "https://YOUR_STORAGE_ACCOUNT.blob.core.windows.net",
 
+    "PERPLEXITY_API_KEY": "pplx-...",
+    "PERPLEXITY_MODEL": "sonar",
+
     "OPENAI_API_KEY": "sk-...",
-    "OPENAI_TEXT_MODEL": "gpt-4o-mini",
     "OPENAI_VISION_MODEL": "gpt-4o-mini",
 
     "CORS_ALLOWED_ORIGIN": "*"
