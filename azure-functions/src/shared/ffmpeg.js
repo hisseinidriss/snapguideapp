@@ -1,15 +1,27 @@
 // ffmpeg helpers for stitching narrated MP4 walkthroughs.
 // Bundles its own ffmpeg binary so this works on Windows or Linux Function Apps.
+//
+// IMPORTANT: requires here are lazy. The ffmpeg installer packages download
+// platform-specific binaries during `npm install`. If that didn't happen on
+// the deploy host, requiring them at module load time would crash the whole
+// Functions host and every route would 404. We isolate the failure to the
+// render endpoint instead.
 const path = require("path");
 const os = require("os");
 const fs = require("fs/promises");
 const { randomUUID } = require("crypto");
-const ffmpegPath = require("@ffmpeg-installer/ffmpeg").path;
-const ffprobePath = require("@ffprobe-installer/ffprobe").path;
-const ffmpeg = require("fluent-ffmpeg");
 
-ffmpeg.setFfmpegPath(ffmpegPath);
-ffmpeg.setFfprobePath(ffprobePath);
+let _ffmpeg = null;
+function getFfmpeg() {
+  if (_ffmpeg) return _ffmpeg;
+  const ffmpegPath = require("@ffmpeg-installer/ffmpeg").path;
+  const ffprobePath = require("@ffprobe-installer/ffprobe").path;
+  const ffmpeg = require("fluent-ffmpeg");
+  ffmpeg.setFfmpegPath(ffmpegPath);
+  ffmpeg.setFfprobePath(ffprobePath);
+  _ffmpeg = ffmpeg;
+  return ffmpeg;
+}
 
 const VIDEO_W = 1280;
 const VIDEO_H = 720;
@@ -33,6 +45,7 @@ async function downloadToFile(url, destPath) {
  * Image is letterboxed/scaled to fit 1280x720.
  */
 function makeStepClip({ imagePath, audioPath, outPath, durationSeconds }) {
+  const ffmpeg = getFfmpeg();
   return new Promise((resolve, reject) => {
     ffmpeg()
       .input(imagePath)
@@ -64,6 +77,7 @@ function makeStepClip({ imagePath, audioPath, outPath, durationSeconds }) {
  * Concatenate multiple MP4 clips using the concat demuxer.
  */
 async function concatClips(clipPaths, outPath, dir) {
+  const ffmpeg = getFfmpeg();
   const listFile = path.join(dir, "concat.txt");
   const lines = clipPaths
     .map((p) => `file '${p.replace(/'/g, "'\\''")}'`)
@@ -81,4 +95,28 @@ async function concatClips(clipPaths, outPath, dir) {
   });
 }
 
-module.exports = { workDir, downloadToFile, makeStepClip, concatClips, VIDEO_W, VIDEO_H, FPS };
+/**
+ * Probe an mp3/audio file's duration (ms) using ffprobe.
+ * Lazy so missing binary doesn't crash module load.
+ */
+function probeDurationMs(filePath) {
+  const ffmpeg = getFfmpeg();
+  return new Promise((resolve, reject) => {
+    ffmpeg.ffprobe(filePath, (err, meta) => {
+      if (err) return reject(err);
+      const seconds = meta?.format?.duration || 0;
+      resolve(Math.round(seconds * 1000));
+    });
+  });
+}
+
+module.exports = {
+  workDir,
+  downloadToFile,
+  makeStepClip,
+  concatClips,
+  probeDurationMs,
+  VIDEO_W,
+  VIDEO_H,
+  FPS,
+};
