@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
 import type { ProcessRecordingStep } from '@/types/recording';
+import { buildApiUrl } from '@/api/http';
 
 export type PdfLanguage = 'en' | 'ar' | 'fr';
 
@@ -276,12 +277,28 @@ export async function generateCombinedPdf(
   doc.save(`${appName.replace(/\s+/g, '-').toLowerCase()}-all-sops.pdf`);
 }
 
-function loadImage(url: string): Promise<HTMLImageElement> {
+async function loadImage(url: string): Promise<HTMLImageElement> {
+  // Route Azure Blob URLs through our same-origin proxy to avoid CORS taint
+  // (otherwise jsPDF.addImage fails when reading pixel data).
+  let srcUrl = url;
+  try {
+    const parsed = new URL(url, window.location.href);
+    if (parsed.hostname.endsWith('.blob.core.windows.net')) {
+      const proxied = buildApiUrl(`/screenshot-file?url=${encodeURIComponent(url)}`);
+      const res = await fetch(proxied, { cache: 'no-store' });
+      if (!res.ok) throw new Error(`proxy ${res.status}`);
+      const blob = await res.blob();
+      srcUrl = URL.createObjectURL(blob);
+    }
+  } catch (e) {
+    // fall back to direct load
+  }
+
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.onload = () => resolve(img);
     img.onerror = reject;
-    img.src = url;
+    img.src = srcUrl;
   });
 }
