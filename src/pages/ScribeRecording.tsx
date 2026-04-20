@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import {
-  ArrowLeft, Pencil, Trash2, Download, Languages, Loader2, FileText, FileType, ChevronDown, Edit3,
+  ArrowLeft, Pencil, Trash2, Download, Languages, Loader2, FileText, FileType, ChevronDown, Edit3, ArrowUp, ArrowDown,
 } from "lucide-react";
 import isdbLogo from "@/assets/isdb-logo.jpg";
 import { Button } from "@/components/ui/button";
@@ -26,12 +26,14 @@ import AnnotationEditor from "@/components/AnnotationEditor";
 interface StepCardProps {
   step: ProcessRecordingStep;
   index: number;
+  total: number;
   onUpdate: (id: string, updates: Partial<ProcessRecordingStep>) => void;
   onRemove: (id: string) => void;
   onAnnotate: (step: ProcessRecordingStep) => void;
+  onMove: (index: number, direction: -1 | 1) => void;
 }
 
-const StepCard = ({ step, index, onUpdate, onRemove, onAnnotate }: StepCardProps) => {
+const StepCard = ({ step, index, total, onUpdate, onRemove, onAnnotate, onMove }: StepCardProps) => {
   const [editing, setEditing] = useState(false);
   const [val, setVal] = useState(step.instruction);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -54,10 +56,30 @@ const StepCard = ({ step, index, onUpdate, onRemove, onAnnotate }: StepCardProps
       <div className={`flex flex-col ${isEven ? 'md:flex-row' : 'md:flex-row-reverse'} gap-5 items-start`}>
         {/* Number badge + content side */}
         <div className="flex gap-4 md:w-2/5 w-full">
-          <div className="flex flex-col items-center shrink-0">
+          <div className="flex flex-col items-center shrink-0 gap-1">
+            <button
+              type="button"
+              onClick={() => onMove(index, -1)}
+              disabled={index === 0}
+              className="h-6 w-6 rounded-md flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-muted-foreground transition-colors opacity-0 group-hover:opacity-100"
+              title="Move step up"
+              aria-label="Move step up"
+            >
+              <ArrowUp className="h-3.5 w-3.5" />
+            </button>
             <span className="flex items-center justify-center h-12 w-12 rounded-2xl bg-gradient-to-br from-primary to-primary/70 text-primary-foreground text-base font-bold shadow-lg shadow-primary/20 ring-4 ring-background">
               {index + 1}
             </span>
+            <button
+              type="button"
+              onClick={() => onMove(index, 1)}
+              disabled={index === total - 1}
+              className="h-6 w-6 rounded-md flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-muted-foreground transition-colors opacity-0 group-hover:opacity-100"
+              title="Move step down"
+              aria-label="Move step down"
+            >
+              <ArrowDown className="h-3.5 w-3.5" />
+            </button>
           </div>
           <div className="flex-1 min-w-0 pt-1">
             {editing ? (
