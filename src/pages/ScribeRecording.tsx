@@ -210,6 +210,27 @@ const ScribeRecording = () => {
     await recordingStepsApi.update(id, clean as any);
   };
 
+  const moveStep = async (index: number, direction: -1 | 1) => {
+    const target = index + direction;
+    if (target < 0 || target >= steps.length) return;
+    const reordered = [...steps];
+    [reordered[index], reordered[target]] = [reordered[target], reordered[index]];
+    // Reassign sort_order based on new positions
+    const withOrder = reordered.map((s, i) => ({ ...s, sort_order: i }));
+    setSteps(withOrder);
+    // Persist only the two changed steps
+    const a = withOrder[index];
+    const b = withOrder[target];
+    try {
+      await Promise.all([
+        recordingStepsApi.update(a.id, { sort_order: a.sort_order }),
+        recordingStepsApi.update(b.id, { sort_order: b.sort_order }),
+      ]);
+    } catch (err: any) {
+      toast({ title: "Reorder failed", description: err?.message || "Could not save new order", variant: "destructive" });
+    }
+  };
+
   const removeStep = async (id: string) => {
     await recordingStepsApi.delete(id);
     setSteps(prev => prev.filter(s => s.id !== id));
@@ -418,7 +439,7 @@ const ScribeRecording = () => {
 
         <div className="space-y-14">
           {steps.map((step, i) => (
-            <StepCard key={step.id} step={step} index={i} onUpdate={updateStep} onRemove={removeStep} onAnnotate={setAnnotateStep} />
+            <StepCard key={step.id} step={step} index={i} total={steps.length} onUpdate={updateStep} onRemove={removeStep} onAnnotate={setAnnotateStep} onMove={moveStep} />
           ))}
         </div>
 
