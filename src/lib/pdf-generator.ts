@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf';
 import type { ProcessRecordingStep } from '@/types/recording';
 import { buildApiUrl } from '@/api/http';
+import { generateHtmlSOPPdf } from './pdf-html-renderer';
 
 export type PdfLanguage = 'en' | 'ar' | 'fr';
 
