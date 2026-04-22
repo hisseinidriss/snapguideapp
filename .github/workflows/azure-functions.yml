@@ -23,21 +23,41 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
-      - name: Install production deps and bundle ffmpeg
+      # Build the deployment artifact LOCALLY in CI.
+      # We install production deps + bundle ffmpeg here so the Function App
+      # does NOT need Kudu/Oryx to run any build steps server-side.
+      # This is the correct model for Linux Function Apps using Run-From-Package.
+      - name: Build deployment package (no remote build)
         run: |
+          set -euo pipefail
           pushd "${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}"
+
+          # Install production dependencies locally
           npm install --omit=dev --no-audit --no-fund
+
+          # Download + bundle ffmpeg/ffprobe binaries for linux-x64
           node scripts/install-ffmpeg.js
+
+          # Verify binaries exist and are executable
           test -f src/vendor/ffmpeg/linux-x64/ffmpeg
           test -f src/vendor/ffmpeg/linux-x64/ffprobe
           chmod +x src/vendor/ffmpeg/linux-x64/ffmpeg \
                    src/vendor/ffmpeg/linux-x64/ffprobe
+
           popd
 
-      - name: Deploy to Azure Function App
+      - name: Deploy to Azure Function App (Run-From-Package)
         uses: Azure/functions-action@v1
         with:
           app-name: ${{ env.AZURE_FUNCTIONAPP_NAME }}
           package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
           publish-profile: ${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}
           respect-funcignore: true
+          # Force Run-From-Package deployment model.
+          # scm-do-build-during-deployment=false and enable-oryx-build=false
+          # tell the action NOT to mutate SCM_DO_BUILD_DURING_DEPLOYMENT or
+          # ENABLE_ORYX_BUILD on the Function App, and NOT to invoke Kudu's
+          # remote build pipeline. The package we built above is shipped as-is
+          # and mounted read-only via WEBSITE_RUN_FROM_PACKAGE.
+          scm-do-build-during-deployment: false
+          enable-oryx-build: false
