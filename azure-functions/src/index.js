@@ -27,3 +27,4 @@ safeLoad("./functions/redact-screenshot");
 safeLoad("./functions/screenshot-file");
 safeLoad("./functions/generate-narration");
 safeLoad("./functions/render-recording-video");
+safeLoad("./functions/ffmpeg-check");
