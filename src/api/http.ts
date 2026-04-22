@@ -2,7 +2,10 @@
 // Base URL comes from VITE_API_BASE_URL (e.g. https://snapguide-api.azurewebsites.net/api).
 // On Azure Static Web Apps with linked Functions, leave it empty so requests go to /api/*.
 
-const RAW_BASE = (import.meta.env.VITE_API_BASE_URL ?? "").trim();
+// Default to the Linux-based Azure Function App (supports ffmpeg-powered AI video rendering).
+// Override via VITE_API_BASE_URL at build time, or leave blank ("") to use SWA-linked /api proxy.
+const DEFAULT_API_BASE = "https://snapeguide1-hjakarahbzhcc2dk.uaenorth-01.azurewebsites.net";
+const RAW_BASE = (import.meta.env.VITE_API_BASE_URL ?? DEFAULT_API_BASE).trim();
 const API_BASE = RAW_BASE.replace(/\/$/, "");
 
 export type ApiResult<T> = { data: T | null; error: { message: string } | null };
