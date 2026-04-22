@@ -1,31 +1,137 @@
 // ffmpeg helpers for stitching narrated MP4 walkthroughs.
-// Bundles its own ffmpeg binary so this works on Windows or Linux Function Apps.
-//
-// IMPORTANT: requires here are lazy. The ffmpeg installer packages download
-// platform-specific binaries during `npm install`. If that didn't happen on
-// the deploy host, requiring them at module load time would crash the whole
-// Functions host and every route would 404. We isolate the failure to the
-// render endpoint instead.
+// Uses project-bundled binaries with explicit platform resolution instead of
+// npm installer packages or system PATH discovery.
 const path = require("path");
 const os = require("os");
 const fs = require("fs/promises");
+const fsSync = require("fs");
+const { execFileSync } = require("child_process");
 const { randomUUID } = require("crypto");
 
-let _ffmpeg = null;
-function getFfmpeg() {
-  if (_ffmpeg) return _ffmpeg;
-  const ffmpegPath = require("@ffmpeg-installer/ffmpeg").path;
-  const ffprobePath = require("@ffprobe-installer/ffprobe").path;
-  const ffmpeg = require("fluent-ffmpeg");
-  ffmpeg.setFfmpegPath(ffmpegPath);
-  ffmpeg.setFfprobePath(ffprobePath);
-  _ffmpeg = ffmpeg;
-  return ffmpeg;
-}
+const BUNDLE_ROOT = path.join(__dirname, "..", "vendor", "ffmpeg");
+const RUNTIME_ROOT = path.join(os.tmpdir(), "snapguide-ffmpeg-runtime");
+
+const TARGETS = {
+  "linux-x64": { dir: "linux-x64", ffmpeg: "ffmpeg", ffprobe: "ffprobe" },
+  "linux-arm64": { dir: "linux-arm64", ffmpeg: "ffmpeg", ffprobe: "ffprobe" },
+  "darwin-x64": { dir: "darwin-x64", ffmpeg: "ffmpeg", ffprobe: "ffprobe" },
+  "darwin-arm64": { dir: "darwin-arm64", ffmpeg: "ffmpeg", ffprobe: "ffprobe" },
+  "win32-x64": { dir: "win32-x64", ffmpeg: "ffmpeg.exe", ffprobe: "ffprobe.exe" },
+};
 
 const VIDEO_W = 1280;
 const VIDEO_H = 720;
 const FPS = 30;
+
+let _ffmpegPromise = null;
+let _binaryPathsPromise = null;
+
+function getTarget() {
+  const key = `${process.platform}-${process.arch}`;
+  const target = TARGETS[key];
+  if (!target) {
+    throw new Error(
+      `Unsupported ffmpeg runtime target: ${key}. ` +
+        `Supported targets: ${Object.keys(TARGETS).join(", ")}`
+    );
+  }
+  return { key, ...target };
+}
+
+async function pathExists(filePath) {
+  try {
+    await fs.access(filePath, fsSync.constants.F_OK);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function verifyBinary(binaryPath) {
+  execFileSync(binaryPath, ["-version"], { stdio: "ignore", timeout: 5000 });
+}
+
+async function ensureRuntimeBinary(sourcePath, runtimePath) {
+  await fs.mkdir(path.dirname(runtimePath), { recursive: true });
+  const sourceStat = await fs.stat(sourcePath);
+
+  let needsCopy = true;
+  try {
+    const runtimeStat = await fs.stat(runtimePath);
+    needsCopy =
+      runtimeStat.size !== sourceStat.size || runtimeStat.mtimeMs < sourceStat.mtimeMs;
+  } catch {}
+
+  if (needsCopy) {
+    await fs.copyFile(sourcePath, runtimePath);
+  }
+
+  if (process.platform !== "win32") {
+    await fs.chmod(runtimePath, 0o755);
+  }
+
+  verifyBinary(runtimePath);
+  return runtimePath;
+}
+
+async function resolveBundledBinaryPaths() {
+  if (_binaryPathsPromise) return _binaryPathsPromise;
+
+  _binaryPathsPromise = (async () => {
+    const target = getTarget();
+    const ffmpegBundledPath = process.env.SNAPGUIDE_FFMPEG_PATH || path.join(BUNDLE_ROOT, target.dir, target.ffmpeg);
+    const ffprobeBundledPath = process.env.SNAPGUIDE_FFPROBE_PATH || path.join(BUNDLE_ROOT, target.dir, target.ffprobe);
+
+    if (!(await pathExists(ffmpegBundledPath))) {
+      throw new Error(`Bundled ffmpeg binary not found at ${ffmpegBundledPath}`);
+    }
+    if (!(await pathExists(ffprobeBundledPath))) {
+      throw new Error(`Bundled ffprobe binary not found at ${ffprobeBundledPath}`);
+    }
+
+    const runtimeDir = path.join(RUNTIME_ROOT, target.dir);
+    const ffmpegPath = await ensureRuntimeBinary(
+      ffmpegBundledPath,
+      path.join(runtimeDir, target.ffmpeg)
+    );
+    const ffprobePath = await ensureRuntimeBinary(
+      ffprobeBundledPath,
+      path.join(runtimeDir, target.ffprobe)
+    );
+
+    return {
+      target,
+      runtimeDir,
+      ffmpegPath,
+      ffprobePath,
+      ffmpegBundledPath,
+      ffprobeBundledPath,
+    };
+  })().catch((error) => {
+    _binaryPathsPromise = null;
+    throw error;
+  });
+
+  return _binaryPathsPromise;
+}
+
+async function getFfmpeg() {
+  if (_ffmpegPromise) return _ffmpegPromise;
+
+  _ffmpegPromise = resolveBundledBinaryPaths()
+    .then(({ ffmpegPath, ffprobePath }) => {
+      const ffmpeg = require("fluent-ffmpeg");
+      ffmpeg.setFfmpegPath(ffmpegPath);
+      ffmpeg.setFfprobePath(ffprobePath);
+      return ffmpeg;
+    })
+    .catch((error) => {
+      _ffmpegPromise = null;
+      throw error;
+    });
+
+  return _ffmpegPromise;
+}
 
 function workDir() {
   const dir = path.join(os.tmpdir(), `snapguide-${randomUUID()}`);
@@ -40,12 +146,8 @@ async function downloadToFile(url, destPath) {
   return destPath;
 }
 
-/**
- * Build a single MP4 clip: looped still image with audio overlay.
- * Image is letterboxed/scaled to fit 1280x720.
- */
-function makeStepClip({ imagePath, audioPath, outPath, durationSeconds }) {
-  const ffmpeg = getFfmpeg();
+async function makeStepClip({ imagePath, audioPath, outPath, durationSeconds }) {
+  const ffmpeg = await getFfmpeg();
   return new Promise((resolve, reject) => {
     ffmpeg()
       .input(imagePath)
@@ -73,11 +175,8 @@ function makeStepClip({ imagePath, audioPath, outPath, durationSeconds }) {
   });
 }
 
-/**
- * Concatenate multiple MP4 clips using the concat demuxer.
- */
 async function concatClips(clipPaths, outPath, dir) {
-  const ffmpeg = getFfmpeg();
+  const ffmpeg = await getFfmpeg();
   const listFile = path.join(dir, "concat.txt");
   const lines = clipPaths
     .map((p) => `file '${p.replace(/'/g, "'\\''")}'`)
@@ -95,12 +194,8 @@ async function concatClips(clipPaths, outPath, dir) {
   });
 }
 
-/**
- * Probe an mp3/audio file's duration (ms) using ffprobe.
- * Lazy so missing binary doesn't crash module load.
- */
-function probeDurationMs(filePath) {
-  const ffmpeg = getFfmpeg();
+async function probeDurationMs(filePath) {
+  const ffmpeg = await getFfmpeg();
   return new Promise((resolve, reject) => {
     ffmpeg.ffprobe(filePath, (err, meta) => {
       if (err) return reject(err);
@@ -116,6 +211,7 @@ module.exports = {
   makeStepClip,
   concatClips,
   probeDurationMs,
+  resolveBundledBinaryPaths,
   VIDEO_W,
   VIDEO_H,
   FPS,
