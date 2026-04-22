@@ -5,7 +5,10 @@
 // Default to the Linux-based Azure Function App (supports ffmpeg-powered AI video rendering).
 // Override via VITE_API_BASE_URL at build time, or leave blank ("") to use SWA-linked /api proxy.
 const DEFAULT_API_BASE = "https://snapeguide1-hjakarahbzhcc2dk.uaenorth-01.azurewebsites.net";
-const RAW_BASE = (import.meta.env.VITE_API_BASE_URL ?? DEFAULT_API_BASE).trim();
+// Note: use length check instead of `??` because Vite replaces unset env vars with "" (empty string),
+// which would otherwise short-circuit the fallback and send requests to the SWA origin.
+const ENV_BASE = (import.meta.env.VITE_API_BASE_URL ?? "").trim();
+const RAW_BASE = ENV_BASE.length > 0 ? ENV_BASE : DEFAULT_API_BASE;
 const API_BASE = RAW_BASE.replace(/\/$/, "");
 
 export type ApiResult<T> = { data: T | null; error: { message: string } | null };
