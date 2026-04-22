@@ -26,7 +26,13 @@ jobs:
       - name: Install production deps
         run: |
           pushd "${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}"
-          npm ci --omit=dev
+          # Use `npm ci` when a lockfile exists (reproducible), otherwise fall
+          # back to `npm install` so first-time deploys don't fail.
+          if [ -f package-lock.json ]; then
+            npm ci --omit=dev
+          else
+            npm install --omit=dev --no-audit --no-fund
+          fi
           popd
 
       - name: Deploy to Azure Functions
