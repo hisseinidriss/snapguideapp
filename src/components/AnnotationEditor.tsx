@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import {
   MousePointer2, ArrowUpRight, Square, Droplet, Type, Undo2, Trash2, Loader2,
 } from "lucide-react";
-import { http } from "@/api/http";
+import { http, buildApiUrl } from "@/api/http";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
@@ -30,13 +30,6 @@ type Shape = ArrowShape | RectShape | BlurShape | TextShape;
 const COLORS = ["#ef4444", "#f59e0b", "#1a6b3c", "#3b82f6", "#ffffff", "#000000"];
 const MAX_W = 1100;
 const MAX_H = 700;
-const RAW_BASE = (import.meta.env.VITE_API_BASE_URL ?? "").trim();
-const API_BASE = RAW_BASE.replace(/\/$/, "");
-
-function buildApiUrl(path: string) {
-  const normalized = path.startsWith("/") ? path : `/${path}`;
-  return `${API_BASE}/api${normalized.replace(/^\/api/, "")}`;
-}
 
 interface Props {
   open: boolean;

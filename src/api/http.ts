@@ -1,15 +1,37 @@
 // Centralised HTTP client for the SnapGuide REST API.
-// Base URL comes from VITE_API_BASE_URL (e.g. https://snapguide-api.azurewebsites.net/api).
-// On Azure Static Web Apps with linked Functions, leave it empty so requests go to /api/*.
+//
+// All API calls MUST go to the absolute Azure Function App URL — never to a
+// relative path on the Static Web App origin. Routing requests through the
+// SWA host produces 405s because the SWA does not host the API itself.
+//
+// Resolution order (consistent across dev, build, and production):
+//   1. VITE_API_BASE_URL  — must be an absolute https?:// origin if provided
+//   2. DEFAULT_API_BASE   — the deployed Azure Function App
+//
+// A relative value (empty string, "/", "/api", …) is rejected and replaced
+// with the default so we never accidentally prefix the SWA domain.
 
-// Default to the Linux-based Azure Function App (supports ffmpeg-powered AI video rendering).
-// Override via VITE_API_BASE_URL at build time, or leave blank ("") to use SWA-linked /api proxy.
 const DEFAULT_API_BASE = "https://snapeguide1-hjakarahbzhcc2dk.uaenorth-01.azurewebsites.net";
-// Note: use length check instead of `??` because Vite replaces unset env vars with "" (empty string),
-// which would otherwise short-circuit the fallback and send requests to the SWA origin.
-const ENV_BASE = (import.meta.env.VITE_API_BASE_URL ?? "").trim();
-const RAW_BASE = ENV_BASE.length > 0 ? ENV_BASE : DEFAULT_API_BASE;
-const API_BASE = RAW_BASE.replace(/\/$/, "");
+
+function resolveApiBase(): string {
+  const raw = (import.meta.env.VITE_API_BASE_URL ?? "").trim();
+  if (raw.length === 0) return DEFAULT_API_BASE;
+  if (!/^https?:\/\//i.test(raw)) {
+    // Relative path or malformed value — refuse to use the SWA origin.
+    if (typeof console !== "undefined") {
+      console.warn(
+        `[api] VITE_API_BASE_URL must be an absolute URL (got "${raw}"). Falling back to ${DEFAULT_API_BASE}.`
+      );
+    }
+    return DEFAULT_API_BASE;
+  }
+  return raw;
+}
+
+const API_BASE = resolveApiBase().replace(/\/$/, "");
+
+// Exposed for diagnostics/settings UIs.
+export const API_BASE_URL = API_BASE;
 
 export type ApiResult<T> = { data: T | null; error: { message: string } | null };
 
