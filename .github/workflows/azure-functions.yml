@@ -26,11 +26,21 @@ jobs:
       - name: Install production deps
         run: |
           pushd "${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}"
-          if [ -f package-lock.json ]; then
-            npm ci --omit=dev
-          else
-            npm install --omit=dev --no-audit --no-fund
-          fi
+          # Remove any committed lockfile — it can pin platform-specific
+          # optional deps (ffmpeg/ffprobe binaries) to the dev machine's OS,
+          # which means the Linux binaries never get installed on this runner.
+          rm -f package-lock.json
+          npm install --omit=dev --no-audit --no-fund --include=optional
+          # Belt-and-suspenders: force the Linux x64 binary subpackages to be
+          # present even if npm's optional-dep resolution skipped them.
+          npm install --no-save --no-audit --no-fund \
+            @ffmpeg-installer/linux-x64 \
+            @ffprobe-installer/linux-x64
+          # Verify the binaries actually exist before we ship the package.
+          test -f node_modules/@ffmpeg-installer/linux-x64/ffmpeg
+          test -f node_modules/@ffprobe-installer/linux-x64/ffprobe
+          chmod +x node_modules/@ffmpeg-installer/linux-x64/ffmpeg \
+                   node_modules/@ffprobe-installer/linux-x64/ffprobe
           popd
 
       - name: Deploy to Azure Function App
