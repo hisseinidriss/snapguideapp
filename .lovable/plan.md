@@ -1,70 +1,27 @@
 
-## AI-narrated MP4 walkthroughs — final plan
 
-Stays on your current Windows Function App. Bundles ffmpeg via npm so no infra change is needed.
+## Fix: deployed app calls SWA instead of the new Linux Function App
 
-### Flow
-```text
-ScribeRecording UI
-  click "Generate AI video"
-        │
-        ▼
-POST /api/generate-narration
-   ├─ Perplexity (sonar) → spoken-style line per step
-   ├─ ElevenLabs TTS     → mp3 per step
-   └─ Azure Blob upload  → recording-narration/<rec_id>/step-<n>.mp3
-        │
-        ▼
-POST /api/render-recording-video
-   ├─ Download screenshots + mp3s
-   ├─ ffmpeg per step: still image clip = mp3 duration, mux audio
-   ├─ ffmpeg concat → final mp4
-   └─ Azure Blob upload → recording-videos/<rec_id>.mp4
-        │
-        ▼
-recording.video_url → Download MP4 button
-```
+### Root cause
+`src/api/http.ts` uses `import.meta.env.VITE_API_BASE_URL ?? DEFAULT_API_BASE`. The `.env` / SWA build sets `VITE_API_BASE_URL=""` (empty string), and `??` only falls back on `null`/`undefined` — so the empty string wins and every request goes to the SWA origin (`calm-field-…azurestaticapps.net/api/apps`). SWA has no linked Function App, so the SPA fallback returns `index.html`, producing the `Unexpected token '<'` JSON error.
 
-### Database changes (migration)
-- `process_recording_steps` add: `narration_text text`, `narration_url text`, `narration_duration_ms int`
-- `process_recordings` add: `video_url text`, `video_status text default 'idle'` (values: `idle | narrating | rendering | ready | failed`), `video_error text`
+### Changes
 
-### Backend (Azure Functions, Windows-compatible)
-- `azure-functions/package.json` — add deps: `@ffmpeg-installer/ffmpeg`, `fluent-ffmpeg`, `node-fetch` (only if needed).
-- `azure-functions/src/shared/elevenlabs.js` — `synthesize(text, voiceId)` → returns `{ buffer, durationMs }`. Uses `mp3_44100_128`. Default voice `JBFqnCBsd6RMkjVDRZzb` (George).
-- `azure-functions/src/shared/ffmpeg.js` — wraps `@ffmpeg-installer/ffmpeg` binary path; helpers `makeStepClip(image, audio, outPath)` and `concatClips(clipPaths, outPath)`.
-- `azure-functions/src/functions/generate-narration.js` — `POST /api/generate-narration` body `{ recording_id }`:
-  1. Set `recordings.video_status='narrating'`.
-  2. Load steps in order.
-  3. For each step: Perplexity rewrite of `instruction` → ~1 short sentence; ElevenLabs TTS; upload mp3; update step row with `narration_text/url/duration_ms`.
-  4. Return updated steps.
-- `azure-functions/src/functions/render-recording-video.js` — `POST /api/render-recording-video` body `{ recording_id }`:
-  1. Set `video_status='rendering'`.
-  2. Download each step's screenshot + mp3 to `os.tmpdir()`.
-  3. Build per-step mp4 clip (image looped to audio length, 1280×720, yuv420p, 30fps).
-  4. Concat clips into one mp4.
-  5. Upload to `recording-videos/<rec_id>.mp4`; save `video_url`; set `video_status='ready'`.
-  6. On any error: `video_status='failed'`, `video_error=message`.
-- `azure-functions/src/index.js` — register both new functions.
-- `azure-functions/local.settings.json.example` — add `ELEVENLABS_API_KEY`, `ELEVENLABS_VOICE_ID`.
+1. **`src/api/http.ts`** — make the fallback robust:
+   ```ts
+   const ENV_BASE = (import.meta.env.VITE_API_BASE_URL ?? "").trim();
+   const RAW_BASE = ENV_BASE.length > 0 ? ENV_BASE : DEFAULT_API_BASE;
+   ```
+   So an empty/whitespace value falls back to the new Linux Function App (`https://snapeguide1-hjakarahbzhcc2dk.uaenorth-01.azurewebsites.net`).
 
-### Frontend
-- `src/api/recordings.ts` — add `generateNarration(id)` and `renderVideo(id)`.
-- `src/pages/ScribeRecording.tsx` — new "Generate AI video" button beside PDF/DOCX. Disabled while `video_status` is `narrating` or `rendering`. Polls the recording every 3s until `ready` or `failed`. Shows toast on failure. When `ready`, render "Download MP4" link to `video_url`.
-- Optional small per-step preview: play button next to each step that plays its `narration_url`.
+2. **`.env.example`** — update guidance to point at the new Linux app and clarify that empty = use built-in default.
 
-### What you need to do
-1. In Azure Function App → **Application settings**, add:
-   - `ELEVENLABS_API_KEY` = your key
-   - (optional) `ELEVENLABS_VOICE_ID` = voice id
-2. Save (auto-restart) and redeploy the Functions code via your existing GitHub Action.
-3. I'll request `ELEVENLABS_API_KEY` via the secret tool when implementation starts so it's also stored in Lovable for reference.
+3. **CORS reminder** (no code change, action item): in the Azure portal for the new Function App `snapeguide1`, add the SWA origin (`https://calm-field-0ce2a1c00.7.azurestaticapps.net` and `https://snapguideapp.lovable.app`) under **CORS → Allowed Origins**, or set `CORS_ALLOWED_ORIGIN` env var to `*` (used by `shared/http.js`).
 
-### Out of scope this round
-- Multi-language narration (English first; Arabic/French TTS later — `eleven_multilingual_v2` supports it, easy follow-up).
-- Background music, transitions, Ken-Burns zoom.
-- Streaming progress (we poll).
+### Deploy
+- Push the change → SWA rebuilds → new bundle calls the Linux Function App directly → data loads.
 
-### Risks
-- Windows Function App cold start with bundled ffmpeg ≈ 6–10s (acceptable for an on-demand action).
-- Long recordings (>20 steps) may exceed default 5-min Functions timeout — I'll set `functionTimeout` to `00:10:00` in `host.json` if not already.
+### Verification
+- Open the deployed app, check Network tab: `/api/apps` request URL should be `https://snapeguide1-…azurewebsites.net/api/apps` and return `200` with JSON.
+- "No apps yet" empty state replaces the red error toast.
+
